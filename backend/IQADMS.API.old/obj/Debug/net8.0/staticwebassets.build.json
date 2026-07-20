@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "4ApjQppVj+VczSYgk4EQiW2EN6tCNvDf/H35nwNxROs=",
+  "Source": "IQADMS.API",
+  "BasePath": "_content/IQADMS.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
