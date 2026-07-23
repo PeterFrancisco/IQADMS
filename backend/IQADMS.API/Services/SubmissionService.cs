@@ -91,4 +91,26 @@ public class SubmissionService
             })
             .ToListAsync();
     }
+
+    public async Task<List<DocumentListResponse>> GetAllAsync()
+    {
+        return await _context.Submissions
+            .Include(s => s.AccreditationActivity)
+            .Include(s => s.RequiredDocument)
+            .Include(s => s.UploadedByUser)
+            .Where(s => !s.IsDeleted)
+            .OrderByDescending(s => s.SubmittedAt)
+            .Select(s => new DocumentListResponse
+            {
+                Id = s.Id,
+                FileName = s.FileName,
+                UploadedBy = s.UploadedByUser.DisplayName,
+                Activity = s.AccreditationActivity.Name,
+                Document = s.RequiredDocument.Title,
+                Status = s.Status,
+                SubmittedAt = s.SubmittedAt,
+                GoogleDriveLink = s.GoogleDriveLink
+            })
+            .ToListAsync();
+    }
 }

@@ -8,7 +8,8 @@ public class User : BaseEntity
     public string LastName { get; set; } = string.Empty;
 
     // Optional display name
-    public string? Username { get; set; }
+// Login username (required and unique)
+    public string Username { get; set; } = string.Empty;
 
     public string Email { get; set; } = string.Empty;
 
@@ -16,6 +17,23 @@ public class User : BaseEntity
 
     // Job title / position
     public string Position { get; set; } = string.Empty;
+
+    public string DisplayName { get; set; } = string.Empty;
+
+    public string? Bio { get; set; }
+
+    public int? Age { get; set; }
+
+    public string? ProfilePictureUrl { get; set; }
+
+    public string? LinkedInUrl { get; set; }
+
+    public string? GitHubUrl { get; set; }
+    
+    public string? WebsiteUrl { get; set; }
+
+    public string? InstagramUrl { get; set; }
+
 
     // System permission
     public bool IsAdmin { get; set; } = false;

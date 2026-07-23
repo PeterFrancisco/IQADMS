@@ -6,17 +6,35 @@ public static class DbInitializer
 {
     public static void Seed(ApplicationDbContext context)
     {
-        // Seed first administrator email
-        if (!context.AllowedUsers.Any())
+        // Ensure team allowed emails exist
+        var teamEmails = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
-            context.AllowedUsers.Add(new AllowedUser
-            {
-                Email = "admin@pqad.edu.ph",
-                IsRegistered = false
-            });
+            ["isco.jamespeter@gmail.com"] = true,
+            ["jamespeter.francisco3rd@gmail.com"] = false
+        };
 
-            context.SaveChanges();
+        foreach (var entry in teamEmails)
+        {
+            var existing = context.AllowedUsers
+                .FirstOrDefault(x => x.Email.ToLower() == entry.Key.ToLower());
+
+            if (existing == null)
+            {
+                context.AllowedUsers.Add(new AllowedUser
+                {
+                    Email = entry.Key.ToLower(),
+                    IsRegistered = false,
+                    IsAdmin = entry.Value
+                });
+            }
+            else
+            {
+                existing.IsAdmin = entry.Value;
+            }
         }
+
+        if (context.ChangeTracker.HasChanges())
+            context.SaveChanges();
 
         // Seed departments
         if (!context.Departments.Any())

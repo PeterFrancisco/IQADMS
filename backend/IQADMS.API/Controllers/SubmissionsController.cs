@@ -1,11 +1,13 @@
 using IQADMS.API.DTOs.Submissions;
 using IQADMS.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IQADMS.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class SubmissionsController : ControllerBase
 {
     private readonly SubmissionService _service;
@@ -13,6 +15,13 @@ public class SubmissionsController : ControllerBase
     public SubmissionsController(SubmissionService service)
     {
         _service = service;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var result = await _service.GetAllAsync();
+        return Ok(result);
     }
 
     [HttpPost]

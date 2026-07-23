@@ -3,5 +3,16 @@ obj/
 .vs/
 node_modules/
 .env
+.env.*
+!.env.example
 *.user
 *.suo
+
+# Local secrets (copy appsettings.example.json → appsettings.json on each machine)
+backend/IQADMS.API/appsettings.json
+
+# User-uploaded files
+backend/IQADMS.API/Uploads/
+
+# Frontend build output
+frontend/iqadms-frontend/dist/

@@ -7,4 +7,6 @@ public class AllowedUser : BaseEntity
     public string Email { get; set; } = string.Empty;
 
     public bool IsRegistered { get; set; } = false;
+
+    public bool IsAdmin { get; set; } = false;
 }

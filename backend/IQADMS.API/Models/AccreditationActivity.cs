@@ -1,5 +1,6 @@
 using IQADMS.API.Models.Base;
 
+
 namespace IQADMS.API.Models;
 
 public class AccreditationActivity : BaseEntity

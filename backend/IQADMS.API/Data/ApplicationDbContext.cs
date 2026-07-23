@@ -21,6 +21,14 @@ public class ApplicationDbContext : DbContext
     public DbSet<RequiredDocument> RequiredDocuments => Set<RequiredDocument>();
 
     public DbSet<Submission> Submissions => Set<Submission>();
+
+    public DbSet<AccountRequest> AccountRequests => Set<AccountRequest>();
+
+    public DbSet<WorkspaceTask> WorkspaceTasks => Set<WorkspaceTask>();
+
+    public DbSet<BoardColumn> BoardColumns => Set<BoardColumn>();
+
+    public DbSet<TaskColumnValue> TaskColumnValues => Set<TaskColumnValue>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -91,6 +99,68 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Submission>()
             .Property(s => s.Status)
             .HasMaxLength(50);
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .Property(t => t.Title)
+            .HasMaxLength(300);
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .Property(t => t.Status)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .HasOne(t => t.AssignedToUser)
+            .WithMany()
+            .HasForeignKey(t => t.AssignedToUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .HasOne(t => t.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(t => t.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BoardColumn>()
+            .Property(c => c.Name)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<BoardColumn>()
+            .Property(c => c.ColumnType)
+            .HasMaxLength(30);
+
+        modelBuilder.Entity<BoardColumn>()
+            .HasOne(c => c.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(c => c.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        modelBuilder.Entity<BoardColumn>()
+            .Property(c => c.OptionsJson)
+            .HasMaxLength(2000);
+
+        modelBuilder.Entity<TaskColumnValue>()
+            .HasOne(v => v.Task)
+            .WithMany()
+            .HasForeignKey(v => v.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskColumnValue>()
+            .HasOne(v => v.Column)
+            .WithMany()
+            .HasForeignKey(v => v.ColumnId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskColumnValue>()
+            .HasIndex(v => new { v.TaskId, v.ColumnId })
+            .IsUnique();
 
     }
 }
