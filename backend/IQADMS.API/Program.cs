@@ -77,7 +77,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:5173",
                 "http://localhost:5174",
-                "https://your-live-domain.com"
+                "http://100.125.111.28:5173",
+                "http://192.168.0.174:5173"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
