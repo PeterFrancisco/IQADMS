@@ -74,12 +74,26 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://100.125.111.28:5173",
-                "http://192.168.0.174:5173"
-            )
+        policy.SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrEmpty(origin) || !Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                    return false;
+
+                if (uri.Port is not (5173 or 5174))
+                    return false;
+
+                if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                // Tailscale (100.x.x.x) and typical LAN (192.168.x.x)
+                if (uri.Host.StartsWith("100.", StringComparison.Ordinal))
+                    return true;
+
+                if (uri.Host.StartsWith("192.168.", StringComparison.Ordinal))
+                    return true;
+
+                return false;
+            })
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -87,19 +101,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-app.UseCors("AllowFrontend");
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-// app.UseHttpsRedirection();   
-
-app.UseAuthentication();
-
-app.UseAuthorization();
 
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -108,6 +114,10 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
+app.UseRouting();
+app.UseCors("AllowFrontend");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
