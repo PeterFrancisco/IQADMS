@@ -40,7 +40,12 @@ export default function ProfilePage() {
     instagram: '',
     facebook: '',
     twitter: '',
-    website: ''
+    website: '',
+    facebookDisplay: '',
+    instagramDisplay: '',
+    twitterDisplay: '',
+    linkedInDisplay: '',
+    githubDisplay: ''
   })
 
   const [passwords, setPasswords] = useState({
@@ -79,7 +84,12 @@ export default function ProfilePage() {
         instagram: res.data.instagramUrl || '',
         facebook: res.data.facebookUrl || '',
         twitter: res.data.twitterUrl || '',
-        website: res.data.websiteUrl || ''
+        website: res.data.websiteUrl || '',
+        facebookDisplay: res.data.facebookDisplayName || '',
+        instagramDisplay: res.data.instagramDisplayName || '',
+        twitterDisplay: res.data.twitterDisplayName || '',
+        linkedInDisplay: res.data.linkedInDisplayName || '',
+        githubDisplay: res.data.gitHubDisplayName || ''
       })
       setProfilePictureUrl(res.data.profilePictureUrl || '')
       setPresenceLocal(normalizePresence(res.data.presence))
@@ -138,7 +148,12 @@ export default function ProfilePage() {
         instagramUrl: profile.instagram,
         facebookUrl: profile.facebook,
         twitterUrl: profile.twitter,
-        websiteUrl: profile.website
+        websiteUrl: profile.website,
+        facebookDisplayName: profile.facebookDisplay,
+        instagramDisplayName: profile.instagramDisplay,
+        twitterDisplayName: profile.twitterDisplay,
+        linkedInDisplayName: profile.linkedInDisplay,
+        gitHubDisplayName: profile.githubDisplay
       })
       notifyProfileUpdated()
       flash('Profile saved successfully.')
@@ -200,24 +215,37 @@ export default function ProfilePage() {
     }
   }
 
-  const socialEditorUrls = {
-    facebook: profile.facebook,
-    instagram: profile.instagram,
-    twitter: profile.twitter,
-    linkedin: profile.linkedIn,
-    github: profile.github
+  const socialEditorLinks = {
+    facebook: { display: profile.facebookDisplay, url: profile.facebook },
+    instagram: { display: profile.instagramDisplay, url: profile.instagram },
+    twitter: { display: profile.twitterDisplay, url: profile.twitter },
+    linkedin: { display: profile.linkedInDisplay, url: profile.linkedIn },
+    github: { display: profile.githubDisplay, url: profile.github }
   }
 
-  const onSocialEdit = (id, value) => {
-    const fieldMap = {
-      facebook: 'facebook',
-      instagram: 'instagram',
-      twitter: 'twitter',
-      linkedin: 'linkedIn',
-      github: 'github'
+  const onSocialEdit = (id, field, value) => {
+    const map = {
+      facebook: { display: 'facebookDisplay', url: 'facebook' },
+      instagram: { display: 'instagramDisplay', url: 'instagram' },
+      twitter: { display: 'twitterDisplay', url: 'twitter' },
+      linkedin: { display: 'linkedInDisplay', url: 'linkedIn' },
+      github: { display: 'githubDisplay', url: 'github' }
     }
-    const field = fieldMap[id]
-    if (field) handleProfileChange(field, value)
+    const key = map[id]?.[field]
+    if (key) handleProfileChange(key, value)
+  }
+
+  const socialSidebarProfile = {
+    facebookUrl: profile.facebook,
+    instagramUrl: profile.instagram,
+    twitterUrl: profile.twitter,
+    linkedInUrl: profile.linkedIn,
+    gitHubUrl: profile.github,
+    facebookDisplayName: profile.facebookDisplay,
+    instagramDisplayName: profile.instagramDisplay,
+    twitterDisplayName: profile.twitterDisplay,
+    linkedInDisplayName: profile.linkedInDisplay,
+    gitHubDisplayName: profile.githubDisplay
   }
 
   if (loading) {
@@ -309,7 +337,7 @@ export default function ProfilePage() {
             </SidebarCard>
 
             <SidebarCard title="Social">
-              <SocialLinksRow urls={socialEditorUrls} size="sm" />
+              <SocialLinksRow profile={socialSidebarProfile} size="sm" />
             </SidebarCard>
 
             <SidebarCard title="Completed tasks">
@@ -356,7 +384,7 @@ export default function ProfilePage() {
             </SectionCard>
 
             <SectionCard title="Social & portfolio links">
-              <SocialLinksEditorList urls={socialEditorUrls} onEdit={onSocialEdit} />
+              <SocialLinksEditorList links={socialEditorLinks} onEdit={onSocialEdit} />
               <div style={{ marginTop: '1rem' }}>
                 <Input
                   label="Website / portfolio"

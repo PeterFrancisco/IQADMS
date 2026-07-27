@@ -9,6 +9,48 @@ const PLATFORMS = [
   { id: 'github', label: 'GitHub' }
 ]
 
+const LEGACY_URL = {
+  facebook: ['facebook', 'facebookUrl'],
+  instagram: ['instagram', 'instagramUrl'],
+  twitter: ['twitter', 'twitterUrl'],
+  linkedin: ['linkedIn', 'linkedInUrl'],
+  github: ['github', 'gitHubUrl']
+}
+
+const LEGACY_DISPLAY = {
+  facebook: ['facebookDisplay', 'facebookDisplayName'],
+  instagram: ['instagramDisplay', 'instagramDisplayName'],
+  twitter: ['twitterDisplay', 'twitterDisplayName'],
+  linkedin: ['linkedInDisplay', 'linkedInDisplayName'],
+  github: ['githubDisplay', 'gitHubDisplayName']
+}
+
+function pick(profile, keys) {
+  for (const k of keys) {
+    const v = profile?.[k]
+    if (v != null && String(v).trim()) return String(v).trim()
+  }
+  return ''
+}
+
+/** @returns {Record<string, { url: string, display: string }>} */
+export function socialLinksFromProfile(profile) {
+  if (!profile) return {}
+  const out = {}
+  for (const p of PLATFORMS) {
+    const url = pick(profile, LEGACY_URL[p.id])
+    let display = pick(profile, LEGACY_DISPLAY[p.id])
+    if (!display && url) display = socialHandleFromUrl(p.id, url)
+    if (url || display) out[p.id] = { url, display }
+  }
+  return out
+}
+
+export function socialUrlsFromProfile(profile) {
+  const links = socialLinksFromProfile(profile)
+  return Object.fromEntries(Object.entries(links).map(([k, v]) => [k, v.url]))
+}
+
 function BrandIcon({ id, size = 20 }) {
   const common = { width: size, height: size, 'aria-hidden': true }
   switch (id) {
@@ -47,21 +89,16 @@ function BrandIcon({ id, size = 20 }) {
   }
 }
 
-/** Map profile object keys to platform ids */
-export function socialUrlsFromProfile(profile) {
-  if (!profile) return {}
-  return {
-    facebook: profile.facebook || profile.facebookUrl || '',
-    instagram: profile.instagram || profile.instagramUrl || '',
-    twitter: profile.twitter || profile.twitterUrl || '',
-    linkedin: profile.linkedIn || profile.linkedInUrl || '',
-    github: profile.github || profile.gitHubUrl || ''
+export function SocialLinksRow({ profile, urls, size = 'md' }) {
+  const links = profile ? socialLinksFromProfile(profile) : {}
+  if (urls && !profile) {
+    for (const p of PLATFORMS) {
+      const url = (urls[p.id] || '').trim()
+      if (url) links[p.id] = { url, display: socialHandleFromUrl(p.id, url) }
+    }
   }
-}
 
-export function SocialLinksRow({ urls, size = 'md' }) {
-  const map = typeof urls === 'object' && urls !== null ? urls : {}
-  const items = PLATFORMS.filter(p => map[p.id]?.trim())
+  const items = PLATFORMS.filter(p => links[p.id]?.url?.trim())
 
   if (items.length === 0) {
     return <p className="social-links-empty">No social links added yet.</p>
@@ -70,46 +107,57 @@ export function SocialLinksRow({ urls, size = 'md' }) {
   return (
     <div className={`social-links-row social-links-${size}`}>
       {items.map(p => {
-        const href = map[p.id].trim()
-        const handle = socialHandleFromUrl(p.id, href)
+        const { url, display } = links[p.id]
         return (
-          <a
-            key={p.id}
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="social-link-entry"
-            title={handle ? `${p.label}: ${handle}` : p.label}
-          >
-            <span className={`social-link-btn social-${p.id}`} aria-hidden>
+          <div key={p.id} className="social-link-entry">
+            <a
+              href={url.trim()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`social-link-btn social-${p.id}`}
+              title={display ? `${p.label}: ${display}` : p.label}
+              aria-label={display || p.label}
+            >
               <BrandIcon id={p.id} size={size === 'sm' ? 16 : 20} />
-            </span>
-            {handle ? <span className="social-link-handle">{handle}</span> : null}
-          </a>
+            </a>
+            {display ? <span className="social-link-handle">{display}</span> : null}
+          </div>
         )
       })}
     </div>
   )
 }
 
-export function SocialLinksEditorList({ urls, onEdit }) {
+export function SocialLinksEditorList({ links, onEdit }) {
   return (
     <div className="social-links-editor">
-      {PLATFORMS.map(p => (
-        <label key={p.id} className="social-links-editor-row">
-          <span className={`social-link-btn social-${p.id} social-link-btn-static`} aria-hidden>
-            <BrandIcon id={p.id} size={18} />
-          </span>
-          <span className="social-links-editor-label">{p.label}</span>
-          <input
-            type="url"
-            className="social-links-editor-input"
-            placeholder={`${p.label} URL`}
-            value={urls[p.id] || ''}
-            onChange={e => onEdit(p.id, e.target.value)}
-          />
-        </label>
-      ))}
+      {PLATFORMS.map(p => {
+        const row = links[p.id] || { display: '', url: '' }
+        return (
+          <div key={p.id} className="social-links-editor-block">
+            <span className={`social-link-btn social-${p.id} social-link-btn-static`} aria-hidden>
+              <BrandIcon id={p.id} size={18} />
+            </span>
+            <div className="social-links-editor-fields">
+              <span className="social-links-editor-platform">{p.label}</span>
+              <input
+                type="text"
+                className="social-links-editor-input"
+                placeholder="Username or display name"
+                value={row.display || ''}
+                onChange={e => onEdit(p.id, 'display', e.target.value)}
+              />
+              <input
+                type="url"
+                className="social-links-editor-input social-links-editor-url"
+                placeholder="https://profile-url..."
+                value={row.url || ''}
+                onChange={e => onEdit(p.id, 'url', e.target.value)}
+              />
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -13,4 +13,10 @@ public class UpdateProfileRequest
     public string? FacebookUrl { get; set; }
     public string? TwitterUrl { get; set; }
     public string? WebsiteUrl { get; set; }
+
+    public string? FacebookDisplayName { get; set; }
+    public string? InstagramDisplayName { get; set; }
+    public string? TwitterDisplayName { get; set; }
+    public string? LinkedInDisplayName { get; set; }
+    public string? GitHubDisplayName { get; set; }
 }

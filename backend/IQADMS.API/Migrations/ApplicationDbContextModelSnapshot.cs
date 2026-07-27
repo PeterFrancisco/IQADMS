@@ -796,6 +796,21 @@ namespace IQADMS.API.Migrations
                     b.Property<string>("FacebookUrl")
                         .HasColumnType("text");
 
+                    b.Property<string>("FacebookDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstagramDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TwitterDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LinkedInDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GitHubDisplayName")
+                        .HasColumnType("text");
+
                     b.Property<string>("TwitterUrl")
                         .HasColumnType("text");
 

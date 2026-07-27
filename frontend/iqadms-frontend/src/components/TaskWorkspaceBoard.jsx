@@ -354,33 +354,128 @@ function BoardCell({
 }
 
 function OwnerCell({ task, members, onAssign }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [anchor, setAnchor] = useState(null)
+  const btnRef = useRef(null)
+  const panelRef = useRef(null)
+  const searchRef = useRef(null)
+
   const owner = members.find(m => m.id === task.assignedToUserId)
-  const displayName = owner?.displayName || owner?.username || task.assignedToName || 'Unassigned'
+  const displayName = owner?.displayName || owner?.username || task.assignedToName || 'Assign owner'
+
+  const filtered = members.filter(m => {
+    const q = query.trim().toLowerCase()
+    if (!q) return true
+    const hay = `${m.displayName || ''} ${m.username || ''} ${m.email || ''}`.toLowerCase()
+    return hay.includes(q)
+  })
+
+  useEffect(() => {
+    if (!open) return undefined
+    const onDoc = e => {
+      if (panelRef.current?.contains(e.target) || btnRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  useEffect(() => {
+    if (open) {
+      setQuery('')
+      setTimeout(() => searchRef.current?.focus(), 0)
+    }
+  }, [open])
+
+  const toggle = () => {
+    if (open) {
+      setOpen(false)
+      return
+    }
+    const rect = btnRef.current?.getBoundingClientRect()
+    if (rect) {
+      setAnchor({
+        top: rect.bottom + 6,
+        left: Math.min(rect.left, window.innerWidth - 280)
+      })
+    }
+    setOpen(true)
+  }
+
+  const pick = userId => {
+    onAssign(task.id, userId || null)
+    setOpen(false)
+  }
 
   return (
     <div className="workspace-owner-cell">
-      <div className="workspace-owner-visual">
-        <UserAvatar member={owner || { displayName: '?' }} size={34} />
-        <div className="workspace-owner-popover" role="tooltip">
-          <strong>{displayName}</strong>
-          {owner?.email && <span>{owner.email}</span>}
-          {owner?.position && <span>{owner.position}</span>}
-          {!owner && <span>Click to assign an owner</span>}
-        </div>
-      </div>
-      <select
-        className="workspace-owner-select"
-        aria-label={`Owner for ${task.title}`}
-        value={task.assignedToUserId || ''}
-        onChange={e => onAssign(task.id, e.target.value || null)}
+      <button
+        type="button"
+        ref={btnRef}
+        className="workspace-owner-trigger"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-haspopup="listbox"
       >
-        <option value="">Unassigned</option>
-        {members.map(m => (
-          <option key={m.id} value={m.id}>
-            {m.displayName || m.username}
-          </option>
-        ))}
-      </select>
+        <UserAvatar
+          member={owner || { displayName: '?' }}
+          size={32}
+          className="workspace-owner-avatar"
+        />
+        <span className="workspace-owner-name">{displayName}</span>
+        <span className="workspace-owner-chevron" aria-hidden>▾</span>
+      </button>
+
+      {open &&
+        anchor &&
+        createPortal(
+          <div
+            ref={panelRef}
+            className="workspace-owner-picker"
+            style={{ top: anchor.top, left: anchor.left }}
+            role="listbox"
+            aria-label="Assign owner"
+          >
+            <div className="workspace-owner-picker-search">
+              <input
+                ref={searchRef}
+                type="search"
+                placeholder="Search members…"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                className="workspace-owner-search-input"
+              />
+            </div>
+            <button type="button" className="workspace-owner-option" onClick={() => pick(null)}>
+              <span className="workspace-owner-option-unassigned">—</span>
+              <span>Unassigned</span>
+            </button>
+            <div className="workspace-owner-picker-list">
+              {filtered.length === 0 ? (
+                <p className="workspace-owner-picker-empty">No members match your search.</p>
+              ) : (
+                filtered.map(m => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="option"
+                    aria-selected={m.id === task.assignedToUserId}
+                    className={`workspace-owner-option ${m.id === task.assignedToUserId ? 'selected' : ''}`}
+                    onClick={() => pick(m.id)}
+                  >
+                    <UserAvatar member={m} size={28} />
+                    <span className="workspace-owner-option-text">
+                      <strong>{m.displayName || m.username}</strong>
+                      <small>@{m.username}</small>
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

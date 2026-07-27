@@ -38,6 +38,16 @@ public class User : BaseEntity
 
     public string? TwitterUrl { get; set; }
 
+    public string? FacebookDisplayName { get; set; }
+
+    public string? InstagramDisplayName { get; set; }
+
+    public string? TwitterDisplayName { get; set; }
+
+    public string? LinkedInDisplayName { get; set; }
+
+    public string? GitHubDisplayName { get; set; }
+
     /// <summary>online | away | dnd | offline</summary>
     public string PresenceStatus { get; set; } = "offline";
 

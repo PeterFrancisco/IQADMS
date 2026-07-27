@@ -89,6 +89,12 @@ public class ProfileController : ControllerBase
         user.TwitterUrl = request.TwitterUrl;
         user.WebsiteUrl = request.WebsiteUrl;
 
+        user.FacebookDisplayName = request.FacebookDisplayName;
+        user.InstagramDisplayName = request.InstagramDisplayName;
+        user.TwitterDisplayName = request.TwitterDisplayName;
+        user.LinkedInDisplayName = request.LinkedInDisplayName;
+        user.GitHubDisplayName = request.GitHubDisplayName;
+
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Profile updated successfully." });
@@ -201,6 +207,11 @@ public class ProfileController : ControllerBase
         FacebookUrl = user.FacebookUrl,
         TwitterUrl = user.TwitterUrl,
         WebsiteUrl = user.WebsiteUrl,
+        FacebookDisplayName = user.FacebookDisplayName,
+        InstagramDisplayName = user.InstagramDisplayName,
+        TwitterDisplayName = user.TwitterDisplayName,
+        LinkedInDisplayName = user.LinkedInDisplayName,
+        GitHubDisplayName = user.GitHubDisplayName,
         Presence = NormalizePresence(user.PresenceStatus),
         LastActiveAt = user.LastActiveAt,
         IsAdmin = user.IsAdmin

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import AvatarWithPresence from '../components/AvatarWithPresence'
-import { SocialLinksRow, socialUrlsFromProfile } from '../components/SocialLinks'
+import { SocialLinksRow } from '../components/SocialLinks'
 import api from '../services/api'
 import ActivityStatusText from '../components/ActivityStatusText'
 import { normalizePresence } from '../config/presence'
@@ -71,7 +71,6 @@ export default function MemberProfilePage() {
     )
   }
 
-  const socialUrls = socialUrlsFromProfile(member)
   const displayName = member.displayName || member.username
   const presence = normalizePresence(member.presence)
 
@@ -129,7 +128,7 @@ export default function MemberProfilePage() {
             </SidebarCard>
 
             <SidebarCard title="Social">
-              <SocialLinksRow urls={socialUrls} size="sm" />
+              <SocialLinksRow profile={member} size="sm" />
             </SidebarCard>
 
             <SidebarCard title="Completed tasks">
