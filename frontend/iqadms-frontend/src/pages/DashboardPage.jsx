@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import TaskWorkspaceBoard from '../components/TaskWorkspaceBoard'
+import AppModal, { ConfirmDialog } from '../components/AppModal'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
 
@@ -63,6 +64,7 @@ export default function DashboardPage() {
   const [boardColumns, setBoardColumns] = useState([])
   const [cellValues, setCellValues] = useState({})
   const [showAddColumnModal, setShowAddColumnModal] = useState(false)
+  const [deleteColumnPrompt, setDeleteColumnPrompt] = useState(null)
   const [insertAfterColumnId, setInsertAfterColumnId] = useState(null)
   const [sortConfig, setSortConfig] = useState(null)
   const [newColumnForm, setNewColumnForm] = useState({ name: '', columnType: 'text', optionsText: '', binding: '' })
@@ -260,16 +262,21 @@ export default function DashboardPage() {
     }
   }
 
-  const deleteColumn = async (columnId, columnName) => {
-    const ok = window.confirm(`Delete column "${columnName}"? This cannot be undone.`)
-    if (!ok) return
+  const deleteColumn = (columnId, columnName) => {
+    setDeleteColumnPrompt({ columnId, columnName })
+  }
+
+  const confirmDeleteColumn = async () => {
+    if (!deleteColumnPrompt) return
+    const { columnId, columnName } = deleteColumnPrompt
 
     try {
       await api.delete(`/BoardColumns/${columnId}`)
+      setDeleteColumnPrompt(null)
       loadData()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to delete column.')
+      alert(err.response?.data?.message || `Failed to delete column "${columnName}".`)
     }
   }
   
@@ -457,380 +464,337 @@ export default function DashboardPage() {
           saveCellValue={saveCellValue}
         />
 
-            {selectedTask && (
-              <div style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(15,23,42,.45)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 999
-              }}>
-                <div style={{
-                  background: '#fff',
-                  borderRadius: 16,
-                  padding: '1.5rem',
-                  width: '100%',
-                  maxWidth: 560,
-                  maxHeight: '90vh',
-                  overflow: 'auto',
-                  boxShadow: '0 25px 50px rgba(0,0,0,.25)'
-                }}>
-                  <h2 style={{ margin: '0 0 .5rem', color: '#7a0019' }}>{selectedTask.title}</h2>
-                  <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem' }}>
-                    Status: <strong style={{ color: statusColor(selectedTask.status) }}>{selectedTask.status}</strong>
-                    {selectedTask.priority && <> · Priority: {selectedTask.priority}</>}
-                    {selectedTask.dueDate && <> · Due {selectedTask.dueDate}</>}
-                    {selectedTask.projectTitle && <> · {selectedTask.projectTitle}</>}
-                    {selectedTask.relatedDepartmentName && <> · Dept: {selectedTask.relatedDepartmentName}</>}
-                    {selectedTask.assignedToName && <> · Assigned to {selectedTask.assignedToName}</>}
+        <ConfirmDialog
+          open={Boolean(deleteColumnPrompt)}
+          onClose={() => setDeleteColumnPrompt(null)}
+          onConfirm={confirmDeleteColumn}
+          title="Delete column"
+          message={
+            deleteColumnPrompt
+              ? `Delete "${deleteColumnPrompt.columnName}"? This cannot be undone.`
+              : ''
+          }
+          confirmLabel="Delete"
+          danger
+        />
+
+        <AppModal
+          open={Boolean(selectedTask)}
+          onClose={closeTaskDetail}
+          title={selectedTask?.title || 'Task'}
+          size="lg"
+        >
+          {selectedTask && (
+            <>
+              <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem' }}>
+                Status: <strong style={{ color: statusColor(selectedTask.status) }}>{selectedTask.status}</strong>
+                {selectedTask.priority && <> · Priority: {selectedTask.priority}</>}
+                {selectedTask.dueDate && <> · Due {selectedTask.dueDate}</>}
+                {selectedTask.projectTitle && <> · {selectedTask.projectTitle}</>}
+                {selectedTask.relatedDepartmentName && <> · Dept: {selectedTask.relatedDepartmentName}</>}
+                {selectedTask.assignedToName && <> · Assigned to {selectedTask.assignedToName}</>}
+              </p>
+
+              {selectedTask.description && (
+                <>
+                  <label style={labelStyle}>Description</label>
+                  <p style={{ margin: '0 0 1rem', color: '#374151', whiteSpace: 'pre-wrap' }}>
+                    {selectedTask.description}
                   </p>
+                </>
+              )}
 
-                  {selectedTask.description && (
-                    <>
-                      <label style={labelStyle}>Description</label>
-                      <p style={{ margin: '0 0 1rem', color: '#374151', whiteSpace: 'pre-wrap' }}>
-                        {selectedTask.description}
-                      </p>
-                    </>
-                  )}
-
-                  {selectedTask.attachmentFileName && (
-                    <>
-                      <label style={labelStyle}>Reference attachment</label>
-                      <p style={{ margin: '0 0 1rem' }}>
-                        <a
-                          href={`${API_ORIGIN}${selectedTask.attachmentDownloadUrl}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#9e1b32', fontWeight: 600 }}
-                        >
-                          Download {selectedTask.attachmentFileName}
-                        </a>
-                      </p>
-                    </>
-                  )}
-
-                  {selectedTask.uploadGoogleDriveLink && (
-                    <>
-                      <label style={labelStyle}>Upload folder (Google Drive)</label>
-                      <p style={{ margin: '0 0 1rem' }}>
-                        <a
-                          href={selectedTask.uploadGoogleDriveLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#9e1b32', wordBreak: 'break-all' }}
-                        >
-                          Open Google Drive folder
-                        </a>
-                      </p>
-                    </>
-                  )}
-
-                  {selectedTask.deliverableGoogleDriveLink && isCompletedStatus(selectedTask.status) && (
-                    <>
-                      <label style={labelStyle}>Submitted work</label>
-                      <p style={{ margin: '0 0 1rem' }}>
-                        <a
-                          href={selectedTask.deliverableGoogleDriveLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#16a34a', wordBreak: 'break-all' }}
-                        >
-                          View finished work on Google Drive
-                        </a>
-                      </p>
-                    </>
-                  )}
-
-                  {(selectedTask.assignedToUserId === currentUserId ||
-                      selectedTask.createdByUserId === currentUserId) &&
-                      !isCompletedStatus(selectedTask.status) && (
-                      <>
-                        <label style={labelStyle}>Your finished work (Google Drive link)</label>
-                      <input
-                        style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-                        placeholder="https://drive.google.com/..."
-                        value={deliverableLink}
-                        onChange={e => setDeliverableLink(e.target.value)}
-                      />
-                      <button
-                        onClick={submitDeliverable}
-                        disabled={submittingDeliverable || !deliverableLink.trim()}
-            style={primaryBtn}
-          >
-            {submittingDeliverable ? 'Submitting...' : 'Submit & Mark Completed'}
-          </button>
-        </>
-      )}
-
-                  <label style={{ ...labelStyle, marginTop: '1.25rem' }}>Comments</label>
-                  <div style={{ maxHeight: 160, overflow: 'auto', marginBottom: '0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.75rem' }}>
-                    {taskComments.length === 0 ? (
-                      <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>No comments yet.</p>
-                    ) : (
-                      taskComments.map(c => (
-                        <div key={c.id} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                          <strong style={{ color: '#7a0019' }}>{c.authorName}</strong>
-                          <span style={{ color: '#94a3b8', marginLeft: 8, fontSize: '0.8rem' }}>
-                            {new Date(c.createdAt).toLocaleString()}
-                          </span>
-                          <div style={{ color: '#334155', marginTop: 4, whiteSpace: 'pre-wrap' }}>{c.body}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <textarea
-                    style={{ ...inputStyle, width: '100%', minHeight: 72, marginBottom: '0.5rem', boxSizing: 'border-box' }}
-                    placeholder="Add a comment…"
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                  />
-                  <button type="button" onClick={postComment} disabled={postingComment || !newComment.trim()} style={{ ...primaryBtn, marginBottom: '1rem' }}>
-                    {postingComment ? 'Posting…' : 'Post comment'}
-                  </button>
-
-                  {taskActivity.length > 0 && (
-                    <>
-                      <label style={labelStyle}>Activity</label>
-                      <ul style={{ margin: '0 0 1rem', paddingLeft: '1.1rem', color: '#475569', fontSize: '0.85rem' }}>
-                        {taskActivity.slice(0, 8).map(a => (
-                          <li key={a.id} style={{ marginBottom: 4 }}>
-                            <strong>{a.action}</strong>
-                            {a.detail ? ` — ${a.detail}` : ''}
-                            {a.actorName && ` (${a.actorName})`}
-                            <span style={{ color: '#94a3b8' }}> · {new Date(a.createdAt).toLocaleString()}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-        <button onClick={closeTaskDetail} style={ghostBtn}>
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-            {showAddColumnModal && (
-              <div style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(15,23,42,.45)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 999
-              }}>
-                <div style={{
-                  background: '#fff',
-                  borderRadius: 16,
-                  padding: '1.5rem',
-                  width: '100%',
-                  maxWidth: 420,
-                  boxShadow: '0 25px 50px rgba(0,0,0,.25)'
-                }}>
-                  <h2 style={{ margin: '0 0 1rem', color: '#7a0019' }}>Add Column</h2>
-
-                  <label style={labelStyle}>Column name</label>
-                  <input
-                    style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-                    placeholder="e.g. GDrive Submission"
-                    value={newColumnForm.name}
-                    onChange={e => setNewColumnForm({ ...newColumnForm, name: e.target.value })}
-                  />
-
-                  <label style={labelStyle}>Column type</label>
-                  <select
-                    style={{ ...selectStyle, marginBottom: '1rem' }}
-                    value={newColumnForm.columnType}
-                    onChange={e => setNewColumnForm({ ...newColumnForm, columnType: e.target.value, binding: '' })}
-                  >
-                    <option value="text">Text</option>
-                    <option value="link">Link</option>
-                    <option value="date">Date</option>
-                    <option value="number">Number</option>
-                    <option value="dropdown">Dropdown (limited choices)</option>
-                  </select>
-
-                  <label style={labelStyle}>Special column (optional)</label>
-                  <select
-                    style={{ ...selectStyle, marginBottom: '1rem' }}
-                    value={newColumnForm.binding}
-                    onChange={e => setNewColumnForm({ ...newColumnForm, binding: e.target.value })}
-                  >
-                    <option value="">Custom field</option>
-                    <option value="owner">Owner</option>
-                    <option value="status">Status</option>
-                    <option value="due_date">Due date</option>
-                  </select>
-
-                  {newColumnForm.columnType === 'dropdown' && (
-                    <>
-                      <label style={labelStyle}>Options (comma-separated)</label>
-                      <input
-                        style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-                        placeholder="e.g. High, Medium, Low"
-                        value={newColumnForm.optionsText}
-                        onChange={e => setNewColumnForm({ ...newColumnForm, optionsText: e.target.value })}
-                      />
-                    </>
-                  )}
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                    <button onClick={() => setShowAddColumnModal(false)} style={ghostBtn}>
-                      Cancel
-                    </button>
-                    <button onClick={createColumn} style={primaryBtn}>
-                      Add Column
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-
-            {showCreateModal && (
-              <div style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(15,23,42,.45)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                zIndex: 999,
-                padding: '1rem',
-                overflowY: 'auto',
-                boxSizing: 'border-box'
-              }}>
-                <div style={{
-                  background: '#fff',
-                  borderRadius: 16,
-                  padding: '1.5rem',
-                  width: '100%',
-                  maxWidth: 480,
-                  maxHeight: 'calc(100vh - 2rem)',
-                  overflowY: 'auto',
-                  margin: 'auto',
-                  boxShadow: '0 25px 50px rgba(0,0,0,.25)',
-                  boxSizing: 'border-box'
-                }}>
-                  <h2 style={{ margin: '0 0 1rem', color: '#7a0019' }}>Create Task</h2>
-
-                  <label style={labelStyle}>Task name</label>
-                  <input
-                    style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-                    placeholder="Enter task name..."
-                    value={createForm.title}
-                    onChange={e => setCreateForm({ ...createForm, title: e.target.value })}
-                  />
-
-                  <label style={labelStyle}>Description (optional)</label>
-                  <textarea
-                    style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, marginBottom: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
-                    value={createForm.description}
-                    onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
-                  />
-
-                  <label style={labelStyle}>Project</label>
-                  <select
-                    style={{ ...selectStyle, marginBottom: '1rem' }}
-                    value={createForm.projectId}
-                    onChange={e => setCreateForm({ ...createForm, projectId: e.target.value })}
-                  >
-                    <option value="">None</option>
-                    {projects.map(p => (
-                      <option key={p.id} value={p.id}>{p.title}</option>
-                    ))}
-                  </select>
-
-                  <label style={labelStyle}>Related department (metadata)</label>
-                  <select
-                    style={{ ...selectStyle, marginBottom: '1rem' }}
-                    value={createForm.relatedDepartmentId}
-                    onChange={e => setCreateForm({ ...createForm, relatedDepartmentId: e.target.value })}
-                  >
-                    <option value="">None</option>
-                    {departments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-
-                  <div className="mobile-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                    <div>
-                      <label style={labelStyle}>Due date</label>
-                      <input
-                        type="date"
-                        style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
-                        value={createForm.dueDate}
-                        onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Priority</label>
-                      <select
-                        style={{ ...selectStyle, width: '100%' }}
-                        value={createForm.priority}
-                        onChange={e => setCreateForm({ ...createForm, priority: e.target.value })}
-                      >
-                        {PRIORITY_OPTIONS.map(p => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <label style={labelStyle}>Assign to</label>
-                  <select
-                    style={{ ...selectStyle, marginBottom: '1rem' }}
-                    value={createForm.assignedToUserId}
-                    onChange={e => setCreateForm({ ...createForm, assignedToUserId: e.target.value })}
-                  >
-                    <option value="">Assign to me</option>
-                    {members.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.displayName || m.username} ({m.email})
-                      </option>
-                    ))}
-                  </select>
-
-                  <label style={labelStyle}>Google Drive link (where assignee uploads finished work)</label>
-                  <input
-                    style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-                    placeholder="https://drive.google.com/..."
-                    value={createForm.uploadGoogleDriveLink}
-                    onChange={e => setCreateForm({ ...createForm, uploadGoogleDriveLink: e.target.value })}
-                  />
-
-                  <label style={labelStyle}>Reference attachment (optional)</label>
-                  <input
-                    type="file"
-                    style={{ marginBottom: '1.5rem', display: 'block' }}
-                    onChange={e => setCreateForm({ ...createForm, attachment: e.target.files[0] })}
-                  />
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                    <button
-                        onClick={() => setShowCreateModal(false)}
-                        style={ghostBtn}
+              {selectedTask.attachmentFileName && (
+                <>
+                  <label style={labelStyle}>Reference attachment</label>
+                  <p style={{ margin: '0 0 1rem' }}>
+                    <a
+                      href={`${API_ORIGIN}${selectedTask.attachmentDownloadUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#9e1b32', fontWeight: 600 }}
                     >
-                        Cancel
-                    </button>
+                      Download {selectedTask.attachmentFileName}
+                    </a>
+                  </p>
+                </>
+              )}
+
+              {selectedTask.uploadGoogleDriveLink && (
+                <>
+                  <label style={labelStyle}>Upload folder (Google Drive)</label>
+                  <p style={{ margin: '0 0 1rem' }}>
+                    <a
+                      href={selectedTask.uploadGoogleDriveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#9e1b32', wordBreak: 'break-all' }}
+                    >
+                      Open Google Drive folder
+                    </a>
+                  </p>
+                </>
+              )}
+
+              {selectedTask.deliverableGoogleDriveLink && isCompletedStatus(selectedTask.status) && (
+                <>
+                  <label style={labelStyle}>Submitted work</label>
+                  <p style={{ margin: '0 0 1rem' }}>
+                    <a
+                      href={selectedTask.deliverableGoogleDriveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#16a34a', wordBreak: 'break-all' }}
+                    >
+                      View finished work on Google Drive
+                    </a>
+                  </p>
+                </>
+              )}
+
+              {(selectedTask.assignedToUserId === currentUserId ||
+                selectedTask.createdByUserId === currentUserId) &&
+                !isCompletedStatus(selectedTask.status) && (
+                  <>
+                    <label style={labelStyle}>Your finished work (Google Drive link)</label>
+                    <input
+                      style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+                      placeholder="https://drive.google.com/..."
+                      value={deliverableLink}
+                      onChange={e => setDeliverableLink(e.target.value)}
+                    />
                     <button
-                      onClick={createTaskWithDetails}
-                      disabled={saving}
+                      type="button"
+                      onClick={submitDeliverable}
+                      disabled={submittingDeliverable || !deliverableLink.trim()}
                       style={primaryBtn}
                     >
-                      {saving ? 'Creating...' : 'Create'}
+                      {submittingDeliverable ? 'Submitting...' : 'Submit & Mark Completed'}
                     </button>
-                  </div>
-                </div>
+                  </>
+                )}
+
+              <label style={{ ...labelStyle, marginTop: '1.25rem' }}>Comments</label>
+              <div style={{ maxHeight: 160, overflow: 'auto', marginBottom: '0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.75rem' }}>
+                {taskComments.length === 0 ? (
+                  <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>No comments yet.</p>
+                ) : (
+                  taskComments.map(c => (
+                    <div key={c.id} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                      <strong style={{ color: '#7a0019' }}>{c.authorName}</strong>
+                      <span style={{ color: '#94a3b8', marginLeft: 8, fontSize: '0.8rem' }}>
+                        {new Date(c.createdAt).toLocaleString()}
+                      </span>
+                      <div style={{ color: '#334155', marginTop: 4, whiteSpace: 'pre-wrap' }}>{c.body}</div>
+                    </div>
+                  ))
+                )}
               </div>
-            )}
+              <textarea
+                style={{ ...inputStyle, width: '100%', minHeight: 72, marginBottom: '0.5rem', boxSizing: 'border-box' }}
+                placeholder="Add a comment…"
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+              />
+              <button type="button" onClick={postComment} disabled={postingComment || !newComment.trim()} style={{ ...primaryBtn, marginBottom: '1rem' }}>
+                {postingComment ? 'Posting…' : 'Post comment'}
+              </button>
+
+              {taskActivity.length > 0 && (
+                <>
+                  <label style={labelStyle}>Activity</label>
+                  <ul style={{ margin: '0 0 1rem', paddingLeft: '1.1rem', color: '#475569', fontSize: '0.85rem' }}>
+                    {taskActivity.slice(0, 8).map(a => (
+                      <li key={a.id} style={{ marginBottom: 4 }}>
+                        <strong>{a.action}</strong>
+                        {a.detail ? ` — ${a.detail}` : ''}
+                        {a.actorName && ` (${a.actorName})`}
+                        <span style={{ color: '#94a3b8' }}> · {new Date(a.createdAt).toLocaleString()}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button type="button" onClick={closeTaskDetail} style={ghostBtn}>
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+        </AppModal>
+
+        <AppModal
+          open={showAddColumnModal}
+          onClose={() => setShowAddColumnModal(false)}
+          title="Add column"
+          size="sm"
+          footer={
+            <div className="app-modal-actions">
+              <button type="button" onClick={() => setShowAddColumnModal(false)} style={ghostBtn}>
+                Cancel
+              </button>
+              <button type="button" onClick={createColumn} style={primaryBtn}>
+                Add column
+              </button>
+            </div>
+          }
+        >
+          <label style={labelStyle}>Column name</label>
+          <input
+            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+            placeholder="e.g. GDrive Submission"
+            value={newColumnForm.name}
+            onChange={e => setNewColumnForm({ ...newColumnForm, name: e.target.value })}
+          />
+
+          <label style={labelStyle}>Column type</label>
+          <select
+            style={{ ...selectStyle, marginBottom: '1rem' }}
+            value={newColumnForm.columnType}
+            onChange={e => setNewColumnForm({ ...newColumnForm, columnType: e.target.value, binding: '' })}
+          >
+            <option value="text">Text</option>
+            <option value="link">Link</option>
+            <option value="date">Date</option>
+            <option value="number">Number</option>
+            <option value="dropdown">Dropdown (limited choices)</option>
+          </select>
+
+          <label style={labelStyle}>Special column (optional)</label>
+          <select
+            style={{ ...selectStyle, marginBottom: '1rem' }}
+            value={newColumnForm.binding}
+            onChange={e => setNewColumnForm({ ...newColumnForm, binding: e.target.value })}
+          >
+            <option value="">Custom field</option>
+            <option value="owner">Owner</option>
+            <option value="status">Status</option>
+            <option value="due_date">Due date</option>
+          </select>
+
+          {newColumnForm.columnType === 'dropdown' && (
+            <>
+              <label style={labelStyle}>Options (comma-separated)</label>
+              <input
+                style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+                placeholder="e.g. High, Medium, Low"
+                value={newColumnForm.optionsText}
+                onChange={e => setNewColumnForm({ ...newColumnForm, optionsText: e.target.value })}
+              />
+            </>
+          )}
+        </AppModal>
+
+        <AppModal
+          open={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title="Create task"
+          size="md"
+          footer={
+            <div className="app-modal-actions">
+              <button type="button" onClick={() => setShowCreateModal(false)} style={ghostBtn}>
+                Cancel
+              </button>
+              <button type="button" onClick={createTaskWithDetails} disabled={saving} style={primaryBtn}>
+                {saving ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          }
+        >
+          <label style={labelStyle}>Task name</label>
+          <input
+            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+            placeholder="Enter task name..."
+            value={createForm.title}
+            onChange={e => setCreateForm({ ...createForm, title: e.target.value })}
+          />
+
+          <label style={labelStyle}>Description (optional)</label>
+          <textarea
+            style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, marginBottom: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+            value={createForm.description}
+            onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
+          />
+
+          <label style={labelStyle}>Project</label>
+          <select
+            style={{ ...selectStyle, marginBottom: '1rem' }}
+            value={createForm.projectId}
+            onChange={e => setCreateForm({ ...createForm, projectId: e.target.value })}
+          >
+            <option value="">None</option>
+            {projects.map(p => (
+              <option key={p.id} value={p.id}>{p.title}</option>
+            ))}
+          </select>
+
+          <label style={labelStyle}>Related department (metadata)</label>
+          <select
+            style={{ ...selectStyle, marginBottom: '1rem' }}
+            value={createForm.relatedDepartmentId}
+            onChange={e => setCreateForm({ ...createForm, relatedDepartmentId: e.target.value })}
+          >
+            <option value="">None</option>
+            {departments.map(d => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+
+          <div className="mobile-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Due date</label>
+              <input
+                type="date"
+                style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+                value={createForm.dueDate}
+                onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Priority</label>
+              <select
+                style={{ ...selectStyle, width: '100%' }}
+                value={createForm.priority}
+                onChange={e => setCreateForm({ ...createForm, priority: e.target.value })}
+              >
+                {PRIORITY_OPTIONS.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <label style={labelStyle}>Assign to</label>
+          <select
+            style={{ ...selectStyle, marginBottom: '1rem' }}
+            value={createForm.assignedToUserId}
+            onChange={e => setCreateForm({ ...createForm, assignedToUserId: e.target.value })}
+          >
+            <option value="">Assign to me</option>
+            {members.map(m => (
+              <option key={m.id} value={m.id}>
+                {m.displayName || m.username} ({m.email})
+              </option>
+            ))}
+          </select>
+
+          <label style={labelStyle}>Google Drive link (where assignee uploads finished work)</label>
+          <input
+            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+            placeholder="https://drive.google.com/..."
+            value={createForm.uploadGoogleDriveLink}
+            onChange={e => setCreateForm({ ...createForm, uploadGoogleDriveLink: e.target.value })}
+          />
+
+          <label style={labelStyle}>Reference attachment (optional)</label>
+          <input
+            type="file"
+            style={{ marginBottom: '0.25rem', display: 'block' }}
+            onChange={e => setCreateForm({ ...createForm, attachment: e.target.files[0] })}
+          />
+        </AppModal>
       </div>
     </DashboardLayout>
   )
