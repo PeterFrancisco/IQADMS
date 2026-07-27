@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { getApiErrorMessage, validateStrongPassword } from '../utils/apiError'
 
 export default function CompleteRegistrationPage() {
   const navigate = useNavigate()
@@ -32,6 +33,12 @@ export default function CompleteRegistrationPage() {
       return
     }
 
+    const passwordIssue = validateStrongPassword(password)
+    if (passwordIssue) {
+      setError(passwordIssue)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -53,10 +60,7 @@ export default function CompleteRegistrationPage() {
       // Go directly to dashboard
       navigate('/')
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        'Registration failed.'
-      )
+      setError(getApiErrorMessage(err, 'Registration failed. Please check your details and try again.'))
     } finally {
       setLoading(false)
     }

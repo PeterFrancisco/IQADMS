@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { getApiErrorMessage } from '../utils/apiError'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('admin')
@@ -31,10 +32,7 @@ export default function LoginPage() {
 
       navigate('/')
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        'Invalid username/email or password'
-      )
+      setError(getApiErrorMessage(err, 'Invalid username/email or password'))
     } finally {
       setLoading(false)
     }
