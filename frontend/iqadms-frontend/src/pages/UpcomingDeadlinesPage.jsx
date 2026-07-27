@@ -106,7 +106,7 @@ export default function UpcomingDeadlinesPage() {
                     {item.assignedToName && (
                       <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{item.assignedToName}</div>
                     )}
-                    {!item.projectTitle && !item.assignedToName && item.itemType !== 'project' && '—'}
+                    {!item.projectTitle && !item.assignedToName && item.itemType !== 'project' && '-'}
                   </td>
                   <td style={td}>
                     <span

@@ -422,15 +422,15 @@ export default function DashboardPage() {
       <div>
         <h1 style={{ marginBottom: '.25rem', color: '#7a0019' }}>My Tasks</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-          Flexible workspace — rename columns from the header menu (⋮), scroll horizontally, sort, and add columns to the right.
+          Flexible workspace: rename columns from the header menu (⋮), scroll horizontally, sort, and add columns to the right.
           {filterProject && (
             <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
-              Filter: project — {filterProject.title}
+              Filter: project · {filterProject.title}
             </span>
           )}
           {filterDepartment && (
             <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
-              Filter: department — {filterDepartment.name}
+              Filter: department · {filterDepartment.name}
             </span>
           )}
         </p>
@@ -607,7 +607,7 @@ export default function DashboardPage() {
                     {taskActivity.slice(0, 8).map(a => (
                       <li key={a.id} style={{ marginBottom: 4 }}>
                         <strong>{a.action}</strong>
-                        {a.detail ? ` — ${a.detail}` : ''}
+                        {a.detail ? `: ${a.detail}` : ''}
                         {a.actorName && ` (${a.actorName})`}
                         <span style={{ color: '#94a3b8' }}> · {new Date(a.createdAt).toLocaleString()}</span>
                       </li>

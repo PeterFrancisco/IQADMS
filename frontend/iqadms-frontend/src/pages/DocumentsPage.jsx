@@ -309,7 +309,7 @@ function DocumentTable({ rows, fileLink, showFolder }) {
                       </span>
                     )}
                   </td>
-                  {showFolder && <td style={tdStyle}>{doc.autoFolderPath || '—'}</td>}
+                  {showFolder && <td style={tdStyle}>{doc.autoFolderPath || '-'}</td>}
                   <td style={tdStyle}>{doc.department}</td>
                   <td style={tdStyle}>{doc.uploadedBy}</td>
                   <td style={tdStyle}>{doc.activity}</td>

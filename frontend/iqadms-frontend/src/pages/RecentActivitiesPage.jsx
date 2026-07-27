@@ -78,7 +78,7 @@ export default function RecentActivitiesPage() {
                 <strong style={{ textTransform: 'capitalize' }}>{a.action}</strong>
                 {a.detail ? `: ${a.detail}` : ''}
                 {a.actorName && (
-                  <span style={{ color: '#64748b' }}> — {a.actorName}</span>
+                  <span style={{ color: '#64748b' }}> · {a.actorName}</span>
                 )}
               </p>
             </li>

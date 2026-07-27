@@ -1,4 +1,4 @@
-/** UPSHD Molino — PQAD brand colors for inline styles */
+/** UPSHD Molino / PQAD brand colors for inline styles */
 export const upshd = {
   maroon: '#7a0019',
   maroonDark: '#5c0012',

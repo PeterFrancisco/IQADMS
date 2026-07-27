@@ -105,7 +105,7 @@ export default function MonitoringPage() {
               fontSize: '1.1rem'
             }}
           >
-            PACUCOA Accreditation 2026 – Submission Monitoring
+            PACUCOA Accreditation 2026: Submission Monitoring
           </p>
           <p style={{ color: upshd.maroonLight, fontSize: '0.9rem', marginTop: '0.35rem' }}>
             UPSHD Molino Campus · PQAD

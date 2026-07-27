@@ -80,7 +80,7 @@ export default function AdminManageUsersPage() {
       <div style={{ display: 'grid', gap: '1.5rem' }}>
         <div>
           <h1 style={pageTitleStyle}>Manage Users</h1>
-          <p style={{ color: '#64748b', margin: 0 }}>Admin settings — remove registered users or pending allowed emails.</p>
+          <p style={{ color: '#64748b', margin: 0 }}>Remove registered users or pending allowed emails.</p>
         </div>
 
         {error && (
@@ -117,7 +117,7 @@ export default function AdminManageUsersPage() {
                     <tr key={user.id}>
                       <td style={tdStyle}>{user.username}</td>
                       <td style={tdStyle}>{user.email}</td>
-                      <td style={tdStyle}>{user.position || '—'}</td>
+                      <td style={tdStyle}>{user.position || '-'}</td>
                       <td style={tdStyle}>{user.isAdmin ? 'Admin' : 'User'}</td>
                       <td style={tdStyle}>
                         <Badge

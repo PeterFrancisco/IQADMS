@@ -23,7 +23,7 @@ export default function FeedbackPage() {
         message: message.trim()
       })
       setMessage('')
-      alert('Thank you — PQAD admins can review reports in the system.')
+      alert('Thank you. PQAD admins can review reports in the system.')
       navigate('/dashboard')
     } catch (err) {
       console.error(err)

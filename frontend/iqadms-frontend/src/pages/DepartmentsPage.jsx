@@ -81,7 +81,7 @@ export default function DepartmentsPage() {
     <DashboardLayout>
       <h1 style={pageTitleStyle}>Departments</h1>
       <p style={{ color: '#64748b', marginBottom: '1.25rem' }}>
-        Offices and colleges PQAD coordinates with. Departments are metadata on tasks—not assignees.
+        Offices and colleges PQAD coordinates with. Departments are metadata on tasks, not assignees.
       </p>
 
       {loading ? (

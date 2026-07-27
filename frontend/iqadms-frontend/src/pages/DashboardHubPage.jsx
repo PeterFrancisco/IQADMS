@@ -88,7 +88,7 @@ export default function DashboardHubPage() {
         <header className="dashboard-hub-header">
           <h1>PQAD Dashboard</h1>
           <p className="dashboard-hub-campus">
-            University of Perpetual Help System DALTA — Molino Campus
+            University of Perpetual Help System DALTA, Molino Campus
           </p>
           <p>
             Planning and Quality Assurance Department workspace. Tasks are assigned to
@@ -120,7 +120,7 @@ export default function DashboardHubPage() {
                   <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
                     {' '}
                     · {a.category} · {a.startDate}
-                    {a.endDate && a.endDate !== a.startDate ? ` – ${a.endDate}` : ''}
+                    {a.endDate && a.endDate !== a.startDate ? ` to ${a.endDate}` : ''}
                   </span>
                 </li>
               ))}

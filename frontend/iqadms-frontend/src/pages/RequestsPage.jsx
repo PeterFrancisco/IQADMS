@@ -255,7 +255,7 @@ export default function RequestsPage() {
           <section style={{ ...card, marginTop: '1rem' }}>
             <h2 style={sectionTitle}>Document request (department)</h2>
             <p style={{ margin: '0 0 1rem', color: '#475569', fontSize: '0.9rem' }}>
-              Track documents PQAD needs from an office or college. Departments remain metadata—not system users.
+              Track documents PQAD needs from an office or college. Departments remain metadata, not system users.
             </p>
             <form onSubmit={submitDocument}>
               <label style={label}>Department</label>

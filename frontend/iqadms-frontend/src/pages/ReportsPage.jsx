@@ -180,10 +180,10 @@ export default function ReportsPage() {
                       <td style={td}>{row.title}</td>
                       <td style={td}>{row.status}</td>
                       <td style={td}>{row.priority}</td>
-                      <td style={td}>{row.dueDate || '—'}</td>
-                      <td style={td}>{row.assigneeName || '—'}</td>
-                      <td style={td}>{row.projectTitle || '—'}</td>
-                      <td style={td}>{row.relatedDepartmentName || '—'}</td>
+                      <td style={td}>{row.dueDate || '-'}</td>
+                      <td style={td}>{row.assigneeName || '-'}</td>
+                      <td style={td}>{row.projectTitle || '-'}</td>
+                      <td style={td}>{row.relatedDepartmentName || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

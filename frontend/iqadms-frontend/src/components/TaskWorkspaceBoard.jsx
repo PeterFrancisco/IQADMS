@@ -448,7 +448,7 @@ function CustomCell({ column, taskId, value, onSave }) {
           onSave(taskId, column.id, e.target.value)
         }}
       >
-        <option value="">—</option>
+        <option value="">(none)</option>
         {options.map(opt => (
           <option key={opt} value={opt}>{opt}</option>
         ))}

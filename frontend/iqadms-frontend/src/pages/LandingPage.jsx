@@ -72,8 +72,8 @@ export default function LandingPage() {
           <p className="landing-eyebrow">University of Perpetual Help System DALTA</p>
           <h1>Integrated Quality Assurance Document Management System</h1>
           <p className="landing-hero-lead">
-            IQADMS supports the Planning and Quality Assurance Department (PQAD) at the Molino campus —
-            coordinating accreditation work, documents, tasks, and reporting in a single workspace.
+            IQADMS supports the Planning and Quality Assurance Department (PQAD) at the Molino campus by
+            coordinating accreditation work, documents, tasks, and reporting in one workspace.
           </p>
           <div className="landing-hero-actions">
             {isSignedIn ? (
@@ -100,8 +100,8 @@ export default function LandingPage() {
           <p>
             IQADMS is the internal platform for PQAD Molino to plan, execute, and document quality assurance
             and accreditation activities. It connects people, deadlines, evidence files, and monitoring views so
-            teams can see what is due, who is responsible, and what has been submitted — without scattered
-            spreadsheets and ad hoc folders.
+            teams can see what is due, who is responsible, and what has been submitted, instead of relying on
+            scattered spreadsheets and ad hoc folders.
           </p>
           <div className="landing-highlight-grid">
             <article className="landing-highlight">
@@ -125,7 +125,7 @@ export default function LandingPage() {
 
           <div className="landing-about-institution">
             <p className="landing-about-name">
-              {molinoCampus.institutionName} — {molinoCampus.campusName}
+              {molinoCampus.institutionName}, {molinoCampus.campusName}
             </p>
             <p className="landing-about-location inline-icon-text">
               <AppIcon name="map-pin" size={18} />
@@ -195,9 +195,9 @@ export default function LandingPage() {
             institutional goals, and works with schools and offices to complete required documents.
           </p>
           <p>
-            IQADMS was developed to give PQAD a dedicated digital workspace on campus — aligned with UPSHD
-            branding and workflows — while staying connected to broader campus resources through official
-            websites and assistant tools linked below.
+            IQADMS gives PQAD a dedicated workspace on campus that follows UPSHD branding and day-to-day
+            workflows. It stays linked to broader campus resources through the official websites and tools listed
+            below.
           </p>
         </section>
 
@@ -252,7 +252,7 @@ export default function LandingPage() {
         <p>
           <strong style={{ color: upshd.maroon }}>IQADMS</strong> · Planning and Quality Assurance Department
         </p>
-        <p>{molinoCampus.institutionName} — {molinoCampus.campusName}</p>
+        <p>{molinoCampus.institutionName}, {molinoCampus.campusName}</p>
         <p>{molinoCampus.address}</p>
         <p className="landing-footer-note">Authorized PQAD users only. Sign in for full access.</p>
       </footer>

@@ -24,7 +24,7 @@ const emptyForm = () => ({
 })
 
 function formatRange(a) {
-  if (a.endDate && a.endDate !== a.startDate) return `${a.startDate} – ${a.endDate}`
+  if (a.endDate && a.endDate !== a.startDate) return `${a.startDate} to ${a.endDate}`
   return a.startDate
 }
 
@@ -119,7 +119,7 @@ export default function AnnouncementsPage() {
         <div>
           <h1 style={pageTitleStyle}>Announcements</h1>
           <p style={{ color: '#64748b', margin: 0 }}>
-            PQAD orientation, meetings, PACUCOA visits — shown on the calendar too.
+            PQAD orientation, meetings, and PACUCOA visits also appear on the calendar.
           </p>
         </div>
         {isAdmin && (

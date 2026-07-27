@@ -26,7 +26,7 @@ export const mission = `The University of Perpetual Help System DALTA is dedicat
 
 As a system of Service in health and in education, it is dedicated to the formation of Christ-centered, service-oriented and research-driven individuals with great social concern and commitment to the delivery of quality education and health care.
 
-It shall produce Perpetualites as “Helpers of God” – a vital ingredient to nation building.`
+It shall produce Perpetualites as “Helpers of God”, a vital ingredient to nation building.`
 
 export const coreValues = [
   'Love of God, Love of Self, Family and Neighbor',
@@ -39,4 +39,4 @@ export const coreValues = [
 ]
 
 export const iqadmsAboutNote =
-  'IQADMS supports the Molino campus Planning and Quality Assurance Department in quality assurance, accreditation readiness, and evidence management — aligned with UPHSD’s commitment to continuous improvement and institutional excellence.'
+  'IQADMS supports the Molino campus Planning and Quality Assurance Department in quality assurance, accreditation readiness, and evidence management, in line with UPHSD’s commitment to continuous improvement and institutional excellence.'

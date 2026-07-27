@@ -1,4 +1,4 @@
-/* IQADMS — mobile & touch-friendly layout */
+/* IQADMS: mobile and touch-friendly layout */
 
 @media (max-width: 768px) {
   .main {
@@ -96,7 +96,7 @@
   }
 }
 
-/* Modals / overlays — full-width panels on small screens */
+/* Modals / overlays: full-width panels on small screens */
 @media (max-width: 640px) {
   .mobile-modal-grid {
     grid-template-columns: 1fr !important;
