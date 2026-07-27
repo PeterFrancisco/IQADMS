@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api from '../services/api'
+import { upshd } from '../theme/upshd'
+import {
+  authPageStyle,
+  authCardStyle,
+  authHeadingStyle,
+  authPrimaryButtonStyle,
+  authOutlineButtonStyle,
+  authInputStyle
+} from '../theme/pageStyles'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -39,7 +47,7 @@ export default function RegisterPage() {
   return (
     <div style={pageStyle}>
       <form onSubmit={handleContinue} style={cardStyle}>
-        <h1 style={{ marginTop: 0, color: '#1e3a8a' }}>Register</h1>
+        <h1 style={authHeadingStyle}>Register</h1>
         <p style={{ color: '#64748b' }}>
           Enter your institutional email address.
         </p>
@@ -81,55 +89,25 @@ export default function RegisterPage() {
   )
 }
 
-const pageStyle = {
-  minHeight: '100vh',
-  display: 'grid',
-  placeItems: 'center',
-  background: '#f5f7fb',
-  padding: '2rem',
-  fontFamily: 'Arial, sans-serif'
-}
+const pageStyle = authPageStyle
 
 const cardStyle = {
-  width: '100%',
-  maxWidth: '420px',
-  background: 'white',
-  padding: '2rem',
-  borderRadius: '16px',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+  ...authCardStyle,
+  maxWidth: '420px'
 }
 
 const inputStyle = {
-  width: '100%',
-  padding: '0.9rem',
-  borderRadius: '10px',
-  border: '1px solid #cbd5e1',
-  marginTop: '0.5rem',
-  boxSizing: 'border-box'
+  ...authInputStyle,
+  marginTop: '0.5rem'
 }
 
 const buttonStyle = {
-  width: '100%',
-  marginTop: '1rem',
-  padding: '0.9rem',
-  border: 'none',
-  borderRadius: '10px',
-  background: '#2563eb',
-  color: 'white',
-  fontWeight: '700',
-  cursor: 'pointer'
+  ...authPrimaryButtonStyle,
+  marginTop: '1rem'
 }
 
 const secondaryButtonStyle = {
-  width: '100%',
-  marginTop: '0.75rem',
-  padding: '0.9rem',
-  border: '1px solid #2563eb',
-  borderRadius: '10px',
-  background: 'white',
-  color: '#2563eb',
-  fontWeight: '700',
-  cursor: 'pointer'
+  ...authOutlineButtonStyle
 }
 
 const linkButtonStyle = {

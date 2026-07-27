@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import {
+  authPageStyle,
+  authCardStyle,
+  authHeadingStyle,
+  authPrimaryButtonStyle,
+  authInputStyle
+} from '../theme/pageStyles'
 
 export default function RequestAccountPage() {
   const navigate = useNavigate()
@@ -42,7 +49,7 @@ export default function RequestAccountPage() {
   return (
     <div style={pageStyle}>
       <form onSubmit={handleSubmit} style={cardStyle}>
-        <h1 style={{ marginTop: 0, color: '#1e3a8a' }}>Request Access</h1>
+        <h1 style={authHeadingStyle}>Request Access</h1>
 
         <div style={fieldStyle}>
           <label>Full Name</label>
@@ -77,22 +84,11 @@ export default function RequestAccountPage() {
   )
 }
 
-const pageStyle = {
-  minHeight: '100vh',
-  display: 'grid',
-  placeItems: 'center',
-  background: '#f5f7fb',
-  padding: '2rem',
-  fontFamily: 'Arial, sans-serif'
-}
+const pageStyle = authPageStyle
 
 const cardStyle = {
-  width: '100%',
-  maxWidth: '560px',
-  background: 'white',
-  padding: '2rem',
-  borderRadius: '16px',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+  ...authCardStyle,
+  maxWidth: '560px'
 }
 
 const fieldStyle = {
@@ -102,21 +98,10 @@ const fieldStyle = {
   marginBottom: '1rem'
 }
 
-const inputStyle = {
-  width: '100%',
-  padding: '0.85rem',
-  borderRadius: '10px',
-  border: '1px solid #cbd5e1',
-  boxSizing: 'border-box'
-}
+const inputStyle = authInputStyle
 
 const buttonStyle = {
+  ...authPrimaryButtonStyle,
   width: '100%',
-  padding: '0.9rem',
-  border: 'none',
-  borderRadius: '10px',
-  background: '#2563eb',
-  color: 'white',
-  fontWeight: '700',
-  cursor: 'pointer'
+  marginTop: 0
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
+import { upshd } from '../theme/upshd'
 
 const API_ORIGIN = api.defaults.baseURL.replace(/\/api$/, '')
 
@@ -227,10 +228,10 @@ export default function ProfilePage() {
               {profile.position && <p style={styles.heroRole}>{profile.position}</p>}
               <span style={{
                 ...styles.badge,
-                background: isAdmin ? '#dbeafe' : '#dcfce7',
-                color: isAdmin ? '#1d4ed8' : '#166534'
+                background: isAdmin ? upshd.maroonMuted : '#dcfce7',
+                color: isAdmin ? upshd.maroon : '#166534'
               }}>
-                {isAdmin ? 'Administrator' : 'Member'}
+                {isAdmin ? 'Administrator' : 'PQAD Staff'}
               </span>
             </div>
           </div>
@@ -521,7 +522,7 @@ const primaryButton = {
   padding: '0.75rem 1.25rem',
   border: 'none',
   borderRadius: '10px',
-  background: '#2563eb',
+  background: upshd.maroon,
   color: 'white',
   fontWeight: '600',
   cursor: 'pointer'
@@ -529,7 +530,7 @@ const primaryButton = {
 
 const secondaryButton = {
   ...primaryButton,
-  background: '#1e3a8a'
+  background: upshd.maroonDark
 }
 
 const styles = {
@@ -550,7 +551,7 @@ const styles = {
     borderRadius: 20,
     overflow: 'hidden',
     marginBottom: '1.5rem',
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #6366f1 100%)',
+    background: upshd.heroGradient,
     minHeight: 180
   },
   heroOverlay: {
@@ -598,7 +599,7 @@ const styles = {
     borderRadius: 999,
     border: 'none',
     background: 'rgba(255,255,255,.95)',
-    color: '#1e3a8a',
+    color: upshd.maroon,
     fontSize: '0.8rem',
     fontWeight: 600,
     cursor: 'pointer'
@@ -655,7 +656,7 @@ const styles = {
   sidebarTitle: {
     margin: '0 0 0.75rem',
     fontSize: '0.95rem',
-    color: '#1e3a8a',
+    color: upshd.maroon,
     fontWeight: 700
   },
   main: {
@@ -670,7 +671,7 @@ const styles = {
   },
   cardTitle: {
     margin: 0,
-    color: '#1e3a8a',
+    color: upshd.maroon,
     fontSize: '1.15rem'
   },
   cardSub: {
@@ -694,8 +695,8 @@ const styles = {
     padding: '0.55rem 0.75rem',
     marginBottom: '0.5rem',
     borderRadius: 8,
-    background: '#eff6ff',
-    color: '#2563eb',
+    background: upshd.linkBg,
+    color: upshd.maroon,
     textDecoration: 'none',
     fontSize: '0.9rem',
     fontWeight: 500
@@ -711,7 +712,7 @@ const styles = {
   statNumber: {
     fontSize: '2rem',
     fontWeight: 700,
-    color: '#2563eb'
+    color: upshd.maroon
   },
   statLabel: {
     color: '#64748b',
@@ -743,7 +744,7 @@ const styles = {
   },
   historyTitle: {
     fontWeight: 600,
-    color: '#1e3a8a'
+    color: upshd.maroon
   },
   historyMeta: {
     fontSize: '0.85rem',
@@ -754,7 +755,7 @@ const styles = {
     display: 'inline-block',
     marginTop: '0.5rem',
     fontSize: '0.85rem',
-    color: '#2563eb',
+    color: upshd.maroonLight,
     fontWeight: 500,
     textDecoration: 'none'
   }

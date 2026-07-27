@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
+import { upshd } from '../theme/upshd'
 
 const API_ORIGIN = api.defaults.baseURL.replace(/\/api$/, '')
 
 const STATUS_OPTIONS = ['Planning', 'In Progress', 'Review', 'Done']
 const STATUS_COLORS = {
-  Planning: '#2563eb',
+  Planning: '#7a0019',
   'In Progress': '#f59e0b',
   Review: '#9333ea',
   Done: '#16a34a'
@@ -219,13 +220,13 @@ const assignMember = async (id, userId) => {
   return (
     <DashboardLayout>
       <div>
-        <h1 style={{ marginBottom: '.25rem', color: '#1e3a8a' }}>Home</h1>
+        <h1 style={{ marginBottom: '.25rem', color: '#7a0019' }}>My Tasks</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
           Your workspace — manage tasks, assignments, and progress
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          <MiniStat label="Total Tasks" value={tasks.length} color="#2563eb" />
+          <MiniStat label="Total Tasks" value={tasks.length} color="#9e1b32" />
           <MiniStat label="In Progress" value={tasks.filter(t => t.status === 'In Progress').length} color="#f59e0b" />
           <MiniStat label="Review" value={tasks.filter(t => t.status === 'Review').length} color="#9333ea" />
           <MiniStat label="Done" value={tasks.filter(t => t.status === 'Done').length} color="#16a34a" />
@@ -237,7 +238,7 @@ const assignMember = async (id, userId) => {
           <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.08)', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#eef2ff' }}>
+                <tr style={{ background: upshd.tableHeadBg }}>
                   <th style={{ ...thStyle, width: 60 }}></th>
                   <th style={thStyle}>Task</th>
                   <th style={{ ...thStyle, width: 220 }}>Assigned To</th>
@@ -315,7 +316,7 @@ const assignMember = async (id, userId) => {
                     <tr key={task.id}>
                       <td style={tdStyle}></td>
                       <td
-                        style={{ ...tdStyle, fontWeight: 600, cursor: 'pointer', color: '#1e3a8a' }}
+                        style={{ ...tdStyle, fontWeight: 600, cursor: 'pointer', color: '#7a0019' }}
                         onClick={() => openTaskDetail(task)}
                         title="View task details"
                       >     
@@ -394,7 +395,7 @@ const assignMember = async (id, userId) => {
                   maxWidth: 520,
                   boxShadow: '0 25px 50px rgba(0,0,0,.25)'
                 }}>
-                  <h2 style={{ margin: '0 0 .5rem', color: '#1e3a8a' }}>{selectedTask.title}</h2>
+                  <h2 style={{ margin: '0 0 .5rem', color: '#7a0019' }}>{selectedTask.title}</h2>
                   <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem' }}>
                     Status: <strong style={{ color: STATUS_COLORS[selectedTask.status] }}>{selectedTask.status}</strong>
                     {selectedTask.assignedToName && <> · Assigned to {selectedTask.assignedToName}</>}
@@ -417,7 +418,7 @@ const assignMember = async (id, userId) => {
                           href={`${API_ORIGIN}${selectedTask.attachmentDownloadUrl}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#2563eb', fontWeight: 600 }}
+                          style={{ color: '#9e1b32', fontWeight: 600 }}
                         >
                           Download {selectedTask.attachmentFileName}
                         </a>
@@ -433,7 +434,7 @@ const assignMember = async (id, userId) => {
                           href={selectedTask.uploadGoogleDriveLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#2563eb', wordBreak: 'break-all' }}
+                          style={{ color: '#9e1b32', wordBreak: 'break-all' }}
                         >
                           Open Google Drive folder
                         </a>
@@ -505,7 +506,7 @@ const assignMember = async (id, userId) => {
                   maxWidth: 420,
                   boxShadow: '0 25px 50px rgba(0,0,0,.25)'
                 }}>
-                  <h2 style={{ margin: '0 0 1rem', color: '#1e3a8a' }}>Add Column</h2>
+                  <h2 style={{ margin: '0 0 1rem', color: '#7a0019' }}>Add Column</h2>
 
                   <label style={labelStyle}>Column name</label>
                   <input
@@ -571,7 +572,7 @@ const assignMember = async (id, userId) => {
                   maxWidth: 480,
                   boxShadow: '0 25px 50px rgba(0,0,0,.25)'
                 }}>
-                  <h2 style={{ margin: '0 0 1rem', color: '#1e3a8a' }}>Create Task</h2>
+                  <h2 style={{ margin: '0 0 1rem', color: '#7a0019' }}>Create Task</h2>
 
                   <label style={labelStyle}>Task name</label>
                   <input
@@ -659,7 +660,7 @@ function CustomCell({ column, taskId, value, onSave }) {
             href={local}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize: '0.8rem', color: '#2563eb', display: 'inline-block', marginTop: '0.25rem' }}
+            style={{ fontSize: '0.8rem', color: '#9e1b32', display: 'inline-block', marginTop: '0.25rem' }}
           >
             Open
           </a>
@@ -737,7 +738,7 @@ function Avatar({ initials, size = 36 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: '999px',
-      background: '#1e3a8a', color: '#fff',
+      background: '#7a0019', color: '#fff',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontSize: size * 0.35, fontWeight: 700
     }}>
@@ -750,7 +751,7 @@ const thStyle = { textAlign: 'left', padding: '1rem', borderBottom: '1px solid #
 const tdStyle = { padding: '1rem', borderBottom: '1px solid #eee', verticalAlign: 'middle' }
 const inputStyle = { flex: 1, padding: '0.6rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.95rem' }
 const selectStyle = { width: '100%', padding: '0.5rem 0.6rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.9rem' }
-const plusBtnStyle = { width: 32, height: 32, borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', fontWeight: 700 }
-const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600, cursor: 'pointer' }
+const plusBtnStyle = { width: 32, height: 32, borderRadius: 8, border: 'none', background: '#9e1b32', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', fontWeight: 700 }
+const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: '#9e1b32', color: '#fff', fontWeight: 600, cursor: 'pointer' }
 const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }
 const labelStyle = { display: 'block', marginBottom: '0.35rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }

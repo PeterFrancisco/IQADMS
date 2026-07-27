@@ -3,6 +3,7 @@ import MonitoringPage from './pages/MonitoringPage'
 import ActivitiesPage from './pages/ActivitiesPage'
 import DepartmentsPage from './pages/DepartmentsPage'
 import DashboardPage from './pages/DashboardPage'
+import DashboardHubPage from './pages/DashboardHubPage'
 import LoginPage from './pages/LoginPage'
 import RequestAccountPage from './pages/RequestAccountPage'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -17,6 +18,15 @@ import MemberProfilePage from './pages/MemberProfilePage'
 import DocumentsPage from './pages/DocumentsPage'
 import AdminManageUsersPage from './pages/AdminManageUsersPage'
 import AdminRoute from './components/AdminRoute'
+import {
+  ProjectsPage,
+  UpcomingDeadlinesPage,
+  RecentActivitiesPage,
+  NotificationsPage,
+  StatisticsPage,
+  CalendarPage,
+  ReportsPage
+} from './pages/ModulePlaceholders'
 
 export default function App() {
   return (
@@ -29,12 +39,85 @@ export default function App() {
       <Route path="/request-access" element={<RequestAccountPage />} />
       <Route path="/request-submitted" element={<RequestSubmittedPage />} />
 
-      {/* Protected routes */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
       <Route
-        path="/"
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardHubPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/my-tasks"
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <ProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/upcoming-deadlines"
+        element={
+          <ProtectedRoute>
+            <UpcomingDeadlinesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/recent-activities"
+        element={
+          <ProtectedRoute>
+            <RecentActivitiesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/statistics"
+        element={
+          <ProtectedRoute>
+            <StatisticsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute>
+            <CalendarPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <ReportsPage />
           </ProtectedRoute>
         }
       />
@@ -69,12 +152,12 @@ export default function App() {
       <Route
         path="/settings"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <SettingsPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
-      
+
       <Route
         path="/profile"
         element={
@@ -114,9 +197,9 @@ export default function App() {
       <Route
         path="/admin/add-account"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <AdminAddAccountPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
 
@@ -128,11 +211,8 @@ export default function App() {
           </AdminRoute>
         }
       />
-      
-      {/* Redirect unknown routes */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
 
-      
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
+import { pageTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'
 
 export default function SettingsPage() {
   const [requests, setRequests] = useState([])
@@ -50,7 +51,7 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div>
         <div style={{ marginBottom: '2rem' }}>
-          <h1 style={{ margin: 0, color: '#1e3a8a' }}>Admin Settings</h1>
+          <h1 style={{ margin: 0, ...pageTitleStyle }}>Admin Settings</h1>
           <p style={{ color: '#64748b' }}>
             Manage account requests and user access.
           </p>
@@ -100,7 +101,7 @@ export default function SettingsPage() {
               }}
             >
               <thead>
-                <tr style={{ background: '#eef2ff' }}>
+                <tr style={tableHeadRowStyle}>
                   <th style={thStyle}>Name</th>
                   <th style={thStyle}>Email</th>
                   <th style={thStyle}>Department</th>

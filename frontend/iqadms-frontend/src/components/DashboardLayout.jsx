@@ -7,6 +7,8 @@ export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 1024
   )
+  const isAdmin = localStorage.getItem('isAdmin') === 'true'
+  const closeMobile = () => closeSidebarMobile(setSidebarOpen)
 
   return (
     <div className="layout">
@@ -19,18 +21,35 @@ export default function DashboardLayout({ children }) {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <h2>IQADMS</h2>
-          <small>PQAD Portal</small>
+          <small>PQAD · UPSHD Molino</small>
         </div>
 
-        <NavItem label="Home" to="/" icon="🏠" onNavigate={() => closeSidebarMobile(setSidebarOpen)} />
-        <TeamMembersDropdown label="Team" icon="👥" onNavigate={() => closeSidebarMobile(setSidebarOpen)} />
-        <NavItem label="Documents" to="/documents" icon="📄" onNavigate={() => closeSidebarMobile(setSidebarOpen)} />
+        <NavItem label="Dashboard" to="/dashboard" icon="📊" onNavigate={closeMobile} />
+        <NavItem label="My Tasks" to="/my-tasks" icon="✅" onNavigate={closeMobile} />
+        <NavItem label="Projects" to="/projects" icon="📁" onNavigate={closeMobile} />
+        <NavItem label="Documents" to="/documents" icon="📄" onNavigate={closeMobile} />
+        <NavItem label="Monitoring" to="/monitoring" icon="📈" onNavigate={closeMobile} />
+        <NavItem label="Calendar" to="/calendar" icon="📅" onNavigate={closeMobile} />
+        <NavItem label="Reports" to="/reports" icon="📑" onNavigate={closeMobile} />
 
         <div className="sidebar-divider" />
 
-        <NavItem label="Activities" to="/activities" icon="📋" onNavigate={() => closeSidebarMobile(setSidebarOpen)} />
-        <NavItem label="Monitoring" to="/monitoring" icon="📊" onNavigate={() => closeSidebarMobile(setSidebarOpen)} />
-        <NavItem label="Departments" to="/departments" icon="🏢" onNavigate={() => closeSidebarMobile(setSidebarOpen)} />
+        <NavItem label="Notifications" to="/notifications" icon="🔔" onNavigate={closeMobile} />
+        <TeamMembersDropdown label="PQAD Team" icon="👥" onNavigate={closeMobile} />
+
+        <div className="sidebar-divider" />
+
+        <NavItem label="Activities" to="/activities" icon="📋" onNavigate={closeMobile} />
+        <NavItem label="Departments" to="/departments" icon="🏢" onNavigate={closeMobile} />
+
+        {isAdmin && (
+          <>
+            <div className="sidebar-divider" />
+            <NavItem label="Account Requests" to="/settings" icon="📬" onNavigate={closeMobile} />
+            <NavItem label="Add Account" to="/admin/add-account" icon="➕" onNavigate={closeMobile} />
+            <NavItem label="Manage Users" to="/admin/manage-users" icon="⚙️" onNavigate={closeMobile} />
+          </>
+        )}
       </aside>
 
       <main className={`main ${sidebarOpen ? 'main-shifted' : ''}`}>
@@ -58,9 +77,11 @@ function closeSidebarMobile(setSidebarOpen) {
   if (window.innerWidth < 1024) setSidebarOpen(false)
 }
 
-function NavItem({ label, to, icon, onNavigate }) {
+function NavItem({ label, to, icon, onNavigate, matchPrefix }) {
   const location = useLocation()
-  const active = location.pathname === to
+  const active = matchPrefix
+    ? location.pathname.startsWith(matchPrefix)
+    : location.pathname === to
 
   return (
     <Link to={to} className="nav-item-link" onClick={onNavigate}>
@@ -243,7 +264,7 @@ function ProfileMenu() {
       <div className={`profile-menu ${open ? 'open' : ''}`}>
         <div className="profile-header">
           <strong>{username}</strong>
-          <small>{isAdmin ? 'Administrator' : 'User'}</small>
+          <small>{isAdmin ? 'Administrator' : 'PQAD Staff'}</small>
         </div>
 
         <button type="button" className="menu-item" onClick={() => go('/profile')}>
@@ -257,6 +278,9 @@ function ProfileMenu() {
             </button>
             <button type="button" className="menu-item" onClick={() => go('/admin/manage-users')}>
               <span>⚙️</span> Manage Users
+            </button>
+            <button type="button" className="menu-item" onClick={() => go('/settings')}>
+              <span>📬</span> Account Requests
             </button>
           </>
         ) : (

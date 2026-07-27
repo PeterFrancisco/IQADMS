@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
+import { upshd } from '../theme/upshd'
 
 const ACTIVITY_ID = '93cb5e08-4c2c-40bf-9d79-59d0c2a1d689'
 
@@ -18,9 +19,11 @@ export default function MonitoringPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '2rem', fontFamily: 'Arial' }}>
-        <h2>Loading monitoring data...</h2>
-      </div>
+      <DashboardLayout>
+        <div style={{ padding: '2rem', color: upshd.maroon, fontWeight: 600 }}>
+          Loading monitoring data...
+        </div>
+      </DashboardLayout>
     )
   }
 
@@ -39,191 +42,180 @@ export default function MonitoringPage() {
     <DashboardLayout>
       <div>
         <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
-                {/* Top Header Bar */}
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '2rem',
-        background: 'white',
-        padding: '1rem 1.5rem',
-        borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-      }}
-    >
-      <div>
-        <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-          Today
-        </div>
-        <div style={{ fontWeight: '600', fontSize: '1.05rem' }}>
-          {new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </div>
-      </div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '2rem',
+              background: 'white',
+              padding: '1rem 1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(92, 0, 18, 0.06)',
+              border: '1px solid #e5e7eb'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.9rem', color: '#64748b' }}>Today</div>
+              <div style={{ fontWeight: '600', fontSize: '1.05rem' }}>
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </div>
+            </div>
 
-      <button
-        style={{
-          background: '#2563eb',
-          color: 'white',
-          border: 'none',
-          borderRadius: '10px',
-          padding: '0.75rem 1.25rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          boxShadow: '0 2px 6px rgba(37,99,235,0.35)'
-        }}
-        onMouseEnter={e => (e.currentTarget.style.background = '#1d4ed8')}
-        onMouseLeave={e => (e.currentTarget.style.background = '#2563eb')}
-        onClick={() => alert('Create Activity form coming next')}
-      >
-        + Create Activity
-      </button>
-    </div>
-            <h1
-                style={{
-                margin: 0,
-                color: '#1e3a8a',
-                fontSize: '2.2rem',
-                fontWeight: '700',
-                }}
+            <button
+              type="button"
+              style={{
+                background: upshd.maroon,
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '0.75rem 1.25rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                boxShadow: upshd.shadowMaroon
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = upshd.maroonDark)}
+              onMouseLeave={e => (e.currentTarget.style.background = upshd.maroon)}
+              onClick={() => alert('Create Activity form coming next')}
             >
-                IQADMS Dashboard
-            </h1>
+              + Create Activity
+            </button>
+          </div>
 
-            <p
-                style={{
-                    color: '#555',
-                    marginTop: '0.75rem',
-                    fontSize: '1.1rem'
-                }}
-            >
-                PACUCOA Accreditation 2026 – Submission Monitoring
-             </p>
+          <h1
+            style={{
+              margin: 0,
+              color: upshd.maroon,
+              fontSize: '2.2rem',
+              fontWeight: '700'
+            }}
+          >
+            Monitoring
+          </h1>
+
+          <p
+            style={{
+              color: '#555',
+              marginTop: '0.75rem',
+              fontSize: '1.1rem'
+            }}
+          >
+            PACUCOA Accreditation 2026 – Submission Monitoring
+          </p>
+          <p style={{ color: upshd.maroonLight, fontSize: '0.9rem', marginTop: '0.35rem' }}>
+            UPSHD Molino Campus · PQAD
+          </p>
         </div>
 
-      {/* Summary Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem',
-          marginBottom: '2rem'
-        }}
-      >
-        <SummaryCard title="Departments" value={totalDepartments} color="#2563eb" />
-        <SummaryCard title="Completed" value={completedDepartments} color="#16a34a" />
-        <SummaryCard title="Pending" value={pendingDepartments} color="#dc2626" />
-        <SummaryCard title="Average Progress" value={`${averageProgress}%`} color="#9333ea" />
-      </div>
-
-      {/* Monitoring Table */}
-      <div
-        style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '1rem',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Department Progress</h2>
-
-        <table
+        <div
           style={{
-            width: '100%',
-            borderCollapse: 'collapse'
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '1rem',
+            marginBottom: '2rem'
           }}
         >
-          <thead>
-            <tr style={{ background: '#eef2ff' }}>
-              <th style={thStyle}>Department</th>
-              <th style={thStyle}>Submitted</th>
-              <th style={thStyle}>Missing</th>
-              <th style={thStyle}>Progress</th>
-              <th style={thStyle}>Status</th>
-            </tr>
-          </thead>
+          <SummaryCard title="Departments" value={totalDepartments} color={upshd.maroon} />
+          <SummaryCard title="Completed" value={completedDepartments} color="#16a34a" />
+          <SummaryCard title="Pending" value={pendingDepartments} color="#dc2626" />
+          <SummaryCard title="Average Progress" value={`${averageProgress}%`} color={upshd.gold} />
+        </div>
 
-          <tbody>
-            {data.map(item => (
-              <tr
-                key={item.departmentId}
-                style={{
-                    transition: 'background 0.2s',
-                    cursor: 'pointer'
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'white')}
-              >
-                <td style={tdStyle}>{item.departmentName}</td>
+        <div
+          style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '1rem',
+            boxShadow: '0 2px 8px rgba(92, 0, 18, 0.06)',
+            border: '1px solid #e5e7eb'
+          }}
+        >
+          <h2 style={{ marginTop: 0, color: upshd.maroon }}>Department Progress</h2>
 
-                <td style={tdStyle}>
-                  {item.submittedDocuments} / {item.totalRequiredDocuments}
-                </td>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: upshd.tableHeadBg }}>
+                <th style={thStyle}>Department</th>
+                <th style={thStyle}>Submitted</th>
+                <th style={thStyle}>Missing</th>
+                <th style={thStyle}>Progress</th>
+                <th style={thStyle}>Status</th>
+              </tr>
+            </thead>
 
-                <td style={tdStyle}>{item.missingDocuments}</td>
-
-                <td style={tdStyle}>
-                  <div
-                    style={{
-                      background: '#e5e7eb',
-                      borderRadius: '999px',
-                      height: '10px',
-                      overflow: 'hidden',
-                      marginBottom: '0.25rem'
-                    }}
-                  >
+            <tbody>
+              {data.map(item => (
+                <tr
+                  key={item.departmentId}
+                  style={{ transition: 'background 0.2s', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'white')}
+                >
+                  <td style={tdStyle}>{item.departmentName}</td>
+                  <td style={tdStyle}>
+                    {item.submittedDocuments} / {item.totalRequiredDocuments}
+                  </td>
+                  <td style={tdStyle}>{item.missingDocuments}</td>
+                  <td style={tdStyle}>
                     <div
                       style={{
-                        width: `${item.progressPercentage}%`,
-                        height: '100%',
-                        background:
-                          item.progressPercentage === 100
-                            ? '#16a34a'
-                            : '#2563eb'
+                        background: '#e5e7eb',
+                        borderRadius: '999px',
+                        height: '10px',
+                        overflow: 'hidden',
+                        marginBottom: '0.25rem'
                       }}
-                    />
-                  </div>
-                  <small>{item.progressPercentage}%</small>
-                </td>
+                    >
+                      <div
+                        style={{
+                          width: `${item.progressPercentage}%`,
+                          height: '100%',
+                          background:
+                            item.progressPercentage === 100 ? '#16a34a' : upshd.maroon
+                        }}
+                      />
+                    </div>
+                    <small>{item.progressPercentage}%</small>
+                  </td>
+                  <td style={tdStyle}>
+                    <span
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: '999px',
+                        fontSize: '0.85rem',
+                        color: 'white',
+                        background: item.isComplete ? '#16a34a' : '#f59e0b'
+                      }}
+                    >
+                      {item.isComplete ? 'Complete' : 'Pending'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-                <td style={tdStyle}>
-                  <span
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      borderRadius: '999px',
-                      fontSize: '0.85rem',
-                      color: 'white',
-                      background: item.isComplete ? '#16a34a' : '#f59e0b'
-                    }}
-                  >
-                    {item.isComplete ? 'Complete' : 'Pending'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <footer
+          style={{
+            marginTop: '3rem',
+            textAlign: 'center',
+            color: '#666',
+            fontSize: '0.9rem'
+          }}
+        >
+          <p>
+            Developed by <strong>Peter Francisco</strong>
+          </p>
+          <p>Contact Support | Report an Issue</p>
+        </footer>
       </div>
-
-      {/* Footer */}
-            <footer
-        style={{    
-          marginTop: '3rem',
-          textAlign: 'center',
-          color: '#666',
-          fontSize: '0.9rem'
-        }}
-      >
-        <p>Developed by <strong>Peter Francisco</strong></p>
-        <p>Contact Support | Report an Issue</p>
-      </footer>
-    </div>
-  </DashboardLayout>
+    </DashboardLayout>
   )
 }
 
@@ -234,14 +226,12 @@ function SummaryCard({ title, value, color }) {
         background: 'white',
         borderRadius: '12px',
         padding: '1rem',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        boxShadow: '0 2px 8px rgba(92, 0, 18, 0.06)',
         borderLeft: `6px solid ${color}`
       }}
     >
       <div style={{ color: '#555', marginBottom: '0.5rem' }}>{title}</div>
-      <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>
-        {value}
-      </div>
+      <div style={{ fontSize: '2rem', fontWeight: 'bold', color }}>{value}</div>
     </div>
   )
 }
@@ -249,7 +239,8 @@ function SummaryCard({ title, value, color }) {
 const thStyle = {
   textAlign: 'left',
   padding: '0.75rem',
-  borderBottom: '1px solid #d1d5db'
+  borderBottom: '1px solid #d1d5db',
+  color: upshd.maroonDark
 }
 
 const tdStyle = {

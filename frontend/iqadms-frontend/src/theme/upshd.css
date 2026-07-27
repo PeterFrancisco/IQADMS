@@ -1,0 +1,127 @@
+/* UPSHD Molino Campus — PQAD maroon theme */
+:root {
+  --upshd-maroon: #7a0019;
+  --upshd-maroon-dark: #5c0012;
+  --upshd-maroon-light: #9e1b32;
+  --upshd-maroon-muted: #f3e8eb;
+  --upshd-gold: #c5a572;
+  --upshd-text: #1f2937;
+  --upshd-text-muted: #64748b;
+  --upshd-bg: #f7f4f5;
+  --upshd-surface: #ffffff;
+  --upshd-border: #e5e7eb;
+  --upshd-danger: #b91c1c;
+  --upshd-success: #15803d;
+}
+
+body {
+  background: var(--upshd-bg);
+  color: var(--upshd-text);
+}
+
+.placeholder-page {
+  max-width: 720px;
+}
+
+.placeholder-page h1 {
+  margin: 0 0 0.35rem;
+  color: var(--upshd-maroon);
+  font-size: 1.75rem;
+}
+
+.placeholder-page .subtitle {
+  color: var(--upshd-text-muted);
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.placeholder-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--upshd-maroon-muted);
+  color: var(--upshd-maroon);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.placeholder-card {
+  background: var(--upshd-surface);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(92, 0, 18, 0.06);
+  border: 1px solid var(--upshd-border);
+  margin-bottom: 1rem;
+}
+
+.placeholder-card ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--upshd-text-muted);
+  line-height: 1.6;
+}
+
+.dashboard-hub {
+  max-width: 1100px;
+}
+
+.dashboard-hub-header h1 {
+  margin: 0;
+  color: var(--upshd-maroon);
+  font-size: 1.85rem;
+}
+
+.dashboard-hub-header p {
+  margin: 0.35rem 0 0;
+  color: var(--upshd-text-muted);
+}
+
+.dashboard-hub-campus {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--upshd-maroon-light);
+  font-weight: 600;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.dashboard-tile {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--upshd-surface);
+  border-radius: 14px;
+  padding: 1.25rem;
+  border: 1px solid var(--upshd-border);
+  box-shadow: 0 2px 8px rgba(92, 0, 18, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
+}
+
+.dashboard-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(92, 0, 18, 0.1);
+  border-color: var(--upshd-maroon-light);
+}
+
+.dashboard-tile-icon {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-tile-title {
+  font-weight: 700;
+  color: var(--upshd-maroon);
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-tile-desc {
+  font-size: 0.88rem;
+  color: var(--upshd-text-muted);
+  line-height: 1.45;
+}

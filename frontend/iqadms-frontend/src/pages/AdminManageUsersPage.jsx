@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
+import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'
 
 export default function AdminManageUsersPage() {
   const [users, setUsers] = useState([])
@@ -78,7 +79,7 @@ export default function AdminManageUsersPage() {
     <DashboardLayout>
       <div style={{ display: 'grid', gap: '1.5rem' }}>
         <div>
-          <h1 style={{ margin: '0 0 0.25rem', color: '#1e3a8a' }}>Manage Users</h1>
+          <h1 style={pageTitleStyle}>Manage Users</h1>
           <p style={{ color: '#64748b', margin: 0 }}>Admin settings — remove registered users or pending allowed emails.</p>
         </div>
 
@@ -102,7 +103,7 @@ export default function AdminManageUsersPage() {
             <Section title="Registered Users">
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#eef2ff' }}>
+                  <tr style={tableHeadRowStyle}>
                     <th style={thStyle}>Username</th>
                     <th style={thStyle}>Email</th>
                     <th style={thStyle}>Position</th>
@@ -153,7 +154,7 @@ export default function AdminManageUsersPage() {
             <Section title="Allowed Emails (Pending Registration)">
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#eef2ff' }}>
+                  <tr style={tableHeadRowStyle}>
                     <th style={thStyle}>Email</th>
                     <th style={thStyle}>Admin?</th>
                     <th style={thStyle}>Status</th>
@@ -205,7 +206,7 @@ export default function AdminManageUsersPage() {
 function Section({ title, children }) {
   return (
     <div style={{ background: 'white', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
-      <h2 style={{ marginTop: 0, color: '#1e3a8a' }}>{title}</h2>
+      <h2 style={sectionTitleStyle}>{title}</h2>
       {children}
     </div>
   )

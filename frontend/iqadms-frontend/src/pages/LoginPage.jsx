@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
+import { upshd } from '../theme/upshd'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('admin')
@@ -45,7 +46,7 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f5f7fb',
+        background: 'var(--upshd-bg, #f7f4f5)',
         fontFamily: 'Arial, sans-serif'
       }}
     >
@@ -60,9 +61,12 @@ export default function LoginPage() {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, color: '#1e3a8a' }}>IQADMS</h1>
+          <h1 style={{ margin: 0, color: '#7a0019' }}>IQADMS</h1>
           <p style={{ color: '#64748b' }}>
             Planning and Quality Assurance Department
+          </p>
+          <p style={{ color: upshd.maroonLight, fontSize: '0.85rem', marginTop: '0.25rem' }}>
+            UPSHD · Molino Campus
           </p>
         </div>
 
@@ -111,7 +115,7 @@ export default function LoginPage() {
               padding: '0.85rem',
               border: 'none',
               borderRadius: '10px',
-              background: '#2563eb',
+              background: '#7a0019',
               color: 'white',
               fontWeight: '600',
               cursor: 'pointer'
@@ -140,7 +144,7 @@ export default function LoginPage() {
             style={{
               background: 'none',
               border: 'none',
-              color: '#2563eb',
+              color: '#7a0019',
               fontWeight: '700',
               cursor: 'pointer'
             }}

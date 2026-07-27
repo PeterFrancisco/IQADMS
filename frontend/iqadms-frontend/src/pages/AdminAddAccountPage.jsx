@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
+import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle, primaryButtonStyle } from '../theme/pageStyles'
 
 export default function AdminAddAccountPage() {
   const [email, setEmail] = useState('')
@@ -62,7 +63,7 @@ export default function AdminAddAccountPage() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
           }}
         >
-          <h1 style={{ marginTop: 0, color: '#1e3a8a' }}>
+          <h1 style={pageTitleStyle}>
             Add Account
           </h1>
 
@@ -136,7 +137,7 @@ export default function AdminAddAccountPage() {
               marginBottom: '1rem'
             }}
           >
-            <h2 style={{ margin: 0, color: '#1e3a8a' }}>Allowed Users</h2>
+            <h2 style={{ margin: 0, ...sectionTitleStyle }}>Allowed Users</h2>
 
             <button
               onClick={loadAllowedUsers}
@@ -159,7 +160,7 @@ export default function AdminAddAccountPage() {
             }}
           >
             <thead>
-              <tr style={{ background: '#eef2ff' }}>
+              <tr style={tableHeadRowStyle}>
                 <th style={thStyle}>Email</th>
                 <th style={thStyle}>Status</th>
               </tr>
@@ -219,13 +220,7 @@ const inputStyle = {
 }
 
 const primaryButton = {
-  padding: '0.85rem 1.2rem',
-  border: 'none',
-  borderRadius: '10px',
-  background: '#2563eb',
-  color: 'white',
-  fontWeight: '600',
-  cursor: 'pointer',
+  ...primaryButtonStyle,
   minWidth: '140px'
 }
 

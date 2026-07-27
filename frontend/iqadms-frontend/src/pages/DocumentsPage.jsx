@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
+import { upshd } from '../theme/upshd'
+import { pageTitleStyle, tableHeadRowStyle, linkStyle } from '../theme/pageStyles'
 
 const STATUS_COLORS = {
   Approved: '#16a34a',
-  Submitted: '#2563eb',
+  Submitted: upshd.maroon,
   Pending: '#f59e0b',
   Reviewed: '#9333ea',
   Returned: '#ef4444',
@@ -41,7 +43,7 @@ export default function DocumentsPage() {
   return (
     <DashboardLayout>
       <div>
-        <h1 style={{ marginBottom: '.25rem', color: '#1e3a8a' }}>Documents</h1>
+        <h1 style={pageTitleStyle}>Documents</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
           All uploaded documents across accreditation activities
         </p>
@@ -63,7 +65,7 @@ export default function DocumentsPage() {
           <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.08)', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#eef2ff' }}>
+                <tr style={tableHeadRowStyle}>
                   <th style={thStyle}>Document</th>
                   <th style={thStyle}>Uploaded By</th>
                   <th style={thStyle}>Activity</th>
@@ -83,7 +85,7 @@ export default function DocumentsPage() {
                     <tr key={doc.id}>
                       <td style={{ ...tdStyle, fontWeight: 600 }}>
                         {doc.googleDriveLink ? (
-                          <a href={doc.googleDriveLink} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>
+                          <a href={doc.googleDriveLink} target="_blank" rel="noreferrer" style={linkStyle}>
                             📄 {doc.fileName}
                           </a>
                         ) : (

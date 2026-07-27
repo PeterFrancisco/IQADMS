@@ -1,6 +1,8 @@
     import { useEffect, useState } from 'react'
     import DashboardLayout from '../components/DashboardLayout'
     import api from '../services/api'
+    import { upshd } from '../theme/upshd'
+    import { pageTitleStyle } from '../theme/pageStyles'
 
     export default function ActivitiesPage() {
     const emptyForm = {
@@ -115,7 +117,7 @@
                 marginBottom: '1.5rem'
             }}
             >
-            <h1>Accreditation Activities</h1>
+            <h1 style={pageTitleStyle}>Accreditation Activities</h1>
 
             <button
                 onClick={() => {
@@ -147,7 +149,7 @@
                 }}
                 >
                 <thead>
-                    <tr style={{ background: '#eef2ff' }}>
+                    <tr style={{ background: upshd.tableHeadBg }}>
                     <th style={thStyle}>Activity</th>
                     <th style={thStyle}>Year</th>
                     <th style={thStyle}>Status</th>
@@ -196,7 +198,7 @@
                                 activity.status === 'Ongoing'
                                 ? '#16a34a'
                                 : activity.status === 'Planning'
-                                ? '#2563eb'
+                                ? upshd.maroon
                                 : activity.status === 'Completed'
                                 ? '#9333ea'
                                 : '#6b7280',
@@ -234,7 +236,7 @@
                     <h2
                         style={{
                             margin: 0,
-                            color: '#1e3a8a',
+                            color: upshd.maroon,
                             fontSize: '1.8rem',
                         }}
                     >
@@ -511,7 +513,7 @@
                         <h2
                             style={{
                                 marginTop: 0,
-                                color: '#1e3a8a'
+                                color: upshd.maroon
                             }}
                         >
                             Activity Details
@@ -619,7 +621,7 @@
     }
 
     const buttonStyle = {
-    background: '#2563eb',
+    background: upshd.maroon,
     color: '#fff',
     border: 'none',
     padding: '12px 22px',

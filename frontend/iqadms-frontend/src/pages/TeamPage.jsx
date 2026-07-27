@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
+import { upshd } from '../theme/upshd'
 
 const PRESENCE = {
   online: { label: 'Online', color: '#22c55e' },
@@ -42,7 +43,7 @@ export default function TeamPage() {
   return (
     <DashboardLayout>
       <div>
-        <h1 style={{ marginBottom: '.25rem', color: '#1e3a8a' }}>Team</h1>
+        <h1 style={{ marginBottom: '.25rem', color: upshd.maroon }}>Team</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
           View members, their status, and open their profiles
         </p>
@@ -59,7 +60,7 @@ export default function TeamPage() {
                 cursor: 'pointer',
                 fontWeight: 600,
                 fontSize: '0.85rem',
-                background: filter === key ? '#1e3a8a' : '#e2e8f0',
+                background: filter === key ? upshd.maroon : '#e2e8f0',
                 color: filter === key ? '#fff' : '#475569'
               }}
             >
@@ -125,7 +126,7 @@ function MemberCard({ member, onClick }) {
         <div style={{ position: 'relative' }}>
           <div style={{
             width: 48, height: 48, borderRadius: '999px',
-            background: '#1e3a8a', color: '#fff',
+            background: upshd.maroon, color: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 700
           }}>

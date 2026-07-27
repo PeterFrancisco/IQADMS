@@ -1,27 +1,15 @@
 import { useNavigate } from 'react-router-dom'
+import { authPageStyle, authCardStyle, authPrimaryButtonStyle } from '../theme/pageStyles'
 
 export default function RequestSubmittedPage() {
   const navigate = useNavigate()
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        background: '#f5f7fb',
-        padding: '2rem',
-        fontFamily: 'Arial, sans-serif'
-      }}
-    >
+    <div style={authPageStyle}>
       <div
         style={{
-          width: '100%',
+          ...authCardStyle,
           maxWidth: '520px',
-          background: 'white',
-          padding: '2rem',
-          borderRadius: '16px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
           textAlign: 'center'
         }}
       >
@@ -57,15 +45,8 @@ export default function RequestSubmittedPage() {
         <button
           onClick={() => navigate('/login')}
           style={{
-            marginTop: '1.5rem',
-            width: '100%',
-            padding: '0.9rem',
-            border: 'none',
-            borderRadius: '10px',
-            background: '#2563eb',
-            color: 'white',
-            fontWeight: '700',
-            cursor: 'pointer'
+            ...authPrimaryButtonStyle,
+            marginTop: '1.5rem'
           }}
         >
           Back to Login
