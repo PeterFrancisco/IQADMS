@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import TaskWorkspaceBoard from '../components/TaskWorkspaceBoard'
 import api from '../services/api'
+import { getApiErrorMessage } from '../utils/apiError'
 
 const API_ORIGIN = api.defaults.baseURL.replace(/\/api$/, '')
 
@@ -127,10 +128,15 @@ export default function DashboardPage() {
       setCellValues(map)
     } catch (err) {
       console.error(err)
+      if (err.response?.status !== 401) {
+        alert(getApiErrorMessage(err, 'Failed to load My Tasks. Check your connection and try again.'))
+      }
     } finally {
       setLoading(false)
     }
   }
+
+  const guidOrNull = value => (value && String(value).trim() ? value : null)
 
   const createTaskWithDetails = async () => {
     if (!createForm.title.trim() || saving) return
@@ -141,9 +147,9 @@ export default function DashboardPage() {
       const res = await api.post('/Tasks', {
         title: createForm.title.trim(),
         description: createForm.description.trim() || null,
-        assignedToUserId: createForm.assignedToUserId || null,
-        projectId: createForm.projectId || null,
-        relatedDepartmentId: createForm.relatedDepartmentId || null,
+        assignedToUserId: guidOrNull(createForm.assignedToUserId),
+        projectId: guidOrNull(createForm.projectId),
+        relatedDepartmentId: guidOrNull(createForm.relatedDepartmentId),
         dueDate: createForm.dueDate || null,
         priority: createForm.priority,
         status: createForm.status,
@@ -153,9 +159,17 @@ export default function DashboardPage() {
       if (createForm.attachment) {
         const formData = new FormData()
         formData.append('file', createForm.attachment)
-        await api.post(`/Tasks/${res.data.id}/attachment`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
+        try {
+          await api.post(`/Tasks/${res.data.id}/attachment`, formData)
+        } catch (attachErr) {
+          console.error(attachErr)
+          alert(
+            getApiErrorMessage(
+              attachErr,
+              'Task was created, but the attachment could not be uploaded.'
+            )
+          )
+        }
       }
 
       setCreateForm({
@@ -174,7 +188,11 @@ export default function DashboardPage() {
       loadData()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || err.response?.statusText || 'Failed to create task.')
+      if (err.response?.status === 401) {
+        alert('Your session expired or is invalid. You will be redirected to sign in again.')
+      } else {
+        alert(getApiErrorMessage(err, 'Failed to create task.'))
+      }
     } finally {
       setSaving(false)
     }

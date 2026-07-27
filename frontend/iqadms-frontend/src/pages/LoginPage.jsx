@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
 import { upshd } from '../theme/upshd'
@@ -9,8 +9,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [searchParams] = useSearchParams()
 
   const navigate = useNavigate()
+  const sessionExpired = searchParams.get('session') === 'expired'
+  const nextPath = searchParams.get('next')
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -23,15 +26,20 @@ export default function LoginPage() {
         password
       })
 
-      
+      const token = (response.data.token || '').trim()
+      if (!token) {
+        setError('Sign-in succeeded but no session token was returned. Contact your administrator.')
+        return
+      }
 
-      // Save JWT token
-      localStorage.setItem('token', response.data.token)
+      localStorage.setItem('token', token)
       localStorage.setItem('username', username)
       localStorage.setItem('isAdmin', response.data.isAdmin)
       localStorage.setItem('userId', response.data.userId)
 
-      navigate('/dashboard')
+      const safeNext =
+        nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard'
+      navigate(safeNext)
     } catch (err) {
       setError(getApiErrorMessage(err, 'Invalid username/email or password'))
     } finally {
@@ -92,6 +100,20 @@ export default function LoginPage() {
               style={inputStyle}
             />
           </div>
+
+          {sessionExpired && !error && (
+            <div
+              style={{
+                background: '#fef3c7',
+                color: '#92400e',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                marginBottom: '1rem'
+              }}
+            >
+              Your session expired. Please sign in again to continue.
+            </div>
+          )}
 
           {error && (
             <div
