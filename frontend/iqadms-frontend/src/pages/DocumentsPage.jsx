@@ -206,7 +206,7 @@ export default function DocumentsPage() {
         {loading ? (
           <p>Loading documents…</p>
         ) : viewMode === 'folders' ? (
-          <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div className="documents-folder-layout" style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <aside style={{
               minWidth: 240,
               background: '#fff',
@@ -266,7 +266,7 @@ export default function DocumentsPage() {
 
 function DocumentTable({ rows, fileLink, showFolder }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.08)', overflow: 'hidden' }}>
+    <div className="table-responsive" style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={tableHeadRowStyle}>

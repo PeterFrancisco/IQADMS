@@ -73,6 +73,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddCors(options =>
 {
+    var configuredOrigins = builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>() ?? Array.Empty<string>();
+    var allowedOrigins = new HashSet<string>(configuredOrigins, StringComparer.OrdinalIgnoreCase);
+
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.SetIsOriginAllowed(origin =>
@@ -80,13 +85,15 @@ builder.Services.AddCors(options =>
                 if (string.IsNullOrEmpty(origin) || !Uri.TryCreate(origin, UriKind.Absolute, out var uri))
                     return false;
 
+                if (allowedOrigins.Contains(origin))
+                    return true;
+
                 if (uri.Port is not (5173 or 5174))
                     return false;
 
                 if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
                     return true;
 
-                // Tailscale (100.x.x.x) and typical LAN (192.168.x.x)
                 if (uri.Host.StartsWith("100.", StringComparison.Ordinal))
                     return true;
 

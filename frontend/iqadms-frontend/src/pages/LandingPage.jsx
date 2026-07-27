@@ -38,12 +38,15 @@ export default function LandingPage() {
             <span className="landing-brand-mark">IQADMS</span>
             <span className="landing-brand-sub">PQAD · UPSHD Molino</span>
           </Link>
-          <nav className="landing-nav">
-            <a href="#overview">Overview</a>
-            <a href="#about">About</a>
-            <a href="#uses">Uses</a>
-            <a href="#background">Background</a>
-            <a href="#resources">Resources</a>
+          <nav className="landing-nav" aria-label="Primary">
+            <div className="landing-nav-scroll">
+              <a href="#overview">Overview</a>
+              <a href="#about">About</a>
+              <a href="#uses">Uses</a>
+              <a href="#background">Background</a>
+              <a href="#resources">Resources</a>
+            </div>
+            <div className="landing-nav-actions">
             {isSignedIn ? (
               <button type="button" className="landing-btn landing-btn-primary" onClick={() => navigate('/dashboard')}>
                 Dashboard
@@ -58,6 +61,7 @@ export default function LandingPage() {
                 </button>
               </>
             )}
+            </div>
           </nav>
         </div>
       </header>

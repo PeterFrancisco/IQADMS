@@ -871,7 +871,7 @@ const assignMember = async (id, userId) => {
                     ))}
                   </select>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div className="mobile-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
                     <div>
                       <label style={labelStyle}>Due date</label>
                       <input

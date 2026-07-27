@@ -1,0 +1,126 @@
+/* IQADMS — mobile & touch-friendly layout */
+
+@media (max-width: 768px) {
+  .main {
+    padding: 12px 14px 20px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .main-header {
+    margin-bottom: 1rem;
+    gap: 0.5rem;
+  }
+
+  .main-header-left {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .main-title {
+    font-size: 1.05rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .menu-toggle {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .avatar-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .profile-menu {
+    width: min(280px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+  }
+
+  /* Horizontal scroll for wide data tables inside dashboard */
+  .main div:has(> table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .main table {
+    min-width: 640px;
+  }
+
+  .dashboard-hub-header h1 {
+    font-size: 1.45rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-tile {
+    padding: 1rem;
+    min-height: 44px;
+  }
+
+  .documents-folder-layout {
+    flex-direction: column;
+  }
+
+  .documents-folder-layout aside {
+    width: 100% !important;
+    max-height: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Reduce iOS input zoom */
+  input,
+  select,
+  textarea,
+  button {
+    font-size: max(16px, 1em);
+  }
+
+  .sidebar {
+    width: min(300px, 88vw);
+    padding: 1.25rem;
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+  }
+
+  .nav-item {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Modals / overlays — full-width panels on small screens */
+@media (max-width: 640px) {
+  .mobile-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Utility: wrap any table explicitly */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive > table {
+  min-width: 640px;
+}
+
+.page-lead {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .page-lead {
+    margin-bottom: 1rem !important;
+  }
+}
