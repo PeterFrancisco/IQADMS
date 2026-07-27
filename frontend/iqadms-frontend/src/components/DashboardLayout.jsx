@@ -328,39 +328,30 @@ function ProfileMenu() {
 
   return (
     <div className="topbar" ref={ref}>
-      <div className="topbar-profile-cluster">
-        <button
-          type="button"
-          className={`avatar-btn ${open ? 'open' : ''}`}
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          aria-haspopup="true"
-          title={displayName}
-        >
-          {me ? (
-            <AvatarWithPresence
-              user={{
-                ...me,
-                displayName: me.displayName || username,
-                presence: normalizePresence(me.presence),
-                lastActiveAt: me.lastActiveAt
-              }}
-              size={40}
-              cacheKey={avatarKey}
-              className="avatar-btn-inner"
-            />
-          ) : (
-            initials
-          )}
-        </button>
+      <button
+        type="button"
+        className={`avatar-btn ${open ? 'open' : ''}`}
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        title={displayName}
+      >
         {me ? (
-          <ActivityStatusText
-            presence={normalizePresence(me.presence)}
-            lastActiveAt={me.lastActiveAt}
-            className="topbar-activity-label"
+          <AvatarWithPresence
+            user={{
+              ...me,
+              displayName: me.displayName || username,
+              presence: normalizePresence(me.presence),
+              lastActiveAt: me.lastActiveAt
+            }}
+            size={40}
+            cacheKey={avatarKey}
+            className="avatar-btn-inner"
           />
-        ) : null}
-      </div>
+        ) : (
+          initials
+        )}
+      </button>
 
       <div className={`profile-menu ${open ? 'open' : ''}`}>
         <div className="profile-header">

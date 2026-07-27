@@ -1,52 +1,49 @@
 .social-links-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.65rem;
 }
 
-.social-link-chip {
+.social-link-entry {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.35rem 0.65rem 0.35rem 0.35rem;
-  border-radius: 999px;
-  color: #fff;
+  gap: 0.65rem;
   text-decoration: none;
-  font-size: 0.82rem;
-  font-weight: 600;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  color: inherit;
+  max-width: 100%;
 }
 
-.social-link-chip:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.08);
+.social-link-entry:hover .social-link-handle {
+  color: var(--upshd-maroon, #7a0019);
 }
 
-.social-link-chip-icon {
+.social-links-sm .social-link-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.social-link-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: #fff;
 }
 
-.social-link-chip-handle {
-  padding-right: 0.15rem;
-  max-width: 140px;
+.social-link-handle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.social-links-sm .social-link-chip {
-  font-size: 0.78rem;
-}
-
-.social-links-sm .social-link-chip-icon {
-  width: 26px;
-  height: 26px;
+.social-links-sm .social-link-handle {
+  font-size: 0.85rem;
 }
 
 .social-link-btn-static {

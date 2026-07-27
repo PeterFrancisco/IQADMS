@@ -78,13 +78,13 @@ export function SocialLinksRow({ urls, size = 'md' }) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className={`social-link-chip social-${p.id}`}
+            className="social-link-entry"
             title={handle ? `${p.label}: ${handle}` : p.label}
           >
-            <span className="social-link-chip-icon" aria-hidden>
-              <BrandIcon id={p.id} size={size === 'sm' ? 16 : 18} />
+            <span className={`social-link-btn social-${p.id}`} aria-hidden>
+              <BrandIcon id={p.id} size={size === 'sm' ? 16 : 20} />
             </span>
-            {handle ? <span className="social-link-chip-handle">{handle}</span> : null}
+            {handle ? <span className="social-link-handle">{handle}</span> : null}
           </a>
         )
       })}
