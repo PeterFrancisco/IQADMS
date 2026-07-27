@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { resolveUploadUrl } from '../utils/apiOrigin'
 import '../theme/user-avatar.css'
 
@@ -25,10 +26,16 @@ export default function UserAvatar({
   cacheKey
 }) {
   const data = member || user || {}
-  const src = resolveUploadUrl(
+  const resolvedSrc = resolveUploadUrl(
     data.profilePictureUrl,
     cacheKey ?? data.profilePictureUrl
   )
+  const [imgFailed, setImgFailed] = useState(false)
+  const src = resolvedSrc && !imgFailed ? resolvedSrc : null
+
+  useEffect(() => {
+    setImgFailed(false)
+  }, [resolvedSrc])
   const initials = memberInitials(data)
   const style = { width: size, height: size, fontSize: Math.max(11, size * 0.36) }
 
@@ -40,6 +47,7 @@ export default function UserAvatar({
         className={`user-avatar user-avatar-img ${className}`.trim()}
         style={style}
         title={title}
+        onError={() => setImgFailed(true)}
       />
     )
   }

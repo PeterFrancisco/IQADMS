@@ -3,10 +3,10 @@ import React, { useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import AppIcon from './AppIcon'
-import UserAvatar from './UserAvatar'
-import { startPresenceHeartbeat } from '../utils/presenceApi'
+import AvatarWithPresence from './AvatarWithPresence'
+import { setPresence, startPresenceHeartbeat } from '../utils/presenceApi'
 import { Menu } from 'lucide-react'
-import { PRESENCE_MAP, normalizePresence } from '../config/presence'
+import { normalizePresence } from '../config/presence'
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(
@@ -64,6 +64,7 @@ export default function DashboardLayout({ children }) {
         <div className="sidebar-divider" />
 
         <NavItem label="Notifications" to="/notifications" icon="notifications" badge={unreadNotifications} onNavigate={closeMobile} />
+        <NavItem label="Team" to="/team" icon="team" onNavigate={closeMobile} matchPrefix="/team" />
         <TeamMembersDropdown label="PQAD Team" icon="team" onNavigate={closeMobile} />
 
         <div className="sidebar-divider" />
@@ -202,7 +203,7 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
           <div className="team-empty">No members found</div>
         ) : (
           members.map(member => {
-            const presence = PRESENCE_MAP[normalizePresence(member.presence)] || PRESENCE_MAP.offline
+            const presence = normalizePresence(member.presence)
             const isSelected = location.pathname === `/team/${member.username}`
 
             return (
@@ -211,14 +212,10 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
                 className={`team-member ${isSelected ? 'selected' : ''}`}
                 onClick={() => openProfile(member.username)}
               >
-                <UserAvatar member={member} size={32} className="team-member-avatar" />
+                <AvatarWithPresence member={{ ...member, presence }} size={32} className="team-member-avatar" />
                 <div className="team-member-text">
                   <div className="team-member-name">{member.displayName || member.username}</div>
                   <div className="team-member-user">@{member.username}</div>
-                </div>
-                <div className="team-member-presence" style={{ color: presence.color }}>
-                  <span className="team-presence-dot" style={{ background: presence.color }} />
-                  {presence.label}
                 </div>
               </div>
             )
@@ -230,12 +227,12 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
           onClick={() => {
             setOpen(false)
             onNavigate?.()
-            navigate('/profile')
+            navigate('/team')
           }}
         >
           <span className="inline-icon-text">
-            <AppIcon name="profile" size={16} />
-            My Profile
+            <AppIcon name="team" size={16} />
+            Open Team page
           </span>
         </div>
       </div>
@@ -288,7 +285,12 @@ function ProfileMenu() {
     return () => document.removeEventListener('keydown', onEsc)
   }, [])
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await setPresence('offline')
+    } catch {
+      // ignore
+    }
     localStorage.removeItem('token')
     localStorage.removeItem('username')
     localStorage.removeItem('isAdmin')
@@ -311,9 +313,13 @@ function ProfileMenu() {
         aria-haspopup="true"
         title={displayName}
       >
-        {me?.profilePictureUrl ? (
-          <UserAvatar
-            user={{ ...me, profilePictureUrl: me.profilePictureUrl }}
+        {me ? (
+          <AvatarWithPresence
+            user={{
+              ...me,
+              displayName: me.displayName || username,
+              presence: normalizePresence(me.presence)
+            }}
             size={40}
             cacheKey={avatarKey}
             className="avatar-btn-img"

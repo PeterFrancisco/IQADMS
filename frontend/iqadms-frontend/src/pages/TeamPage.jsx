@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
-import UserAvatar from '../components/UserAvatar'
+import AvatarWithPresence from '../components/AvatarWithPresence'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-
-import { PRESENCE_MAP, normalizePresence } from '../config/presence'
+import { isActivePresence, normalizePresence } from '../config/presence'
 
 export default function TeamPage() {
   const navigate = useNavigate()
@@ -28,10 +27,19 @@ export default function TeamPage() {
     try {
       setError('')
       const res = await api.get('/Profile/members')
-      setMembers(res.data)
+      setMembers(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
       console.error(err)
-      setError('Failed to load team members.')
+      const status = err.response?.status
+      if (status === 401) {
+        setError('Your session expired. Sign in again.')
+      } else if (status >= 500) {
+        setError(
+          'Could not load team members. If this started after an update, run database migrations on the server (dotnet ef database update).'
+        )
+      } else {
+        setError('Failed to load team members.')
+      }
       setMembers([])
     } finally {
       setLoading(false)
@@ -40,20 +48,29 @@ export default function TeamPage() {
 
   const filtered = filter === 'all'
     ? members
-    : members.filter(m => normalizePresence(m.presence) === filter)
+    : members.filter(m =>
+        filter === 'active'
+          ? isActivePresence(m.presence)
+          : !isActivePresence(m.presence)
+      )
 
   return (
     <DashboardLayout>
       <div>
         <h1 style={{ marginBottom: '.25rem', color: upshd.maroon }}>Team</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-          View members, their status, and open their profiles
+          View members and open their profiles. A green dot on the photo means they are active.
         </p>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-          {['all', 'online', 'away', 'dnd', 'offline'].map(key => (
+          {[
+            { key: 'all', label: 'All' },
+            { key: 'active', label: 'Active' },
+            { key: 'inactive', label: 'Inactive' }
+          ].map(({ key, label }) => (
             <button
               key={key}
+              type="button"
               onClick={() => setFilter(key)}
               style={{
                 padding: '0.45rem 0.9rem',
@@ -66,7 +83,7 @@ export default function TeamPage() {
                 color: filter === key ? '#fff' : '#475569'
               }}
             >
-              {key === 'all' ? 'All' : PRESENCE_MAP[key]?.label || key}
+              {label}
             </button>
           ))}
         </div>
@@ -77,7 +94,9 @@ export default function TeamPage() {
           <p style={{ color: '#dc2626' }}>{error}</p>
         ) : filtered.length === 0 ? (
           <p style={{ color: '#64748b' }}>
-            No registered team members yet. Register accounts using your allowed emails first.
+            {members.length === 0
+              ? 'No registered team members yet. Register accounts using your allowed emails first.'
+              : 'No members match this filter.'}
           </p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1rem' }}>
@@ -96,11 +115,15 @@ export default function TeamPage() {
 }
 
 function MemberCard({ member, onClick }) {
-  const presence = PRESENCE_MAP[normalizePresence(member.presence)] || PRESENCE_MAP.offline
+  const presence = normalizePresence(member.presence)
+  const active = isActivePresence(presence)
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={e => e.key === 'Enter' && onClick()}
       style={{
         background: '#fff',
         borderRadius: 14,
@@ -119,18 +142,13 @@ function MemberCard({ member, onClick }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-        <div style={{ position: 'relative' }}>
-          <UserAvatar member={member} size={48} />
-          <span style={{
-            position: 'absolute', bottom: 0, right: 0,
-            width: 12, height: 12, borderRadius: '999px',
-            background: presence.color,
-            border: '2px solid #fff'
-          }} />
-        </div>
+        <AvatarWithPresence member={{ ...member, presence }} size={48} />
         <div>
           <div style={{ fontWeight: 700, color: '#111827' }}>{member.displayName}</div>
           <div style={{ fontSize: '0.85rem', color: '#64748b' }}>@{member.username}</div>
+          <div style={{ fontSize: '0.8rem', color: active ? '#31a24c' : '#94a3b8', marginTop: '0.2rem' }}>
+            {active ? 'Active now' : 'Inactive'}
+          </div>
         </div>
       </div>
 
@@ -140,15 +158,6 @@ function MemberCard({ member, onClick }) {
 
       <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>
         {member.position || 'No position set'}
-      </div>
-
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-        fontSize: '0.8rem', fontWeight: 600, color: presence.color,
-        marginBottom: '0.75rem'
-      }}>
-        <span style={{ width: 8, height: 8, borderRadius: '999px', background: presence.color }} />
-        {presence.label}
       </div>
 
       {member.bio && (

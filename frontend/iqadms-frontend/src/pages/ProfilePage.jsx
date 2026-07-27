@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
-import UserAvatar from '../components/UserAvatar'
+import AvatarWithPresence from '../components/AvatarWithPresence'
 import { SocialLinksEditorList, SocialLinksRow } from '../components/SocialLinks'
-import PresenceSelector, { PresenceBadge } from '../components/PresenceSelector'
 import { normalizePresence } from '../config/presence'
-import { setPresence } from '../utils/presenceApi'
 import { notifyProfileUpdated } from '../utils/profileEvents'
 import { upshd } from '../theme/upshd'
+import {
+  InfoRow,
+  SectionCard,
+  SidebarCard,
+  profileGridStyle,
+  profileStyles
+} from './profileShared'
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
@@ -19,7 +24,6 @@ export default function ProfilePage() {
   const [profilePictureUrl, setProfilePictureUrl] = useState('')
   const [avatarKey, setAvatarKey] = useState(0)
   const [presence, setPresenceLocal] = useState('offline')
-  const [updatingPresence, setUpdatingPresence] = useState(false)
   const fileInputRef = useRef(null)
 
   const [profile, setProfile] = useState({
@@ -47,6 +51,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     loadProfile()
+    const onPresence = e => {
+      if (e.detail?.presence) setPresenceLocal(normalizePresence(e.detail.presence))
+    }
+    window.addEventListener('iqadms-presence-changed', onPresence)
+    return () => window.removeEventListener('iqadms-presence-changed', onPresence)
   }, [])
 
   const loadProfile = async () => {
@@ -187,20 +196,6 @@ export default function ProfilePage() {
     }
   }
 
-  const changePresence = async next => {
-    try {
-      setUpdatingPresence(true)
-      const saved = await setPresence(next)
-      setPresenceLocal(normalizePresence(saved))
-      flash('Activity status updated.')
-    } catch (err) {
-      console.error(err)
-      flash(err.response?.data?.message || 'Failed to update activity status.', true)
-    } finally {
-      setUpdatingPresence(false)
-    }
-  }
-
   const socialEditorUrls = {
     facebook: profile.facebook,
     instagram: profile.instagram,
@@ -224,8 +219,8 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div style={styles.page}>
-          <div style={styles.loadingCard}>Loading your profile...</div>
+        <div style={profileStyles.page}>
+          <div style={profileStyles.loadingCard}>Loading your profile...</div>
         </div>
       </DashboardLayout>
     )
@@ -233,14 +228,19 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <div style={styles.page}>
+      <div style={profileStyles.page}>
         {/* Hero */}
-        <div style={styles.hero}>
-          <div style={styles.heroOverlay} />
-          <div style={styles.heroContent}>
-            <div style={styles.avatarWrap}>
-              <UserAvatar
-                user={{ displayName: profile.displayName, username: profile.username, profilePictureUrl }}
+        <div style={profileStyles.hero}>
+          <div style={profileStyles.heroOverlay} />
+          <div style={profileStyles.heroContent}>
+            <div style={profileStyles.avatarWrap}>
+              <AvatarWithPresence
+                user={{
+                  displayName: profile.displayName,
+                  username: profile.username,
+                  profilePictureUrl,
+                  presence
+                }}
                 size={112}
                 cacheKey={avatarKey}
               />
@@ -253,7 +253,7 @@ export default function ProfilePage() {
               />
               <button
                 type="button"
-                style={styles.avatarBtn}
+                style={profileStyles.avatarBtn}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingPhoto}
               >
@@ -261,15 +261,12 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div style={styles.heroText}>
-              <h1 style={styles.heroTitle}>{profile.displayName || profile.username}</h1>
-              <p style={styles.heroSub}>@{profile.username}</p>
-              {profile.position && <p style={styles.heroRole}>{profile.position}</p>}
-              <div style={{ marginTop: '0.65rem' }}>
-                <PresenceBadge presence={presence} />
-              </div>
+            <div style={profileStyles.heroText}>
+              <h1 style={profileStyles.heroTitle}>{profile.displayName || profile.username}</h1>
+              <p style={profileStyles.heroSub}>@{profile.username}</p>
+              {profile.position && <p style={profileStyles.heroRole}>{profile.position}</p>}
               <span style={{
-                ...styles.badge,
+                ...profileStyles.badge,
                 background: isAdmin ? upshd.maroonMuted : '#dcfce7',
                 color: isAdmin ? upshd.maroon : '#166534'
               }}>
@@ -281,7 +278,7 @@ export default function ProfilePage() {
 
         {(message || error) && (
           <div style={{
-            ...styles.alert,
+            ...profileStyles.alert,
             background: error ? '#fef2f2' : '#ecfdf5',
             color: error ? '#b91c1c' : '#047857',
             borderColor: error ? '#fecaca' : '#a7f3d0'
@@ -290,9 +287,9 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <div style={styles.grid}>
+        <div style={profileStyles.grid}>
           {/* Left sidebar */}
-          <div style={styles.sidebar}>
+          <div style={profileStyles.sidebar}>
             <SidebarCard title="Contact">
               <InfoRow label="Email" value={profile.email} />
               <InfoRow label="Username" value={`@${profile.username}`} />
@@ -306,29 +303,18 @@ export default function ProfilePage() {
             </SidebarCard>
 
             <SidebarCard title="Completed tasks">
-              <div style={styles.statNumber}>{workHistory.length}</div>
-              <div style={styles.statLabel}>tasks in work history</div>
+              <div style={profileStyles.statNumber}>{workHistory.length}</div>
+              <div style={profileStyles.statLabel}>tasks in work history</div>
             </SidebarCard>
           </div>
 
           {/* Main */}
-          <div style={styles.main}>
-            <SectionCard
-              title="Activity status"
-              subtitle="Team members see this on the Team page and sidebar"
-            >
-              <PresenceSelector
-                value={presence}
-                onChange={changePresence}
-                disabled={updatingPresence}
-              />
-            </SectionCard>
-
+          <div style={profileStyles.main}>
             <SectionCard
               title="Personal information"
               subtitle="Update how you appear to your team"
             >
-              <div style={gridStyle}>
+              <div style={profileGridStyle}>
                 <Input
                   label="Display name"
                   value={profile.displayName}
@@ -377,7 +363,7 @@ export default function ProfilePage() {
             </SectionCard>
 
             <SectionCard title="Security">
-              <div style={gridStyle}>
+              <div style={profileGridStyle}>
                 <Input
                   label="Current password"
                   type="password"
@@ -398,9 +384,9 @@ export default function ProfilePage() {
                   onChange={v => handlePasswordChange('confirmPassword', v)}
                 />
               </div>
-              <div style={styles.hintBox}>
+              <div style={profileStyles.hintBox}>
                 <strong>Password requirements</strong>
-                <ul style={styles.hintList}>
+                <ul style={profileStyles.hintList}>
                   <li>At least 8 characters</li>
                   <li>Uppercase, lowercase, number, and special character</li>
                 </ul>
@@ -414,13 +400,13 @@ export default function ProfilePage() {
 
             <SectionCard title="Work history" subtitle="Tasks you completed as assignee">
               {workHistory.length === 0 ? (
-                <p style={styles.emptyText}>No completed tasks yet. Finish assigned tasks on Home to build your history.</p>
+                <p style={profileStyles.emptyText}>No completed tasks yet. Finish assigned tasks on Home to build your history.</p>
               ) : (
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   {workHistory.map(item => (
-                    <div key={item.taskId} style={styles.historyCard}>
-                      <div style={styles.historyTitle}>{item.title}</div>
-                      <div style={styles.historyMeta}>
+                    <div key={item.taskId} style={profileStyles.historyCard}>
+                      <div style={profileStyles.historyTitle}>{item.title}</div>
+                      <div style={profileStyles.historyMeta}>
                         Assigned by {item.createdByName || 'Unknown'}
                         {item.completedAt && (
                           <> · {new Date(item.completedAt).toLocaleDateString()}</>
@@ -431,7 +417,7 @@ export default function ProfilePage() {
                           href={item.deliverableGoogleDriveLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={styles.historyLink}
+                          style={profileStyles.historyLink}
                         >
                           View finished work →
                         </a>
@@ -445,37 +431,6 @@ export default function ProfilePage() {
         </div>
       </div>
     </DashboardLayout>
-  )
-}
-
-function SectionCard({ title, subtitle, children }) {
-  return (
-    <div style={styles.card}>
-      <div style={{ marginBottom: '1rem' }}>
-        <h2 style={styles.cardTitle}>{title}</h2>
-        {subtitle && <p style={styles.cardSub}>{subtitle}</p>}
-      </div>
-      {children}
-    </div>
-  )
-}
-
-function SidebarCard({ title, children }) {
-  return (
-    <div style={styles.sidebarCard}>
-      <h3 style={styles.sidebarTitle}>{title}</h3>
-      {children}
-    </div>
-  )
-}
-
-function InfoRow({ label, value }) {
-  if (!value) return null
-  return (
-    <div style={{ marginBottom: '0.75rem' }}>
-      <div style={styles.infoLabel}>{label}</div>
-      <div style={styles.infoValue}>{value}</div>
-    </div>
   )
 }
 
@@ -497,12 +452,6 @@ function Input({ label, value, onChange, type = 'text', placeholder, readOnly = 
       />
     </div>
   )
-}
-
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: '1rem'
 }
 
 const labelStyle = {
@@ -548,232 +497,4 @@ const primaryButton = {
 const secondaryButton = {
   ...primaryButton,
   background: upshd.maroonDark
-}
-
-const styles = {
-  page: {
-    maxWidth: 1100,
-    margin: '0 auto'
-  },
-  loadingCard: {
-    background: '#fff',
-    borderRadius: 16,
-    padding: '2rem',
-    textAlign: 'center',
-    color: '#64748b',
-    boxShadow: '0 2px 8px rgba(0,0,0,.06)'
-  },
-  hero: {
-    position: 'relative',
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: '1.5rem',
-    background: upshd.heroGradient,
-    minHeight: 180
-  },
-  heroOverlay: {
-    position: 'absolute',
-    inset: 0,
-    background: 'radial-gradient(circle at top right, rgba(255,255,255,.15), transparent 55%)'
-  },
-  heroContent: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'flex-end',
-    gap: '1.5rem',
-    padding: '1.75rem',
-    flexWrap: 'wrap'
-  },
-  avatarWrap: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.5rem'
-  },
-  avatarImg: {
-    width: 112,
-    height: 112,
-    borderRadius: '999px',
-    objectFit: 'cover',
-    border: '4px solid rgba(255,255,255,.9)',
-    boxShadow: '0 8px 24px rgba(0,0,0,.2)'
-  },
-  avatarFallback: {
-    width: 112,
-    height: 112,
-    borderRadius: '999px',
-    background: 'rgba(255,255,255,.2)',
-    border: '4px solid rgba(255,255,255,.9)',
-    color: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '2rem',
-    fontWeight: 700
-  },
-  avatarBtn: {
-    padding: '0.4rem 0.75rem',
-    borderRadius: 999,
-    border: 'none',
-    background: 'rgba(255,255,255,.95)',
-    color: upshd.maroon,
-    fontSize: '0.8rem',
-    fontWeight: 600,
-    cursor: 'pointer'
-  },
-  heroText: {
-    color: '#fff',
-    paddingBottom: '0.25rem'
-  },
-  heroTitle: {
-    margin: 0,
-    fontSize: '1.75rem',
-    fontWeight: 700
-  },
-  heroSub: {
-    margin: '0.25rem 0',
-    opacity: 0.9
-  },
-  heroRole: {
-    margin: '0.25rem 0 0.75rem',
-    opacity: 0.85,
-    fontSize: '0.95rem'
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '0.3rem 0.75rem',
-    borderRadius: 999,
-    fontSize: '0.8rem',
-    fontWeight: 600
-  },
-  alert: {
-    marginBottom: '1rem',
-    padding: '0.75rem 1rem',
-    borderRadius: 10,
-    border: '1px solid',
-    fontSize: '0.9rem',
-    fontWeight: 500
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '280px 1fr',
-    gap: '1.5rem',
-    alignItems: 'start'
-  },
-  sidebar: {
-    display: 'grid',
-    gap: '1rem'
-  },
-  sidebarCard: {
-    background: '#fff',
-    borderRadius: 16,
-    padding: '1.25rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,.06)'
-  },
-  sidebarTitle: {
-    margin: '0 0 0.75rem',
-    fontSize: '0.95rem',
-    color: upshd.maroon,
-    fontWeight: 700
-  },
-  main: {
-    display: 'grid',
-    gap: '1.25rem'
-  },
-  card: {
-    background: '#fff',
-    borderRadius: 16,
-    padding: '1.5rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,.06)'
-  },
-  cardTitle: {
-    margin: 0,
-    color: upshd.maroon,
-    fontSize: '1.15rem'
-  },
-  cardSub: {
-    margin: '0.35rem 0 0',
-    color: '#64748b',
-    fontSize: '0.9rem'
-  },
-  infoLabel: {
-    fontSize: '0.75rem',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em'
-  },
-  infoValue: {
-    fontWeight: 600,
-    color: '#111827',
-    wordBreak: 'break-word'
-  },
-  linkChip: {
-    display: 'block',
-    padding: '0.55rem 0.75rem',
-    marginBottom: '0.5rem',
-    borderRadius: 8,
-    background: upshd.linkBg,
-    color: upshd.maroon,
-    textDecoration: 'none',
-    fontSize: '0.9rem',
-    fontWeight: 500
-  },
-  linkChipEmpty: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '0.55rem 0',
-    borderBottom: '1px solid #f1f5f9',
-    fontSize: '0.9rem',
-    color: '#475569'
-  },
-  statNumber: {
-    fontSize: '2rem',
-    fontWeight: 700,
-    color: upshd.maroon
-  },
-  statLabel: {
-    color: '#64748b',
-    fontSize: '0.85rem'
-  },
-  hintBox: {
-    marginTop: '1rem',
-    padding: '1rem',
-    borderRadius: 10,
-    background: '#f8fafc',
-    border: '1px solid #e5e7eb',
-    fontSize: '0.9rem',
-    color: '#475569'
-  },
-  hintList: {
-    margin: '0.5rem 0 0 1.1rem',
-    padding: 0
-  },
-  emptyText: {
-    margin: 0,
-    color: '#94a3b8',
-    fontSize: '0.95rem'
-  },
-  historyCard: {
-    padding: '1rem',
-    borderRadius: 12,
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0'
-  },
-  historyTitle: {
-    fontWeight: 600,
-    color: upshd.maroon
-  },
-  historyMeta: {
-    fontSize: '0.85rem',
-    color: '#64748b',
-    marginTop: '0.25rem'
-  },
-  historyLink: {
-    display: 'inline-block',
-    marginTop: '0.5rem',
-    fontSize: '0.85rem',
-    color: upshd.maroonLight,
-    fontWeight: 500,
-    textDecoration: 'none'
-  }
 }

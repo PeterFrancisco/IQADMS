@@ -21,3 +21,19 @@
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
 }
+
+.avatar-with-presence {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.avatar-presence-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-sizing: border-box;
+  pointer-events: none;
+}

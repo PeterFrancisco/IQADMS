@@ -1,7 +1,14 @@
 import api from '../services/api'
 
 export function getApiOrigin() {
-  return (api.defaults.baseURL || '').replace(/\/api\/?$/, '')
+  const base = (api.defaults.baseURL || '').trim()
+  if (/^https?:\/\//i.test(base)) {
+    return base.replace(/\/api\/?$/i, '')
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin
+  }
+  return base.replace(/\/api\/?$/i, '')
 }
 
 export function resolveUploadUrl(path, cacheKey) {

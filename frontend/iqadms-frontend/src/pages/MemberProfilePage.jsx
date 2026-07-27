@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
-import UserAvatar from '../components/UserAvatar'
+import AvatarWithPresence from '../components/AvatarWithPresence'
 import { SocialLinksRow, socialUrlsFromProfile } from '../components/SocialLinks'
 import api from '../services/api'
-import { PresenceBadge } from '../components/PresenceSelector'
 import { normalizePresence } from '../config/presence'
+import { upshd } from '../theme/upshd'
+import {
+  InfoRow,
+  SectionCard,
+  SidebarCard,
+  profileStyles
+} from './profileShared'
 
 export default function MemberProfilePage() {
   const { username } = useParams()
@@ -15,29 +21,32 @@ export default function MemberProfilePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     loadMember()
   }, [username])
 
   async function loadMember() {
     try {
-        const [profileRes, historyRes] = await Promise.all([
+      const [profileRes, historyRes] = await Promise.all([
         api.get(`/Profile/${username}`),
         api.get(`/Tasks/user/${username}/history`)
-        ])
-        setMember(profileRes.data)
-        setWorkHistory(historyRes.data)
+      ])
+      setMember(profileRes.data)
+      setWorkHistory(historyRes.data)
     } catch {
-        setMember(null)
-        setWorkHistory([])
+      setMember(null)
+      setWorkHistory([])
     } finally {
-        setLoading(false)
+      setLoading(false)
     }
-  }   
+  }
 
   if (loading) {
     return (
       <DashboardLayout>
-        <p>Loading profile...</p>
+        <div style={profileStyles.page}>
+          <div style={profileStyles.loadingCard}>Loading profile...</div>
+        </div>
       </DashboardLayout>
     )
   }
@@ -45,97 +54,133 @@ export default function MemberProfilePage() {
   if (!member) {
     return (
       <DashboardLayout>
-        <p>Member not found.</p>
-        <button onClick={() => navigate('/team')} style={{ marginTop: '1rem', cursor: 'pointer' }}>
-          ← Back to Team
-        </button>
+        <div style={profileStyles.page}>
+          <button type="button" style={profileStyles.backLink} onClick={() => navigate('/team')}>
+            ← Back to Team
+          </button>
+          <div style={profileStyles.loadingCard}>Member not found.</div>
+        </div>
       </DashboardLayout>
     )
   }
 
   const socialUrls = socialUrlsFromProfile(member)
+  const displayName = member.displayName || member.username
+  const presence = normalizePresence(member.presence)
 
   return (
     <DashboardLayout>
-      <button
-        onClick={() => navigate('/team')}
-        style={{ border: 'none', background: 'none', color: upshd.maroon, cursor: 'pointer', marginBottom: '1rem', fontWeight: 600 }}
-      >
-        ← Back to Team
-      </button>
+      <div style={profileStyles.page}>
+        <button type="button" style={profileStyles.backLink} onClick={() => navigate('/team')}>
+          ← Back to Team
+        </button>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem' }}>
-        <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
-          <div style={{ textAlign: 'center' }}>
-            <UserAvatar
-              user={{ ...member, displayName: member.displayName || username, profilePictureUrl: member.profilePictureUrl }}
-              size={100}
-              className="member-profile-avatar"
-            />
-            <h2 style={{ margin: '1rem 0 0.25rem', color: upshd.maroon }}>{member.displayName}</h2>
-            <p style={{ margin: 0, color: '#64748b' }}>@{member.username}</p>
-            <p style={{ marginTop: '0.5rem', color: '#475569' }}>{member.position}</p>
-            <div style={{ marginTop: '0.75rem' }}>
-              <PresenceBadge presence={normalizePresence(member.presence)} />
+        <div style={profileStyles.hero}>
+          <div style={profileStyles.heroOverlay} />
+          <div style={profileStyles.heroContent}>
+            <div style={profileStyles.avatarWrap}>
+              <AvatarWithPresence
+                user={{
+                  displayName,
+                  username: member.username,
+                  profilePictureUrl: member.profilePictureUrl,
+                  presence
+                }}
+                size={112}
+              />
+            </div>
+
+            <div style={profileStyles.heroText}>
+              <h1 style={profileStyles.heroTitle}>{displayName}</h1>
+              <p style={profileStyles.heroSub}>@{member.username}</p>
+              {member.position && <p style={profileStyles.heroRole}>{member.position}</p>}
+              <span style={{
+                ...profileStyles.badge,
+                background: member.isAdmin ? upshd.maroonMuted : '#dcfce7',
+                color: member.isAdmin ? upshd.maroon : '#166534'
+              }}>
+                {member.isAdmin ? 'Administrator' : 'PQAD Staff'}
+              </span>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {member.bio && (
-            <Section title="About">
-              <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>{member.bio}</p>
-            </Section>
-          )}
+        <div style={profileStyles.grid}>
+          <div style={profileStyles.sidebar}>
+            <SidebarCard title="Contact">
+              <InfoRow label="Email" value={member.email} />
+              <InfoRow label="Username" value={`@${member.username}`} />
+              {member.age != null && member.age !== '' && (
+                <InfoRow label="Age" value={member.age} />
+              )}
+            </SidebarCard>
 
-          <Section title="Links">
-            <SocialLinksRow urls={socialUrls} />
-          </Section>
+            <SidebarCard title="Social">
+              <SocialLinksRow urls={socialUrls} size="sm" />
+            </SidebarCard>
 
-          <Section title="Work History">
-            {workHistory.length === 0 ? (
-              <p style={{ margin: 0, color: '#94a3b8' }}>No completed tasks yet.</p>
-            ) : (
-              workHistory.map(item => (
-                <div
-                  key={item.taskId}
-                  style={{
-                    padding: '0.75rem 0',
-                    borderBottom: '1px solid #eee'
-                  }}
+            <SidebarCard title="Completed tasks">
+              <div style={profileStyles.statNumber}>{workHistory.length}</div>
+              <div style={profileStyles.statLabel}>tasks in work history</div>
+            </SidebarCard>
+          </div>
+
+          <div style={profileStyles.main}>
+            <SectionCard title="About" subtitle="Public profile information">
+              {member.bio ? (
+                <p style={{ margin: 0, color: '#475569', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                  {member.bio}
+                </p>
+              ) : (
+                <p style={profileStyles.emptyText}>No bio added yet.</p>
+              )}
+            </SectionCard>
+
+            {member.websiteUrl && (
+              <SectionCard title="Website">
+                <a
+                  href={member.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: upshd.maroon, fontWeight: 600, wordBreak: 'break-all' }}
                 >
-                  <div style={{ fontWeight: 600, color: upshd.maroon }}>{item.title}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-                    Assigned by {item.createdByName || 'Unknown'}
-                    {item.completedAt && (
-                      <> · Completed {new Date(item.completedAt).toLocaleDateString()}</>
-                    )}
-                  </div>
-                  {item.deliverableGoogleDriveLink && (
-                    <a
-                      href={item.deliverableGoogleDriveLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '0.85rem', color: upshd.maroonLight, marginTop: '0.35rem', display: 'inline-block' }}
-                    >
-                      View finished work
-                    </a>
-                  )}
-                </div>
-              ))
+                  {member.websiteUrl}
+                </a>
+              </SectionCard>
             )}
-          </Section>
+
+            <SectionCard title="Work history" subtitle="Tasks completed as assignee">
+              {workHistory.length === 0 ? (
+                <p style={profileStyles.emptyText}>No completed tasks yet.</p>
+              ) : (
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  {workHistory.map(item => (
+                    <div key={item.taskId} style={profileStyles.historyCard}>
+                      <div style={profileStyles.historyTitle}>{item.title}</div>
+                      <div style={profileStyles.historyMeta}>
+                        Assigned by {item.createdByName || 'Unknown'}
+                        {item.completedAt && (
+                          <> · {new Date(item.completedAt).toLocaleDateString()}</>
+                        )}
+                      </div>
+                      {item.deliverableGoogleDriveLink && (
+                        <a
+                          href={item.deliverableGoogleDriveLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={profileStyles.historyLink}
+                        >
+                          View finished work →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+          </div>
         </div>
       </div>
     </DashboardLayout>
-  )
-}
-
-function Section({ title, children }) {
-  return (
-    <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
-      <h3 style={{ marginTop: 0, color: upshd.maroon }}>{title}</h3>
-      {children}
-    </div>
   )
 }

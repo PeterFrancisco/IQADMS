@@ -12,3 +12,12 @@ export function normalizePresence(value) {
   const v = (value || '').toLowerCase()
   return PRESENCE_MAP[v] ? v : 'offline'
 }
+
+/** Green dot when member is actively signed in (online), gray when inactive */
+export function isActivePresence(value) {
+  return normalizePresence(value) === 'online'
+}
+
+export function presenceIndicatorColor(value) {
+  return isActivePresence(value) ? '#31a24c' : '#bcc0c4'
+}
