@@ -18,12 +18,12 @@ import MemberProfilePage from './pages/MemberProfilePage'
 import DocumentsPage from './pages/DocumentsPage'
 import AdminManageUsersPage from './pages/AdminManageUsersPage'
 import ProjectsPage from './pages/ProjectsPage'
+import UpcomingDeadlinesPage from './pages/UpcomingDeadlinesPage'
+import RecentActivitiesPage from './pages/RecentActivitiesPage'
+import StatisticsPage from './pages/StatisticsPage'
 import AdminRoute from './components/AdminRoute'
 import {
-  UpcomingDeadlinesPage,
-  RecentActivitiesPage,
   NotificationsPage,
-  StatisticsPage,
   CalendarPage,
   ReportsPage
 } from './pages/ModulePlaceholders'

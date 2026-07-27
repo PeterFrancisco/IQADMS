@@ -1,25 +1,5 @@
 import PlaceholderPage from '../components/PlaceholderPage'
 
-export function UpcomingDeadlinesPage() {
-  return (
-    <PlaceholderPage
-      title="Upcoming Deadlines"
-      subtitle="Consolidated due dates from tasks, meetings, and accreditation milestones."
-      planned={['Due this week / overdue filters', 'Calendar integration', 'PQAD staff workload view']}
-    />
-  )
-}
-
-export function RecentActivitiesPage() {
-  return (
-    <PlaceholderPage
-      title="Recent Activities"
-      subtitle="Task updates, file uploads, comments, and project changes across PQAD."
-      planned={['Activity log feed', 'Filter by project or staff', 'Link to task detail']}
-    />
-  )
-}
-
 export function NotificationsPage() {
   return (
     <PlaceholderPage
@@ -30,16 +10,6 @@ export function NotificationsPage() {
         'Project updates and meeting reminders',
         'Admin: account requests and registrations'
       ]}
-    />
-  )
-}
-
-export function StatisticsPage() {
-  return (
-    <PlaceholderPage
-      title="Statistics"
-      subtitle="Completion rates, overdue counts, and workload summaries for PQAD."
-      planned={['My Tasks summary widgets', 'Admin: office-wide metrics', 'Charts by project and department']}
     />
   )
 }
