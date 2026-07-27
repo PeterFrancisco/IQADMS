@@ -19,38 +19,40 @@ public class BoardColumnsController : ControllerBase
     private static readonly HashSet<string> AllowedTypes =
         new(StringComparer.OrdinalIgnoreCase) { "text", "link", "date", "number", "dropdown" };
 
+    private static readonly HashSet<string> AllowedBindings =
+        new(StringComparer.OrdinalIgnoreCase) { "", "owner", "status", "due_date" };
+
     public BoardColumnsController(ApplicationDbContext context)
     {
         _context = context;
     }
 
-    // GET: api/BoardColumns
     [HttpGet]
     public async Task<IActionResult> GetColumns()
     {
-        var rows = await _context.BoardColumns
-            .Where(c => !c.IsDeleted)
-            .OrderBy(c => c.SortOrder)
-            .ToListAsync();
-
-        var columns = rows.Select(c => new BoardColumnResponse
-        {
-            Id = c.Id,
-            Name = c.Name,
-            ColumnType = c.ColumnType,
-            SortOrder = c.SortOrder,
-            Options = ParseOptions(c.OptionsJson)
-        }).ToList();
-
-        return Ok(columns);
+        await EnsureDefaultColumnsAsync();
+        return Ok(await QueryColumnsAsync());
     }
 
-    // POST: api/BoardColumns
     [HttpPost]
     public async Task<IActionResult> CreateColumn(CreateBoardColumnRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
             return BadRequest(new { message = "Column name is required." });
+
+        var binding = (request.Binding ?? string.Empty).Trim().ToLower();
+        if (binding == "task")
+            return BadRequest(new { message = "The Task column cannot be added manually." });
+        if (!AllowedBindings.Contains(binding))
+            return BadRequest(new { message = "Invalid column binding." });
+
+        if (!string.IsNullOrEmpty(binding))
+        {
+            var duplicate = await _context.BoardColumns
+                .AnyAsync(c => !c.IsDeleted && c.Binding == binding);
+            if (duplicate)
+                return BadRequest(new { message = $"A column for \"{binding}\" already exists." });
+        }
 
         var columnType = (request.ColumnType ?? "text").Trim().ToLower();
         if (!AllowedTypes.Contains(columnType))
@@ -65,16 +67,15 @@ public class BoardColumnsController : ControllerBase
         if (columnType == "dropdown" && options.Count < 2)
             return BadRequest(new { message = "Dropdown columns need at least 2 options." });
 
-        var maxOrder = await _context.BoardColumns
-            .Where(c => !c.IsDeleted)
-            .Select(c => (int?)c.SortOrder)
-            .MaxAsync() ?? 0;
+        var sortOrder = await ComputeSortOrderAsync(request.InsertAfterColumnId);
 
         var column = new BoardColumn
         {
             Name = request.Name.Trim(),
             ColumnType = columnType,
-            SortOrder = maxOrder + 1,
+            Binding = binding,
+            SortOrder = sortOrder,
+            WidthPx = 180,
             CreatedByUserId = GetUserId(),
             OptionsJson = columnType == "dropdown"
                 ? JsonSerializer.Serialize(options)
@@ -84,23 +85,42 @@ public class BoardColumnsController : ControllerBase
         _context.BoardColumns.Add(column);
         await _context.SaveChangesAsync();
 
-        return Ok(new BoardColumnResponse
-        {
-            Id = column.Id,
-            Name = column.Name,
-            ColumnType = column.ColumnType,
-            SortOrder = column.SortOrder,
-            Options = options
-        });
+        var created = (await QueryColumnsAsync()).First(c => c.Id == column.Id);
+        return Ok(created);
     }
 
-    // DELETE: api/BoardColumns/{id}
-    [HttpDelete("{id}")]
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateColumn(Guid id, UpdateBoardColumnRequest request)
+    {
+        var column = await _context.BoardColumns.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+        if (column == null)
+            return NotFound();
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            column.Name = request.Name.Trim();
+
+        if (request.WrapText.HasValue)
+            column.WrapText = request.WrapText.Value;
+
+        if (request.WidthPx.HasValue)
+            column.WidthPx = Math.Clamp(request.WidthPx.Value, 100, 480);
+
+        column.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        var updated = (await QueryColumnsAsync()).First(c => c.Id == column.Id);
+        return Ok(updated);
+    }
+
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteColumn(Guid id)
     {
         var column = await _context.BoardColumns.FindAsync(id);
         if (column == null || column.IsDeleted)
             return NotFound();
+
+        if (string.Equals(column.Binding, "task", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { message = "The Task column cannot be deleted." });
 
         column.IsDeleted = true;
         column.UpdatedAt = DateTime.UtcNow;
@@ -109,7 +129,6 @@ public class BoardColumnsController : ControllerBase
         return NoContent();
     }
 
-    // GET: api/BoardColumns/cell-values
     [HttpGet("cell-values")]
     public async Task<IActionResult> GetCellValues()
     {
@@ -126,7 +145,6 @@ public class BoardColumnsController : ControllerBase
         return Ok(values);
     }
 
-    // PUT: api/BoardColumns/cell-values
     [HttpPut("cell-values")]
     public async Task<IActionResult> UpsertCellValue(UpsertCellValueRequest request)
     {
@@ -170,6 +188,80 @@ public class BoardColumnsController : ControllerBase
             ColumnId = existing.ColumnId,
             Value = existing.Value
         });
+    }
+
+    private async Task<List<BoardColumnResponse>> QueryColumnsAsync()
+    {
+        var rows = await _context.BoardColumns
+            .Where(c => !c.IsDeleted)
+            .OrderBy(c => c.SortOrder)
+            .ToListAsync();
+
+        return rows.Select(c => new BoardColumnResponse
+        {
+            Id = c.Id,
+            Name = c.Name,
+            ColumnType = c.ColumnType,
+            SortOrder = c.SortOrder,
+            Binding = c.Binding ?? string.Empty,
+            WrapText = c.WrapText,
+            WidthPx = c.WidthPx,
+            IsLocked = string.Equals(c.Binding, "task", StringComparison.OrdinalIgnoreCase),
+            Options = ParseOptions(c.OptionsJson)
+        }).ToList();
+    }
+
+    private async Task EnsureDefaultColumnsAsync()
+    {
+        var hasTask = await _context.BoardColumns
+            .AnyAsync(c => !c.IsDeleted && c.Binding == "task");
+        if (hasTask)
+            return;
+
+        var userId = GetUserId();
+        var existing = await _context.BoardColumns
+            .Where(c => !c.IsDeleted)
+            .OrderBy(c => c.SortOrder)
+            .ToListAsync();
+
+        foreach (var col in existing)
+            col.SortOrder += 4;
+
+        var defaults = new[]
+        {
+            new BoardColumn { Name = "Task", Binding = "task", ColumnType = "text", SortOrder = 0, WidthPx = 260, CreatedByUserId = userId },
+            new BoardColumn { Name = "Owner", Binding = "owner", ColumnType = "text", SortOrder = 1, WidthPx = 200, CreatedByUserId = userId },
+            new BoardColumn { Name = "Status", Binding = "status", ColumnType = "dropdown", SortOrder = 2, WidthPx = 160, CreatedByUserId = userId },
+            new BoardColumn { Name = "Due Date", Binding = "due_date", ColumnType = "date", SortOrder = 3, WidthPx = 150, CreatedByUserId = userId }
+        };
+
+        _context.BoardColumns.AddRange(defaults);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task<int> ComputeSortOrderAsync(Guid? insertAfterColumnId)
+    {
+        if (insertAfterColumnId.HasValue)
+        {
+            var after = await _context.BoardColumns
+                .FirstOrDefaultAsync(c => c.Id == insertAfterColumnId && !c.IsDeleted);
+            if (after != null)
+            {
+                var sortOrder = after.SortOrder + 1;
+                var toBump = await _context.BoardColumns
+                    .Where(c => !c.IsDeleted && c.SortOrder >= sortOrder)
+                    .ToListAsync();
+                foreach (var c in toBump)
+                    c.SortOrder++;
+                return sortOrder;
+            }
+        }
+
+        var maxOrder = await _context.BoardColumns
+            .Where(c => !c.IsDeleted)
+            .Select(c => (int?)c.SortOrder)
+            .MaxAsync() ?? -1;
+        return maxOrder + 1;
     }
 
     private static List<string> ParseOptions(string? optionsJson)

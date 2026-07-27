@@ -429,6 +429,10 @@ public class ApplicationDbContext : DbContext
             .HasMaxLength(30);
 
         modelBuilder.Entity<BoardColumn>()
+            .Property(c => c.Binding)
+            .HasMaxLength(32);
+
+        modelBuilder.Entity<BoardColumn>()
             .HasOne(c => c.CreatedByUser)
             .WithMany()
             .HasForeignKey(c => c.CreatedByUserId)

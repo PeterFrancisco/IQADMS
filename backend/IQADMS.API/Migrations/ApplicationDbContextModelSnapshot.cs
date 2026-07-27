@@ -158,6 +158,10 @@ namespace IQADMS.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Binding")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("ColumnType")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -186,6 +190,12 @@ namespace IQADMS.API.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("WidthPx")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("WrapText")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 

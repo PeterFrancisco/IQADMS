@@ -15,6 +15,13 @@ public class BoardColumn : BaseEntity
 
     public int SortOrder { get; set; }
 
+    /// <summary>task | owner | status | due_date — empty for custom columns</summary>
+    public string Binding { get; set; } = string.Empty;
+
+    public bool WrapText { get; set; }
+
+    public int WidthPx { get; set; } = 180;
+
     public Guid CreatedByUserId { get; set; }
     public User CreatedByUser { get; set; } = null!;
 }

@@ -1,0 +1,231 @@
+.workspace-board-shell {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--upshd-border, #e5e7eb);
+}
+
+.workspace-board-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.workspace-board-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: max-content;
+  width: 100%;
+}
+
+.workspace-board-th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--upshd-maroon-muted, #f3e8eb);
+  border-bottom: 1px solid #ddd;
+  border-right: 1px solid #e8e8e8;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  font-weight: 600;
+  color: #374151;
+}
+
+.workspace-board-th-actions {
+  width: 52px;
+  min-width: 52px;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+
+.workspace-board-table tbody td:first-child {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
+  border-right: 1px solid #eee;
+}
+
+.workspace-col-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  position: relative;
+}
+
+.workspace-col-title {
+  flex: 1;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-weight: 600;
+  color: var(--upshd-maroon, #7a0019);
+  cursor: pointer;
+  padding: 0.15rem 0;
+  line-height: 1.35;
+}
+
+.workspace-col-rename-input {
+  flex: 1;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 600;
+}
+
+.workspace-col-menu-btn {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  line-height: 1;
+  font-size: 1.1rem;
+}
+
+.workspace-col-menu-btn:hover {
+  background: rgba(122, 0, 25, 0.08);
+  color: var(--upshd-maroon, #7a0019);
+}
+
+.workspace-col-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  z-index: 20;
+  padding: 0.35rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-col-menu button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+  color: #1f2937;
+}
+
+.workspace-col-menu button:hover {
+  background: #f8fafc;
+}
+
+.workspace-col-menu button.danger {
+  color: #dc2626;
+}
+
+.workspace-sort-indicator {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.workspace-board-table td {
+  border-bottom: 1px solid #eee;
+  border-right: 1px solid #f1f5f9;
+  padding: 0.5rem 0.65rem;
+  vertical-align: top;
+}
+
+.workspace-board-table td.wrap-text,
+.workspace-board-th.wrap-text {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.workspace-board-table td.nowrap-cell {
+  white-space: nowrap;
+}
+
+.workspace-cell-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.workspace-status-select {
+  border: none;
+}
+
+.workspace-task-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.workspace-task-input {
+  flex: 1 1 120px;
+  font-weight: 600;
+  color: var(--upshd-maroon, #7a0019);
+}
+
+.workspace-task-open {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.workspace-task-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+  width: 100%;
+}
+
+.workspace-plus-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--upshd-maroon, #7a0019);
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.workspace-add-row {
+  background: #fafbff;
+}
+
+.workspace-add-row-label {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.92rem;
+  padding: 0.25rem 0;
+}
+
+.workspace-add-row-label:hover {
+  color: var(--upshd-maroon, #7a0019);
+}
+
+.workspace-empty {
+  text-align: center;
+  padding: 2rem !important;
+  color: #94a3b8;
+}
