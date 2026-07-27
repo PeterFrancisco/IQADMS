@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import UserAvatar from './UserAvatar'
 import '../theme/workspace-board.css'
 
 const STATUS_OPTIONS = ['To Do', 'In Progress', 'Waiting', 'Completed', 'Cancelled']
@@ -313,20 +314,7 @@ function BoardCell({
   }
 
   if (binding === 'owner') {
-    return (
-      <select
-        className="workspace-cell-input"
-        value={task.assignedToUserId || ''}
-        onChange={e => onAssign(task.id, e.target.value || null)}
-      >
-        <option value="">Unassigned</option>
-        {members.map(m => (
-          <option key={m.id} value={m.id}>
-            {m.displayName || m.username}
-          </option>
-        ))}
-      </select>
-    )
+    return <OwnerCell task={task} members={members} onAssign={onAssign} />
   }
 
   if (binding === 'status') {
@@ -362,6 +350,38 @@ function BoardCell({
       value={getCellValue(task.id, column.id)}
       onSave={saveCellValue}
     />
+  )
+}
+
+function OwnerCell({ task, members, onAssign }) {
+  const owner = members.find(m => m.id === task.assignedToUserId)
+  const displayName = owner?.displayName || owner?.username || task.assignedToName || 'Unassigned'
+
+  return (
+    <div className="workspace-owner-cell">
+      <div className="workspace-owner-visual">
+        <UserAvatar member={owner || { displayName: '?' }} size={34} />
+        <div className="workspace-owner-popover" role="tooltip">
+          <strong>{displayName}</strong>
+          {owner?.email && <span>{owner.email}</span>}
+          {owner?.position && <span>{owner.position}</span>}
+          {!owner && <span>Click to assign an owner</span>}
+        </div>
+      </div>
+      <select
+        className="workspace-owner-select"
+        aria-label={`Owner for ${task.title}`}
+        value={task.assignedToUserId || ''}
+        onChange={e => onAssign(task.id, e.target.value || null)}
+      >
+        <option value="">Unassigned</option>
+        {members.map(m => (
+          <option key={m.id} value={m.id}>
+            {m.displayName || m.username}
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }
 

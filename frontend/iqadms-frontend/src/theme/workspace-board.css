@@ -245,3 +245,66 @@
   padding: 2rem !important;
   color: #94a3b8;
 }
+
+.workspace-owner-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+}
+
+.workspace-owner-visual {
+  position: relative;
+  pointer-events: none;
+}
+
+.workspace-owner-popover {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  min-width: 180px;
+  max-width: 260px;
+  padding: 0.55rem 0.7rem;
+  background: #1e293b;
+  color: #f8fafc;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.workspace-owner-popover strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.15rem;
+  color: #fff;
+}
+
+.workspace-owner-popover span {
+  display: block;
+  color: #cbd5e1;
+  word-break: break-word;
+}
+
+.workspace-owner-cell:hover .workspace-owner-popover,
+.workspace-owner-cell:focus-within .workspace-owner-popover {
+  opacity: 1;
+  visibility: visible;
+}
+
+.workspace-owner-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 1rem;
+}

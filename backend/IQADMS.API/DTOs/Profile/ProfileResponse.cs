@@ -13,7 +13,11 @@ public class ProfileResponse
     public string? LinkedInUrl { get; set; }
     public string? GitHubUrl { get; set; }
     public string? InstagramUrl { get; set; }
+    public string? FacebookUrl { get; set; }
+    public string? TwitterUrl { get; set; }
     public string? WebsiteUrl { get; set; }
+
+    public string Presence { get; set; } = "offline";
 
     public bool IsAdmin { get; set; }
 }

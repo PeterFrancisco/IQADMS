@@ -34,6 +34,15 @@ public class User : BaseEntity
 
     public string? InstagramUrl { get; set; }
 
+    public string? FacebookUrl { get; set; }
+
+    public string? TwitterUrl { get; set; }
+
+    /// <summary>online | away | dnd | offline</summary>
+    public string PresenceStatus { get; set; } = "offline";
+
+    public DateTime? LastActiveAt { get; set; }
+
 
     // System permission
     public bool IsAdmin { get; set; } = false;

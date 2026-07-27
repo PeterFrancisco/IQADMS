@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
+import { setPresence } from '../utils/presenceApi'
 import { upshd } from '../theme/upshd'
 
 export default function LoginPage() {
@@ -36,6 +37,12 @@ export default function LoginPage() {
       localStorage.setItem('username', username)
       localStorage.setItem('isAdmin', response.data.isAdmin)
       localStorage.setItem('userId', response.data.userId)
+
+      try {
+        await setPresence('online')
+      } catch {
+        // non-blocking if presence API unavailable before migration
+      }
 
       const safeNext =
         nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard'

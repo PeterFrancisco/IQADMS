@@ -145,6 +145,10 @@ public class ApplicationDbContext : DbContext
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        modelBuilder.Entity<User>()
+            .Property(u => u.PresenceStatus)
+            .HasMaxLength(16);
+
         modelBuilder.Entity<WorkspaceTask>()
             .Property(t => t.Title)
             .HasMaxLength(300);

@@ -3,7 +3,10 @@ import React, { useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import AppIcon from './AppIcon'
+import UserAvatar from './UserAvatar'
+import { startPresenceHeartbeat } from '../utils/presenceApi'
 import { Menu } from 'lucide-react'
+import { PRESENCE_MAP, normalizePresence } from '../config/presence'
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(
@@ -17,7 +20,11 @@ export default function DashboardLayout({ children }) {
     loadUnreadCount()
     const onChange = () => loadUnreadCount()
     window.addEventListener('iqadms-notifications-changed', onChange)
-    return () => window.removeEventListener('iqadms-notifications-changed', onChange)
+    const heartbeatId = startPresenceHeartbeat()
+    return () => {
+      window.removeEventListener('iqadms-notifications-changed', onChange)
+      clearInterval(heartbeatId)
+    }
   }, [])
 
   async function loadUnreadCount() {
@@ -122,13 +129,6 @@ function NavItem({ label, to, icon, onNavigate, matchPrefix, badge = 0 }) {
   )
 }
 
-const PRESENCE = {
-  online: { label: 'Online', color: '#22c55e' },
-  away: { label: 'Away', color: '#eab308' },
-  dnd: { label: 'Do Not Disturb', color: '#ef4444' },
-  offline: { label: 'Offline', color: '#94a3b8' }
-}
-
 function TeamMembersDropdown({ label, icon, onNavigate }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -141,6 +141,14 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
 
   useEffect(() => {
     if (open) loadMembers()
+  }, [open])
+
+  useEffect(() => {
+    const refresh = () => {
+      if (open) loadMembers()
+    }
+    window.addEventListener('iqadms-presence-changed', refresh)
+    return () => window.removeEventListener('iqadms-presence-changed', refresh)
   }, [open])
 
   useEffect(() => {
@@ -194,7 +202,7 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
           <div className="team-empty">No members found</div>
         ) : (
           members.map(member => {
-            const presence = PRESENCE[member.presence] || PRESENCE.offline
+            const presence = PRESENCE_MAP[normalizePresence(member.presence)] || PRESENCE_MAP.offline
             const isSelected = location.pathname === `/team/${member.username}`
 
             return (
@@ -203,24 +211,13 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
                 className={`team-member ${isSelected ? 'selected' : ''}`}
                 onClick={() => openProfile(member.username)}
               >
-                <div>
+                <UserAvatar member={member} size={32} className="team-member-avatar" />
+                <div className="team-member-text">
                   <div className="team-member-name">{member.displayName || member.username}</div>
                   <div className="team-member-user">@{member.username}</div>
                 </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  fontSize: '0.75rem',
-                  color: presence.color,
-                  whiteSpace: 'nowrap'
-                }}>
-                  <span style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '999px',
-                    background: presence.color
-                  }} />
+                <div className="team-member-presence" style={{ color: presence.color }}>
+                  <span className="team-presence-dot" style={{ background: presence.color }} />
                   {presence.label}
                 </div>
               </div>
@@ -249,10 +246,31 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
 function ProfileMenu() {
   const navigate = useNavigate()
   const [open, setOpen] = React.useState(false)
+  const [me, setMe] = React.useState(null)
+  const [avatarKey, setAvatarKey] = React.useState(0)
   const ref = useRef(null)
   const username = localStorage.getItem('username') || 'admin'
   const isAdmin = localStorage.getItem('isAdmin') === 'true'
-  const initials = username.slice(0, 2).toUpperCase()
+  const displayName = me?.displayName || username
+  const email = me?.email || ''
+  const initials = (displayName || username).slice(0, 2).toUpperCase()
+
+  const loadMe = React.useCallback(async () => {
+    try {
+      const res = await api.get('/Profile/me')
+      setMe(res.data)
+      setAvatarKey(Date.now())
+    } catch {
+      setMe(null)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadMe()
+    const onUpdate = () => loadMe()
+    window.addEventListener('iqadms-profile-updated', onUpdate)
+    return () => window.removeEventListener('iqadms-profile-updated', onUpdate)
+  }, [loadMe])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -291,14 +309,29 @@ function ProfileMenu() {
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-haspopup="true"
+        title={displayName}
       >
-        {initials}
+        {me?.profilePictureUrl ? (
+          <UserAvatar
+            user={{ ...me, profilePictureUrl: me.profilePictureUrl }}
+            size={40}
+            cacheKey={avatarKey}
+            className="avatar-btn-img"
+          />
+        ) : (
+          initials
+        )}
       </button>
 
       <div className={`profile-menu ${open ? 'open' : ''}`}>
         <div className="profile-header">
-          <strong>{username}</strong>
-          <small>{isAdmin ? 'Administrator' : 'PQAD Staff'}</small>
+          <strong>{displayName}</strong>
+          {email ? (
+            <small className="profile-header-email" title={email}>
+              {email}
+            </small>
+          ) : null}
+          <small className="profile-header-role">{isAdmin ? 'Administrator' : 'PQAD Staff'}</small>
         </div>
 
         <button type="button" className="menu-item" onClick={() => go('/profile')}>

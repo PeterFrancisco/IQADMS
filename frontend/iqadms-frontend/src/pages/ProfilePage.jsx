@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
+import UserAvatar from '../components/UserAvatar'
+import { SocialLinksEditorList, SocialLinksRow } from '../components/SocialLinks'
+import PresenceSelector, { PresenceBadge } from '../components/PresenceSelector'
+import { normalizePresence } from '../config/presence'
+import { setPresence } from '../utils/presenceApi'
+import { notifyProfileUpdated } from '../utils/profileEvents'
 import { upshd } from '../theme/upshd'
-
-const API_ORIGIN = api.defaults.baseURL.replace(/\/api$/, '')
 
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
@@ -13,6 +17,9 @@ export default function ProfilePage() {
   const [error, setError] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [profilePictureUrl, setProfilePictureUrl] = useState('')
+  const [avatarKey, setAvatarKey] = useState(0)
+  const [presence, setPresenceLocal] = useState('offline')
+  const [updatingPresence, setUpdatingPresence] = useState(false)
   const fileInputRef = useRef(null)
 
   const [profile, setProfile] = useState({
@@ -25,6 +32,8 @@ export default function ProfilePage() {
     linkedIn: '',
     github: '',
     instagram: '',
+    facebook: '',
+    twitter: '',
     website: ''
   })
 
@@ -56,9 +65,13 @@ export default function ProfilePage() {
         linkedIn: res.data.linkedInUrl || '',
         github: res.data.gitHubUrl || '',
         instagram: res.data.instagramUrl || '',
+        facebook: res.data.facebookUrl || '',
+        twitter: res.data.twitterUrl || '',
         website: res.data.websiteUrl || ''
       })
       setProfilePictureUrl(res.data.profilePictureUrl || '')
+      setPresenceLocal(normalizePresence(res.data.presence))
+      setAvatarKey(Date.now())
       setIsAdmin(!!res.data.isAdmin)
       localStorage.setItem('isAdmin', res.data.isAdmin ? 'true' : 'false')
 
@@ -110,8 +123,11 @@ export default function ProfilePage() {
         linkedInUrl: profile.linkedIn,
         gitHubUrl: profile.github,
         instagramUrl: profile.instagram,
+        facebookUrl: profile.facebook,
+        twitterUrl: profile.twitter,
         websiteUrl: profile.website
       })
+      notifyProfileUpdated()
       flash('Profile saved successfully.')
     } catch (err) {
       console.error(err)
@@ -157,10 +173,10 @@ export default function ProfilePage() {
       setUploadingPhoto(true)
       const formData = new FormData()
       formData.append('file', file)
-      const res = await api.post('/Profile/me/avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      const res = await api.post('/Profile/me/avatar', formData)
       setProfilePictureUrl(res.data.profilePictureUrl)
+      setAvatarKey(Date.now())
+      notifyProfileUpdated({ profilePictureUrl: res.data.profilePictureUrl })
       flash('Profile photo updated.')
     } catch (err) {
       console.error(err)
@@ -171,16 +187,39 @@ export default function ProfilePage() {
     }
   }
 
-  const initials = (profile.displayName || profile.username || 'U')
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+  const changePresence = async next => {
+    try {
+      setUpdatingPresence(true)
+      const saved = await setPresence(next)
+      setPresenceLocal(normalizePresence(saved))
+      flash('Activity status updated.')
+    } catch (err) {
+      console.error(err)
+      flash(err.response?.data?.message || 'Failed to update activity status.', true)
+    } finally {
+      setUpdatingPresence(false)
+    }
+  }
 
-  const avatarSrc = profilePictureUrl
-    ? `${API_ORIGIN}${profilePictureUrl}`
-    : null
+  const socialEditorUrls = {
+    facebook: profile.facebook,
+    instagram: profile.instagram,
+    twitter: profile.twitter,
+    linkedin: profile.linkedIn,
+    github: profile.github
+  }
+
+  const onSocialEdit = (id, value) => {
+    const fieldMap = {
+      facebook: 'facebook',
+      instagram: 'instagram',
+      twitter: 'twitter',
+      linkedin: 'linkedIn',
+      github: 'github'
+    }
+    const field = fieldMap[id]
+    if (field) handleProfileChange(field, value)
+  }
 
   if (loading) {
     return (
@@ -200,11 +239,11 @@ export default function ProfilePage() {
           <div style={styles.heroOverlay} />
           <div style={styles.heroContent}>
             <div style={styles.avatarWrap}>
-              {avatarSrc ? (
-                <img src={avatarSrc} alt="Profile" style={styles.avatarImg} />
-              ) : (
-                <div style={styles.avatarFallback}>{initials}</div>
-              )}
+              <UserAvatar
+                user={{ displayName: profile.displayName, username: profile.username, profilePictureUrl }}
+                size={112}
+                cacheKey={avatarKey}
+              />
               <input
                 ref={fileInputRef}
                 type="file"
@@ -226,6 +265,9 @@ export default function ProfilePage() {
               <h1 style={styles.heroTitle}>{profile.displayName || profile.username}</h1>
               <p style={styles.heroSub}>@{profile.username}</p>
               {profile.position && <p style={styles.heroRole}>{profile.position}</p>}
+              <div style={{ marginTop: '0.65rem' }}>
+                <PresenceBadge presence={presence} />
+              </div>
               <span style={{
                 ...styles.badge,
                 background: isAdmin ? upshd.maroonMuted : '#dcfce7',
@@ -259,11 +301,8 @@ export default function ProfilePage() {
               )}
             </SidebarCard>
 
-            <SidebarCard title="Quick links">
-              <LinkChip label="LinkedIn" url={profile.linkedIn} />
-              <LinkChip label="GitHub" url={profile.github} />
-              <LinkChip label="Instagram" url={profile.instagram} />
-              <LinkChip label="Website" url={profile.website} />
+            <SidebarCard title="Social">
+              <SocialLinksRow urls={socialEditorUrls} size="sm" />
             </SidebarCard>
 
             <SidebarCard title="Completed tasks">
@@ -274,6 +313,17 @@ export default function ProfilePage() {
 
           {/* Main */}
           <div style={styles.main}>
+            <SectionCard
+              title="Activity status"
+              subtitle="Team members see this on the Team page and sidebar"
+            >
+              <PresenceSelector
+                value={presence}
+                onChange={changePresence}
+                disabled={updatingPresence}
+              />
+            </SectionCard>
+
             <SectionCard
               title="Personal information"
               subtitle="Update how you appear to your team"
@@ -310,25 +360,8 @@ export default function ProfilePage() {
             </SectionCard>
 
             <SectionCard title="Social & portfolio links">
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                <Input
-                  label="LinkedIn"
-                  placeholder="https://linkedin.com/in/yourname"
-                  value={profile.linkedIn}
-                  onChange={v => handleProfileChange('linkedIn', v)}
-                />
-                <Input
-                  label="GitHub"
-                  placeholder="https://github.com/yourname"
-                  value={profile.github}
-                  onChange={v => handleProfileChange('github', v)}
-                />
-                <Input
-                  label="Instagram"
-                  placeholder="https://instagram.com/yourusername"
-                  value={profile.instagram}
-                  onChange={v => handleProfileChange('instagram', v)}
-                />
+              <SocialLinksEditorList urls={socialEditorUrls} onEdit={onSocialEdit} />
+              <div style={{ marginTop: '1rem' }}>
                 <Input
                   label="Website / portfolio"
                   placeholder="https://yourwebsite.com"
@@ -443,22 +476,6 @@ function InfoRow({ label, value }) {
       <div style={styles.infoLabel}>{label}</div>
       <div style={styles.infoValue}>{value}</div>
     </div>
-  )
-}
-
-function LinkChip({ label, url }) {
-  if (!url) {
-    return (
-      <div style={styles.linkChipEmpty}>
-        <span>{label}</span>
-        <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Not set</span>
-      </div>
-    )
-  }
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer" style={styles.linkChip}>
-      {label} →
-    </a>
   )
 }
 

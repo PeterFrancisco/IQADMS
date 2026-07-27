@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
+import UserAvatar from '../components/UserAvatar'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
 
-const PRESENCE = {
-  online: { label: 'Online', color: '#22c55e' },
-  away: { label: 'Away', color: '#eab308' },
-  dnd: { label: 'Do Not Disturb', color: '#ef4444' },
-  offline: { label: 'Offline', color: '#94a3b8' }
-}
+import { PRESENCE_MAP, normalizePresence } from '../config/presence'
 
 export default function TeamPage() {
   const navigate = useNavigate()
@@ -20,6 +16,12 @@ export default function TeamPage() {
 
   useEffect(() => {
     loadMembers()
+  }, [])
+
+  useEffect(() => {
+    const refresh = () => loadMembers()
+    window.addEventListener('iqadms-presence-changed', refresh)
+    return () => window.removeEventListener('iqadms-presence-changed', refresh)
   }, [])
 
   async function loadMembers() {
@@ -38,7 +40,7 @@ export default function TeamPage() {
 
   const filtered = filter === 'all'
     ? members
-    : members.filter(m => m.presence === filter)
+    : members.filter(m => normalizePresence(m.presence) === filter)
 
   return (
     <DashboardLayout>
@@ -64,7 +66,7 @@ export default function TeamPage() {
                 color: filter === key ? '#fff' : '#475569'
               }}
             >
-              {key === 'all' ? 'All' : PRESENCE[key]?.label || key}
+              {key === 'all' ? 'All' : PRESENCE_MAP[key]?.label || key}
             </button>
           ))}
         </div>
@@ -94,13 +96,7 @@ export default function TeamPage() {
 }
 
 function MemberCard({ member, onClick }) {
-  const presence = PRESENCE[member.presence] || PRESENCE.offline
-  const initials = (member.displayName || member.username || '?')
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+  const presence = PRESENCE_MAP[normalizePresence(member.presence)] || PRESENCE_MAP.offline
 
   return (
     <div
@@ -124,14 +120,7 @@ function MemberCard({ member, onClick }) {
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
         <div style={{ position: 'relative' }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: '999px',
-            background: upshd.maroon, color: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 700
-          }}>
-            {initials}
-          </div>
+          <UserAvatar member={member} size={48} />
           <span style={{
             position: 'absolute', bottom: 0, right: 0,
             width: 12, height: 12, borderRadius: '999px',

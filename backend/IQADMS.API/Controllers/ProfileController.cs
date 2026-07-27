@@ -32,23 +32,38 @@ public class ProfileController : ControllerBase
         if (user == null)
             return NotFound();
 
-        return Ok(new ProfileResponse
-        {
-            DisplayName = user.DisplayName,
-            Username = user.Username ?? string.Empty,
-            Email = user.Email,
-            Position = user.Position,
-            Age = user.Age,
-            Bio = user.Bio,
-            ProfilePictureUrl = user.ProfilePictureUrl,
+        return Ok(MapProfile(user));
+    }
 
-            LinkedInUrl = user.LinkedInUrl,
-            GitHubUrl = user.GitHubUrl,
-            InstagramUrl = user.InstagramUrl,
-            WebsiteUrl = user.WebsiteUrl,
+    [HttpPut("me/presence")]
+    public async Task<IActionResult> UpdatePresence(UpdatePresenceRequest request)
+    {
+        var userId = GetUserId();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return NotFound();
 
-            IsAdmin = user.IsAdmin
-        });
+        user.PresenceStatus = NormalizePresence(request.Presence);
+        user.LastActiveAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { presence = user.PresenceStatus });
+    }
+
+    [HttpPost("me/heartbeat")]
+    public async Task<IActionResult> Heartbeat()
+    {
+        var userId = GetUserId();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return NotFound();
+
+        user.LastActiveAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { presence = NormalizePresence(user.PresenceStatus) });
     }
 
     [HttpPut("me")]
@@ -69,6 +84,8 @@ public class ProfileController : ControllerBase
         user.LinkedInUrl = request.LinkedInUrl;
         user.GitHubUrl = request.GitHubUrl;
         user.InstagramUrl = request.InstagramUrl;
+        user.FacebookUrl = request.FacebookUrl;
+        user.TwitterUrl = request.TwitterUrl;
         user.WebsiteUrl = request.WebsiteUrl;
 
         await _context.SaveChangesAsync();
@@ -143,9 +160,13 @@ public class ProfileController : ControllerBase
                 Email = u.Email,
                 Position = u.Position,
                 Bio = u.Bio,
-                Presence = "offline"  // later: online / away / dnd
+                Presence = u.PresenceStatus,
+                ProfilePictureUrl = u.ProfilePictureUrl
             })
             .ToListAsync();
+
+        foreach (var member in members)
+            member.Presence = NormalizePresence(member.Presence);
 
         return Ok(members);
     }
@@ -160,19 +181,38 @@ public class ProfileController : ControllerBase
         if (user == null)
             return NotFound();
 
-        return Ok(new ProfileResponse
+        return Ok(MapProfile(user));
+    }
+
+    private static ProfileResponse MapProfile(Models.User user) => new()
+    {
+        DisplayName = user.DisplayName,
+        Username = user.Username ?? string.Empty,
+        Email = user.Email,
+        Position = user.Position,
+        Age = user.Age,
+        Bio = user.Bio,
+        ProfilePictureUrl = user.ProfilePictureUrl,
+        LinkedInUrl = user.LinkedInUrl,
+        GitHubUrl = user.GitHubUrl,
+        InstagramUrl = user.InstagramUrl,
+        FacebookUrl = user.FacebookUrl,
+        TwitterUrl = user.TwitterUrl,
+        WebsiteUrl = user.WebsiteUrl,
+        Presence = NormalizePresence(user.PresenceStatus),
+        IsAdmin = user.IsAdmin
+    };
+
+    private static string NormalizePresence(string? presence)
+    {
+        var value = (presence ?? string.Empty).Trim().ToLowerInvariant();
+        return value switch
         {
-            DisplayName = user.DisplayName,
-            Username = user.Username,
-            Email = user.Email,
-            Position = user.Position,
-            Bio = user.Bio,
-            LinkedInUrl = user.LinkedInUrl,
-            GitHubUrl = user.GitHubUrl,
-            InstagramUrl = user.InstagramUrl,
-            WebsiteUrl = user.WebsiteUrl,
-            IsAdmin = user.IsAdmin
-        });
+            "online" => "online",
+            "away" => "away",
+            "dnd" => "dnd",
+            _ => "offline"
+        };
     }
 
     private Guid GetUserId()

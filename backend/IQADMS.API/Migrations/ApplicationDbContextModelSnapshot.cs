@@ -793,6 +793,20 @@ namespace IQADMS.API.Migrations
                     b.Property<string>("InstagramUrl")
                         .HasColumnType("text");
 
+                    b.Property<string>("FacebookUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TwitterUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastActiveAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PresenceStatus")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
+import UserAvatar from '../components/UserAvatar'
+import { SocialLinksRow, socialUrlsFromProfile } from '../components/SocialLinks'
 import api from '../services/api'
-import { upshd } from '../theme/upshd'
+import { PresenceBadge } from '../components/PresenceSelector'
+import { normalizePresence } from '../config/presence'
 
 export default function MemberProfilePage() {
   const { username } = useParams()
@@ -50,12 +53,7 @@ export default function MemberProfilePage() {
     )
   }
 
-  const initials = (member.displayName || username)
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+  const socialUrls = socialUrlsFromProfile(member)
 
   return (
     <DashboardLayout>
@@ -69,17 +67,17 @@ export default function MemberProfilePage() {
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem' }}>
         <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: 100, height: 100, borderRadius: '999px',
-              background: upshd.maroon, color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '2rem', fontWeight: 700, margin: '0 auto 1rem'
-            }}>
-              {initials}
-            </div>
-            <h2 style={{ margin: '0 0 0.25rem', color: upshd.maroon }}>{member.displayName}</h2>
+            <UserAvatar
+              user={{ ...member, displayName: member.displayName || username, profilePictureUrl: member.profilePictureUrl }}
+              size={100}
+              className="member-profile-avatar"
+            />
+            <h2 style={{ margin: '1rem 0 0.25rem', color: upshd.maroon }}>{member.displayName}</h2>
             <p style={{ margin: 0, color: '#64748b' }}>@{member.username}</p>
             <p style={{ marginTop: '0.5rem', color: '#475569' }}>{member.position}</p>
+            <div style={{ marginTop: '0.75rem' }}>
+              <PresenceBadge presence={normalizePresence(member.presence)} />
+            </div>
           </div>
         </div>
 
@@ -90,44 +88,41 @@ export default function MemberProfilePage() {
             </Section>
           )}
 
-            <Section title="Links">
-              <LinkRow label="LinkedIn" url={member.linkedInUrl} />
-              <LinkRow label="GitHub" url={member.gitHubUrl} />
-              <LinkRow label="Instagram" url={member.instagramUrl} />
-              <LinkRow label="Website" url={member.websiteUrl} />
-            </Section>
+          <Section title="Links">
+            <SocialLinksRow urls={socialUrls} />
+          </Section>
 
-            <Section title="Work History">
-              {workHistory.length === 0 ? (
-                <p style={{ margin: 0, color: '#94a3b8' }}>No completed tasks yet.</p>
-              ) : (
-                workHistory.map(item => (
-                  <div
-                    key={item.taskId}
-                    style={{
-                      padding: '0.75rem 0',
-                      borderBottom: '1px solid #eee'
-                    }}
-                  >
-                    <div style={{ fontWeight: 600, color: upshd.maroon }}>{item.title}</div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
-                      Assigned by {item.createdByName || 'Unknown'}
-                      {item.completedAt && (
-                        <> · Completed {new Date(item.completedAt).toLocaleDateString()}</>
-                      )}
-                    </div>
-                    {item.deliverableGoogleDriveLink && (
-                      <a
-                        href={item.deliverableGoogleDriveLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: '0.85rem', color: upshd.maroonLight, marginTop: '0.35rem', display: 'inline-block' }}
-                      >
-                        View finished work
-                      </a>
+          <Section title="Work History">
+            {workHistory.length === 0 ? (
+              <p style={{ margin: 0, color: '#94a3b8' }}>No completed tasks yet.</p>
+            ) : (
+              workHistory.map(item => (
+                <div
+                  key={item.taskId}
+                  style={{
+                    padding: '0.75rem 0',
+                    borderBottom: '1px solid #eee'
+                  }}
+                >
+                  <div style={{ fontWeight: 600, color: upshd.maroon }}>{item.title}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Assigned by {item.createdByName || 'Unknown'}
+                    {item.completedAt && (
+                      <> · Completed {new Date(item.completedAt).toLocaleDateString()}</>
                     )}
                   </div>
-                ))
+                  {item.deliverableGoogleDriveLink && (
+                    <a
+                      href={item.deliverableGoogleDriveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.85rem', color: upshd.maroonLight, marginTop: '0.35rem', display: 'inline-block' }}
+                    >
+                      View finished work
+                    </a>
+                  )}
+                </div>
+              ))
             )}
           </Section>
         </div>
@@ -141,16 +136,6 @@ function Section({ title, children }) {
     <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
       <h3 style={{ marginTop: 0, color: upshd.maroon }}>{title}</h3>
       {children}
-    </div>
-  )
-}
-
-function LinkRow({ label, url }) {
-  if (!url) return null
-  return (
-    <div style={{ marginBottom: '0.5rem' }}>
-      <strong>{label}: </strong>
-      <a href={url} target="_blank" rel="noreferrer" style={{ color: upshd.maroonLight }}>{url}</a>
     </div>
   )
 }
