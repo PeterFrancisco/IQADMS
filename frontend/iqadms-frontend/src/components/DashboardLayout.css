@@ -61,6 +61,16 @@
   padding-bottom: 0.75rem;
 }
 
+.sidebar-brand-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sidebar-brand-link:hover h2 {
+  opacity: 0.92;
+}
+
 .sidebar-divider {
   margin: 1rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.12);

@@ -29,10 +29,13 @@ import FeedbackPage from './pages/FeedbackPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
 import AdminRoute from './components/AdminRoute'
 import LandingPage from './pages/LandingPage'
+import RefreshToLanding from './components/RefreshToLanding'
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <RefreshToLanding />
+      <Routes>
       <Route path="/" element={<LandingPage />} />
 
       {/* Public route */}
@@ -252,5 +255,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }

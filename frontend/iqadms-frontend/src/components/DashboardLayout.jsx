@@ -36,11 +36,12 @@ export default function DashboardLayout({ children }) {
       />
 
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-brand">
+        <Link to="/" className="sidebar-brand sidebar-brand-link" onClick={closeMobile}>
           <h2>IQADMS</h2>
           <small>PQAD · UPSHD Molino</small>
-        </div>
+        </Link>
 
+        <NavItem label="Home" to="/" icon="🏠" onNavigate={closeMobile} />
         <NavItem label="Dashboard" to="/dashboard" icon="📊" onNavigate={closeMobile} />
         <NavItem label="My Tasks" to="/my-tasks" icon="✅" onNavigate={closeMobile} />
         <NavItem label="Projects" to="/projects" icon="📁" onNavigate={closeMobile} />

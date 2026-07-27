@@ -811,9 +811,12 @@ const assignMember = async (id, userId) => {
                 inset: 0,
                 background: 'rgba(15,23,42,.45)',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'center',
-                zIndex: 999
+                zIndex: 999,
+                padding: '1rem',
+                overflowY: 'auto',
+                boxSizing: 'border-box'
               }}>
                 <div style={{
                   background: '#fff',
@@ -821,7 +824,11 @@ const assignMember = async (id, userId) => {
                   padding: '1.5rem',
                   width: '100%',
                   maxWidth: 480,
-                  boxShadow: '0 25px 50px rgba(0,0,0,.25)'
+                  maxHeight: 'calc(100vh - 2rem)',
+                  overflowY: 'auto',
+                  margin: 'auto',
+                  boxShadow: '0 25px 50px rgba(0,0,0,.25)',
+                  boxSizing: 'border-box'
                 }}>
                   <h2 style={{ margin: '0 0 1rem', color: '#7a0019' }}>Create Task</h2>
 
@@ -835,7 +842,7 @@ const assignMember = async (id, userId) => {
 
                   <label style={labelStyle}>Description (optional)</label>
                   <textarea
-                    style={{ ...inputStyle, width: '100%', minHeight: 64, marginBottom: '1rem', boxSizing: 'border-box' }}
+                    style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, marginBottom: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
                     value={createForm.description}
                     onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
                   />

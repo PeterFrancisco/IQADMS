@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { externalLinks } from '../config/externalLinks'
 import {
@@ -24,6 +25,10 @@ const USES = [
 export default function LandingPage() {
   const navigate = useNavigate()
   const isSignedIn = Boolean(localStorage.getItem('token'))
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
 
   return (
     <div className="landing">
