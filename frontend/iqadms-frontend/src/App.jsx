@@ -13,7 +13,6 @@ import SettingsPage from './pages/SettingsPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminAddAccountPage from './pages/AdminAddAccountPage'
 import CompleteRegistrationPage from './pages/CompleteRegistrationPage'
-import TeamPage from './pages/TeamPage'
 import MemberProfilePage from './pages/MemberProfilePage'
 import DocumentsPage from './pages/DocumentsPage'
 import AdminManageUsersPage from './pages/AdminManageUsersPage'
@@ -204,15 +203,6 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/team"
-        element={
-          <ProtectedRoute>
-            <TeamPage />
           </ProtectedRoute>
         }
       />

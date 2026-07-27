@@ -55,8 +55,8 @@ export default function MemberProfilePage() {
     return (
       <DashboardLayout>
         <div style={profileStyles.page}>
-          <button type="button" style={profileStyles.backLink} onClick={() => navigate('/team')}>
-            ← Back to Team
+          <button type="button" style={profileStyles.backLink} onClick={() => navigate(-1)}>
+            ← Back
           </button>
           <div style={profileStyles.loadingCard}>Member not found.</div>
         </div>
@@ -71,8 +71,8 @@ export default function MemberProfilePage() {
   return (
     <DashboardLayout>
       <div style={profileStyles.page}>
-        <button type="button" style={profileStyles.backLink} onClick={() => navigate('/team')}>
-          ← Back to Team
+        <button type="button" style={profileStyles.backLink} onClick={() => navigate(-1)}>
+          ← Back
         </button>
 
         <div style={profileStyles.hero}>

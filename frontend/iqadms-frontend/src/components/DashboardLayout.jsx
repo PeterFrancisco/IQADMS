@@ -64,7 +64,6 @@ export default function DashboardLayout({ children }) {
         <div className="sidebar-divider" />
 
         <NavItem label="Notifications" to="/notifications" icon="notifications" badge={unreadNotifications} onNavigate={closeMobile} />
-        <NavItem label="Team" to="/team" icon="team" onNavigate={closeMobile} matchPrefix="/team" />
         <TeamMembersDropdown label="PQAD Team" icon="team" onNavigate={closeMobile} />
 
         <div className="sidebar-divider" />
@@ -138,7 +137,7 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
   const [loading, setLoading] = React.useState(false)
   const ref = useRef(null)
 
-  const isActive = location.pathname.startsWith('/team')
+  const isActive = /^\/team\/[^/]+/.test(location.pathname)
 
   useEffect(() => {
     if (open) loadMembers()
@@ -222,19 +221,6 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
           })
         )}
 
-        <div
-          className="team-footer"
-          onClick={() => {
-            setOpen(false)
-            onNavigate?.()
-            navigate('/team')
-          }}
-        >
-          <span className="inline-icon-text">
-            <AppIcon name="team" size={16} />
-            Open Team page
-          </span>
-        </div>
       </div>
     </div>
   )
