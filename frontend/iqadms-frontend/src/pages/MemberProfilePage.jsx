@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout'
 import AvatarWithPresence from '../components/AvatarWithPresence'
 import { SocialLinksRow, socialUrlsFromProfile } from '../components/SocialLinks'
 import api from '../services/api'
+import ActivityStatusText from '../components/ActivityStatusText'
 import { normalizePresence } from '../config/presence'
 import { upshd } from '../theme/upshd'
 import {
@@ -25,8 +26,14 @@ export default function MemberProfilePage() {
     loadMember()
   }, [username])
 
-  async function loadMember() {
+  useEffect(() => {
+    const id = window.setInterval(() => loadMember(true), 25000)
+    return () => clearInterval(id)
+  }, [username])
+
+  async function loadMember(silent = false) {
     try {
+      if (!silent) setLoading(true)
       const [profileRes, historyRes] = await Promise.all([
         api.get(`/Profile/${username}`),
         api.get(`/Tasks/user/${username}/history`)
@@ -37,7 +44,7 @@ export default function MemberProfilePage() {
       setMember(null)
       setWorkHistory([])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -84,7 +91,8 @@ export default function MemberProfilePage() {
                   displayName,
                   username: member.username,
                   profilePictureUrl: member.profilePictureUrl,
-                  presence
+                  presence,
+                  lastActiveAt: member.lastActiveAt
                 }}
                 size={112}
               />
@@ -93,6 +101,11 @@ export default function MemberProfilePage() {
             <div style={profileStyles.heroText}>
               <h1 style={profileStyles.heroTitle}>{displayName}</h1>
               <p style={profileStyles.heroSub}>@{member.username}</p>
+              <ActivityStatusText
+                presence={presence}
+                lastActiveAt={member.lastActiveAt}
+                className="profile-header-activity hero-activity-on-dark"
+              />
               {member.position && <p style={profileStyles.heroRole}>{member.position}</p>}
               <span style={{
                 ...profileStyles.badge,

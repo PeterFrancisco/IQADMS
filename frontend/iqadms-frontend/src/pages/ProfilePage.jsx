@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout'
 import AvatarWithPresence from '../components/AvatarWithPresence'
 import { SocialLinksEditorList, SocialLinksRow } from '../components/SocialLinks'
 import { normalizePresence } from '../config/presence'
+import ActivityStatusText from '../components/ActivityStatusText'
 import { notifyProfileUpdated } from '../utils/profileEvents'
 import { upshd } from '../theme/upshd'
 import {
@@ -24,6 +25,7 @@ export default function ProfilePage() {
   const [profilePictureUrl, setProfilePictureUrl] = useState('')
   const [avatarKey, setAvatarKey] = useState(0)
   const [presence, setPresenceLocal] = useState('offline')
+  const [lastActiveAt, setLastActiveAt] = useState(null)
   const fileInputRef = useRef(null)
 
   const [profile, setProfile] = useState({
@@ -53,6 +55,7 @@ export default function ProfilePage() {
     loadProfile()
     const onPresence = e => {
       if (e.detail?.presence) setPresenceLocal(normalizePresence(e.detail.presence))
+      if (e.detail?.lastActiveAt) setLastActiveAt(e.detail.lastActiveAt)
     }
     window.addEventListener('iqadms-presence-changed', onPresence)
     return () => window.removeEventListener('iqadms-presence-changed', onPresence)
@@ -80,6 +83,7 @@ export default function ProfilePage() {
       })
       setProfilePictureUrl(res.data.profilePictureUrl || '')
       setPresenceLocal(normalizePresence(res.data.presence))
+      setLastActiveAt(res.data.lastActiveAt || null)
       setAvatarKey(Date.now())
       setIsAdmin(!!res.data.isAdmin)
       localStorage.setItem('isAdmin', res.data.isAdmin ? 'true' : 'false')
@@ -239,7 +243,8 @@ export default function ProfilePage() {
                   displayName: profile.displayName,
                   username: profile.username,
                   profilePictureUrl,
-                  presence
+                  presence,
+                  lastActiveAt
                 }}
                 size={112}
                 cacheKey={avatarKey}
@@ -264,6 +269,11 @@ export default function ProfilePage() {
             <div style={profileStyles.heroText}>
               <h1 style={profileStyles.heroTitle}>{profile.displayName || profile.username}</h1>
               <p style={profileStyles.heroSub}>@{profile.username}</p>
+              <ActivityStatusText
+                presence={presence}
+                lastActiveAt={lastActiveAt}
+                className="profile-header-activity hero-activity-on-dark"
+              />
               {profile.position && <p style={profileStyles.heroRole}>{profile.position}</p>}
               <span style={{
                 ...profileStyles.badge,

@@ -1,0 +1,50 @@
+.activity-status-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.activity-status-text.is-active {
+  color: #31a24c;
+}
+
+.activity-status-text.is-inactive {
+  color: #94a3b8;
+}
+
+.topbar-profile-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.topbar-activity-label {
+  max-width: 7.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .topbar-activity-label {
+    display: none;
+  }
+}
+
+.team-member-activity {
+  font-size: 0.72rem;
+  margin-top: 0.15rem;
+}
+
+.profile-header-activity {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.hero-activity-on-dark.activity-status-text.is-active {
+  color: #86efac;
+}
+
+.hero-activity-on-dark.activity-status-text.is-inactive {
+  color: rgba(255, 255, 255, 0.75);
+}

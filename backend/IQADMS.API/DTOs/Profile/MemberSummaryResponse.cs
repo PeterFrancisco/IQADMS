@@ -9,5 +9,6 @@ public class MemberSummaryResponse
     public string Position { get; set; } = string.Empty;
     public string? Bio { get; set; }
     public string Presence { get; set; } = "offline";
+    public DateTime? LastActiveAt { get; set; }
     public string? ProfilePictureUrl { get; set; }
 }

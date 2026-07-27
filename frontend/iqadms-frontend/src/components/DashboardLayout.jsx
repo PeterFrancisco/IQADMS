@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import AppIcon from './AppIcon'
 import AvatarWithPresence from './AvatarWithPresence'
+import ActivityStatusText from './ActivityStatusText'
 import { setPresence, startPresenceHeartbeat } from '../utils/presenceApi'
 import { Menu } from 'lucide-react'
 import { normalizePresence } from '../config/presence'
@@ -144,6 +145,12 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
   }, [open])
 
   useEffect(() => {
+    if (!open) return undefined
+    const id = window.setInterval(() => loadMembers(), 20000)
+    return () => clearInterval(id)
+  }, [open])
+
+  useEffect(() => {
     const refresh = () => {
       if (open) loadMembers()
     }
@@ -211,10 +218,19 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
                 className={`team-member ${isSelected ? 'selected' : ''}`}
                 onClick={() => openProfile(member.username)}
               >
-                <AvatarWithPresence member={{ ...member, presence }} size={32} className="team-member-avatar" />
+                <AvatarWithPresence
+                  member={{ ...member, presence, lastActiveAt: member.lastActiveAt }}
+                  size={32}
+                  className="team-member-avatar"
+                />
                 <div className="team-member-text">
                   <div className="team-member-name">{member.displayName || member.username}</div>
                   <div className="team-member-user">@{member.username}</div>
+                  <ActivityStatusText
+                    presence={presence}
+                    lastActiveAt={member.lastActiveAt}
+                    className="team-member-activity"
+                  />
                 </div>
               </div>
             )
@@ -231,6 +247,7 @@ function ProfileMenu() {
   const [open, setOpen] = React.useState(false)
   const [me, setMe] = React.useState(null)
   const [avatarKey, setAvatarKey] = React.useState(0)
+  const [, setActivityTick] = React.useState(0)
   const ref = useRef(null)
   const username = localStorage.getItem('username') || 'admin'
   const isAdmin = localStorage.getItem('isAdmin') === 'true'
@@ -251,9 +268,29 @@ function ProfileMenu() {
   React.useEffect(() => {
     loadMe()
     const onUpdate = () => loadMe()
+    const onPresence = e => {
+      setMe(prev =>
+        prev
+          ? {
+              ...prev,
+              presence: e.detail?.presence ?? prev.presence,
+              lastActiveAt: e.detail?.lastActiveAt ?? prev.lastActiveAt
+            }
+          : prev
+      )
+    }
     window.addEventListener('iqadms-profile-updated', onUpdate)
-    return () => window.removeEventListener('iqadms-profile-updated', onUpdate)
+    window.addEventListener('iqadms-presence-changed', onPresence)
+    return () => {
+      window.removeEventListener('iqadms-profile-updated', onUpdate)
+      window.removeEventListener('iqadms-presence-changed', onPresence)
+    }
   }, [loadMe])
+
+  React.useEffect(() => {
+    const id = window.setInterval(() => setActivityTick(t => t + 1), 30000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -291,29 +328,39 @@ function ProfileMenu() {
 
   return (
     <div className="topbar" ref={ref}>
-      <button
-        type="button"
-        className={`avatar-btn ${open ? 'open' : ''}`}
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        aria-haspopup="true"
-        title={displayName}
-      >
+      <div className="topbar-profile-cluster">
+        <button
+          type="button"
+          className={`avatar-btn ${open ? 'open' : ''}`}
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          aria-haspopup="true"
+          title={displayName}
+        >
+          {me ? (
+            <AvatarWithPresence
+              user={{
+                ...me,
+                displayName: me.displayName || username,
+                presence: normalizePresence(me.presence),
+                lastActiveAt: me.lastActiveAt
+              }}
+              size={40}
+              cacheKey={avatarKey}
+              className="avatar-btn-inner"
+            />
+          ) : (
+            initials
+          )}
+        </button>
         {me ? (
-          <AvatarWithPresence
-            user={{
-              ...me,
-              displayName: me.displayName || username,
-              presence: normalizePresence(me.presence)
-            }}
-            size={40}
-            cacheKey={avatarKey}
-            className="avatar-btn-img"
+          <ActivityStatusText
+            presence={normalizePresence(me.presence)}
+            lastActiveAt={me.lastActiveAt}
+            className="topbar-activity-label"
           />
-        ) : (
-          initials
-        )}
-      </button>
+        ) : null}
+      </div>
 
       <div className={`profile-menu ${open ? 'open' : ''}`}>
         <div className="profile-header">
@@ -322,6 +369,13 @@ function ProfileMenu() {
             <small className="profile-header-email" title={email}>
               {email}
             </small>
+          ) : null}
+          {me ? (
+            <ActivityStatusText
+              presence={normalizePresence(me.presence)}
+              lastActiveAt={me.lastActiveAt}
+              className="profile-header-activity"
+            />
           ) : null}
           <small className="profile-header-role">{isAdmin ? 'Administrator' : 'PQAD Staff'}</small>
         </div>

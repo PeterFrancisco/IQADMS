@@ -1,3 +1,4 @@
+import { socialHandleFromUrl } from '../utils/socialHandle'
 import '../theme/social-links.css'
 
 const PLATFORMS = [
@@ -68,19 +69,25 @@ export function SocialLinksRow({ urls, size = 'md' }) {
 
   return (
     <div className={`social-links-row social-links-${size}`}>
-      {items.map(p => (
-        <a
-          key={p.id}
-          href={map[p.id].trim()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`social-link-btn social-${p.id}`}
-          title={p.label}
-          aria-label={p.label}
-        >
-          <BrandIcon id={p.id} size={size === 'sm' ? 16 : 20} />
-        </a>
-      ))}
+      {items.map(p => {
+        const href = map[p.id].trim()
+        const handle = socialHandleFromUrl(p.id, href)
+        return (
+          <a
+            key={p.id}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`social-link-chip social-${p.id}`}
+            title={handle ? `${p.label}: ${handle}` : p.label}
+          >
+            <span className="social-link-chip-icon" aria-hidden>
+              <BrandIcon id={p.id} size={size === 'sm' ? 16 : 18} />
+            </span>
+            {handle ? <span className="social-link-chip-handle">{handle}</span> : null}
+          </a>
+        )
+      })}
     </div>
   )
 }

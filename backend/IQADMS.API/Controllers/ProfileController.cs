@@ -48,7 +48,7 @@ public class ProfileController : ControllerBase
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        return Ok(new { presence = user.PresenceStatus });
+        return Ok(new { presence = user.PresenceStatus, lastActiveAt = user.LastActiveAt });
     }
 
     [HttpPost("me/heartbeat")]
@@ -59,11 +59,12 @@ public class ProfileController : ControllerBase
         if (user == null)
             return NotFound();
 
+        user.PresenceStatus = "online";
         user.LastActiveAt = DateTime.UtcNow;
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        return Ok(new { presence = NormalizePresence(user.PresenceStatus) });
+        return Ok(new { presence = user.PresenceStatus, lastActiveAt = user.LastActiveAt });
     }
 
     [HttpPut("me")]
@@ -161,6 +162,7 @@ public class ProfileController : ControllerBase
                 Position = u.Position,
                 Bio = u.Bio,
                 Presence = u.PresenceStatus,
+                LastActiveAt = u.LastActiveAt,
                 ProfilePictureUrl = u.ProfilePictureUrl
             })
             .ToListAsync();
@@ -200,6 +202,7 @@ public class ProfileController : ControllerBase
         TwitterUrl = user.TwitterUrl,
         WebsiteUrl = user.WebsiteUrl,
         Presence = NormalizePresence(user.PresenceStatus),
+        LastActiveAt = user.LastActiveAt,
         IsAdmin = user.IsAdmin
     };
 

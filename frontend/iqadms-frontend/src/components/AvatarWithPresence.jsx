@@ -1,5 +1,5 @@
 import UserAvatar from './UserAvatar'
-import { presenceIndicatorColor } from '../config/presence'
+import { getActivityStatus } from '../utils/activityStatus'
 import '../theme/user-avatar.css'
 
 /** Facebook-style active dot on the profile photo corner */
@@ -13,8 +13,10 @@ export default function AvatarWithPresence({
   showPresence = true
 }) {
   const data = member || user || {}
-  const presence = data.presence
-  const dotColor = presenceIndicatorColor(presence)
+  const { dotColor } = getActivityStatus({
+    presence: data.presence,
+    lastActiveAt: data.lastActiveAt
+  })
   const dotSize = Math.max(10, Math.round(size * 0.26))
 
   return (
