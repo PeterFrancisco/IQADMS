@@ -17,9 +17,9 @@ import TeamPage from './pages/TeamPage'
 import MemberProfilePage from './pages/MemberProfilePage'
 import DocumentsPage from './pages/DocumentsPage'
 import AdminManageUsersPage from './pages/AdminManageUsersPage'
+import ProjectsPage from './pages/ProjectsPage'
 import AdminRoute from './components/AdminRoute'
 import {
-  ProjectsPage,
   UpcomingDeadlinesPage,
   RecentActivitiesPage,
   NotificationsPage,

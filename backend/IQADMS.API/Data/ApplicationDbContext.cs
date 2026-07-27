@@ -26,6 +26,13 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<WorkspaceTask> WorkspaceTasks => Set<WorkspaceTask>();
 
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
+    public DbSet<ProjectDepartment> ProjectDepartments => Set<ProjectDepartment>();
+    public DbSet<TaskComment> TaskComments => Set<TaskComment>();
+    public DbSet<TaskActivityLog> TaskActivityLogs => Set<TaskActivityLog>();
+    public DbSet<TaskAttachment> TaskAttachments => Set<TaskAttachment>();
+
     public DbSet<BoardColumn> BoardColumns => Set<BoardColumn>();
 
     public DbSet<TaskColumnValue> TaskColumnValues => Set<TaskColumnValue>();
@@ -127,6 +134,126 @@ public class ApplicationDbContext : DbContext
             .WithMany()
             .HasForeignKey(t => t.CreatedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .Property(t => t.Priority)
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .HasOne(t => t.Project)
+            .WithMany(p => p.Tasks)
+            .HasForeignKey(t => t.ProjectId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .HasOne(t => t.RelatedDepartment)
+            .WithMany()
+            .HasForeignKey(t => t.RelatedDepartmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Project>()
+            .Property(p => p.Title)
+            .HasMaxLength(300);
+
+        modelBuilder.Entity<Project>()
+            .Property(p => p.Status)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<Project>()
+            .Property(p => p.Priority)
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<Project>()
+            .HasOne(p => p.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(p => p.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ProjectMember>()
+            .HasKey(pm => new { pm.ProjectId, pm.UserId });
+
+        modelBuilder.Entity<ProjectMember>()
+            .HasOne(pm => pm.Project)
+            .WithMany(p => p.Members)
+            .HasForeignKey(pm => pm.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProjectMember>()
+            .HasOne(pm => pm.User)
+            .WithMany()
+            .HasForeignKey(pm => pm.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProjectDepartment>()
+            .HasKey(pd => new { pd.ProjectId, pd.DepartmentId });
+
+        modelBuilder.Entity<ProjectDepartment>()
+            .HasOne(pd => pd.Project)
+            .WithMany(p => p.Departments)
+            .HasForeignKey(pd => pd.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProjectDepartment>()
+            .HasOne(pd => pd.Department)
+            .WithMany()
+            .HasForeignKey(pd => pd.DepartmentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskComment>()
+            .Property(c => c.Body)
+            .HasMaxLength(4000);
+
+        modelBuilder.Entity<TaskComment>()
+            .HasOne(c => c.Task)
+            .WithMany(t => t.Comments)
+            .HasForeignKey(c => c.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskComment>()
+            .HasOne(c => c.AuthorUser)
+            .WithMany()
+            .HasForeignKey(c => c.AuthorUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TaskActivityLog>()
+            .Property(a => a.Action)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<TaskActivityLog>()
+            .Property(a => a.Detail)
+            .HasMaxLength(2000);
+
+        modelBuilder.Entity<TaskActivityLog>()
+            .HasOne(a => a.Task)
+            .WithMany(t => t.ActivityLogs)
+            .HasForeignKey(a => a.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskAttachment>()
+            .Property(a => a.FileName)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<TaskAttachment>()
+            .Property(a => a.StoredFileName)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<TaskAttachment>()
+            .HasOne(a => a.Task)
+            .WithMany(t => t.Attachments)
+            .HasForeignKey(a => a.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskAttachment>()
+            .HasOne(a => a.UploadedByUser)
+            .WithMany()
+            .HasForeignKey(a => a.UploadedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TaskActivityLog>()
+            .HasOne(a => a.ActorUser)
+            .WithMany()
+            .HasForeignKey(a => a.ActorUserId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<BoardColumn>()
             .Property(c => c.Name)

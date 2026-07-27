@@ -228,6 +228,85 @@ namespace IQADMS.API.Migrations
                     b.ToTable("Departments");
                 });
 
+            modelBuilder.Entity("IQADMS.API.Models.Project", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateOnly?>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.ProjectDepartment", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ProjectId", "DepartmentId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.ToTable("ProjectDepartments");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.ProjectMember", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ProjectId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ProjectMembers");
+                });
+
             modelBuilder.Entity("IQADMS.API.Models.RequiredDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -338,6 +417,85 @@ namespace IQADMS.API.Migrations
                     b.ToTable("Submissions");
                 });
 
+            modelBuilder.Entity("IQADMS.API.Models.TaskActivityLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("TaskActivityLogs");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.TaskAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.ToTable("TaskAttachments");
+                });
+
             modelBuilder.Entity("IQADMS.API.Models.TaskColumnValue", b =>
                 {
                     b.Property<Guid>("Id")
@@ -370,6 +528,41 @@ namespace IQADMS.API.Migrations
                         .IsUnique();
 
                     b.ToTable("TaskColumnValues");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.TaskComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorUserId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("TaskComments");
                 });
 
             modelBuilder.Entity("IQADMS.API.Models.User", b =>
@@ -483,8 +676,22 @@ namespace IQADMS.API.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RelatedDepartmentId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -508,6 +715,10 @@ namespace IQADMS.API.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("RelatedDepartmentId");
+
                     b.ToTable("WorkspaceTasks");
                 });
 
@@ -520,6 +731,55 @@ namespace IQADMS.API.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.Project", b =>
+                {
+                    b.HasOne("IQADMS.API.Models.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.ProjectDepartment", b =>
+                {
+                    b.HasOne("IQADMS.API.Models.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IQADMS.API.Models.Project", "Project")
+                        .WithMany("Departments")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.ProjectMember", b =>
+                {
+                    b.HasOne("IQADMS.API.Models.Project", "Project")
+                        .WithMany("Members")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IQADMS.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("IQADMS.API.Models.RequiredDocument", b =>
@@ -568,6 +828,43 @@ namespace IQADMS.API.Migrations
                     b.Navigation("UploadedByUser");
                 });
 
+            modelBuilder.Entity("IQADMS.API.Models.TaskActivityLog", b =>
+                {
+                    b.HasOne("IQADMS.API.Models.User", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("IQADMS.API.Models.WorkspaceTask", "Task")
+                        .WithMany("ActivityLogs")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ActorUser");
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.TaskAttachment", b =>
+                {
+                    b.HasOne("IQADMS.API.Models.WorkspaceTask", "Task")
+                        .WithMany("Attachments")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IQADMS.API.Models.User", "UploadedByUser")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+
+                    b.Navigation("UploadedByUser");
+                });
+
             modelBuilder.Entity("IQADMS.API.Models.TaskColumnValue", b =>
                 {
                     b.HasOne("IQADMS.API.Models.BoardColumn", "Column")
@@ -587,6 +884,25 @@ namespace IQADMS.API.Migrations
                     b.Navigation("Task");
                 });
 
+            modelBuilder.Entity("IQADMS.API.Models.TaskComment", b =>
+                {
+                    b.HasOne("IQADMS.API.Models.User", "AuthorUser")
+                        .WithMany()
+                        .HasForeignKey("AuthorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("IQADMS.API.Models.WorkspaceTask", "Task")
+                        .WithMany("Comments")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AuthorUser");
+
+                    b.Navigation("Task");
+                });
+
             modelBuilder.Entity("IQADMS.API.Models.WorkspaceTask", b =>
                 {
                     b.HasOne("IQADMS.API.Models.User", "AssignedToUser")
@@ -600,9 +916,41 @@ namespace IQADMS.API.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("IQADMS.API.Models.Project", "Project")
+                        .WithMany("Tasks")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("IQADMS.API.Models.Department", "RelatedDepartment")
+                        .WithMany()
+                        .HasForeignKey("RelatedDepartmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("AssignedToUser");
 
                     b.Navigation("CreatedByUser");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("RelatedDepartment");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.Project", b =>
+                {
+                    b.Navigation("Departments");
+
+                    b.Navigation("Members");
+
+                    b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.WorkspaceTask", b =>
+                {
+                    b.Navigation("ActivityLogs");
+
+                    b.Navigation("Attachments");
+
+                    b.Navigation("Comments");
                 });
 #pragma warning restore 612, 618
         }

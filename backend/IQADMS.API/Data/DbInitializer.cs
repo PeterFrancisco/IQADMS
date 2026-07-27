@@ -85,11 +85,50 @@ public static class DbInitializer
                 {
                     AccreditationActivityId = activity.Id,
                     Title = "Accomplishment Report",
-                Category = "Report"
+                    Category = "Report"
                 }
             );
 
             context.SaveChanges();
+        }
+
+        // Seed sample project (PQAD initiatives)
+        if (!context.Projects.Any())
+        {
+            var creator = context.Users.FirstOrDefault(u => u.IsActive);
+            if (creator != null)
+            {
+                var project = new Project
+                {
+                    Title = "PACUCOA 2026",
+                    Description = "University-wide PACUCOA accreditation preparation and document tracking.",
+                    StartDate = new DateOnly(2026, 1, 1),
+                    DueDate = new DateOnly(2026, 9, 30),
+                    Status = "Active",
+                    Priority = "High",
+                    CreatedByUserId = creator.Id
+                };
+                context.Projects.Add(project);
+                context.SaveChanges();
+
+                context.ProjectMembers.Add(new ProjectMember
+                {
+                    ProjectId = project.Id,
+                    UserId = creator.Id
+                });
+
+                var regDept = context.Departments.FirstOrDefault(d => d.Code == "REG");
+                if (regDept != null)
+                {
+                    context.ProjectDepartments.Add(new ProjectDepartment
+                    {
+                        ProjectId = project.Id,
+                        DepartmentId = regDept.Id
+                    });
+                }
+
+                context.SaveChanges();
+            }
         }
     }
 }

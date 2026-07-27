@@ -1,20 +1,5 @@
 import PlaceholderPage from '../components/PlaceholderPage'
 
-export function ProjectsPage() {
-  return (
-    <PlaceholderPage
-      title="Projects"
-      subtitle="Group tasks under initiatives such as PACUCOA 2026. Each project has title, dates, status, priority, PQAD members, and related departments."
-      planned={[
-        'Project list and detail views',
-        'Link tasks to a project',
-        'PACUCOA 2026 sample project',
-        'Staff and department metadata (not department assignees)'
-      ]}
-    />
-  )
-}
-
 export function UpcomingDeadlinesPage() {
   return (
     <PlaceholderPage

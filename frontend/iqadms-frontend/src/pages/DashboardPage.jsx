@@ -1,16 +1,37 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
 
 const API_ORIGIN = api.defaults.baseURL.replace(/\/api$/, '')
 
-const STATUS_OPTIONS = ['Planning', 'In Progress', 'Review', 'Done']
+const STATUS_OPTIONS = ['To Do', 'In Progress', 'Waiting', 'Completed', 'Cancelled']
+const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical']
 const STATUS_COLORS = {
+  'To Do': '#7a0019',
   Planning: '#7a0019',
   'In Progress': '#f59e0b',
+  Waiting: '#9333ea',
   Review: '#9333ea',
-  Done: '#16a34a'
+  Completed: '#16a34a',
+  Done: '#16a34a',
+  Cancelled: '#64748b'
+}
+
+function statusColor(status) {
+  return STATUS_COLORS[status] || '#64748b'
+}
+
+function statusOptionsFor(task) {
+  if (task?.status && !STATUS_OPTIONS.includes(task.status)) {
+    return [task.status, ...STATUS_OPTIONS]
+  }
+  return STATUS_OPTIONS
+}
+
+function isCompletedStatus(status) {
+  return status === 'Completed' || status === 'Done'
 }
 
 function getInitials(name) {
@@ -23,18 +44,33 @@ function getInitials(name) {
 }
 
 export default function DashboardPage() {
+  const [searchParams] = useSearchParams()
+  const filterProjectId = searchParams.get('project') || ''
+
   const [tasks, setTasks] = useState([])
+  const [projects, setProjects] = useState([])
+  const [departments, setDepartments] = useState([])
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [createForm, setCreateForm] = useState({
     title: '',
+    description: '',
     assignedToUserId: '',
+    projectId: '',
+    relatedDepartmentId: '',
+    dueDate: '',
+    priority: 'Medium',
+    status: 'To Do',
     uploadGoogleDriveLink: '',
     attachment: null
   })
   const [selectedTask, setSelectedTask] = useState(null)
+  const [taskComments, setTaskComments] = useState([])
+  const [taskActivity, setTaskActivity] = useState([])
+  const [newComment, setNewComment] = useState('')
+  const [postingComment, setPostingComment] = useState(false)
   const [deliverableLink, setDeliverableLink] = useState('')
   const [submittingDeliverable, setSubmittingDeliverable] = useState(false)
   const [customColumns, setCustomColumns] = useState([])
@@ -43,23 +79,29 @@ export default function DashboardPage() {
   const [newColumnForm, setNewColumnForm] = useState({ name: '', columnType: 'text', optionsText: '' })
 
   const currentUserId = localStorage.getItem('userId')
-  const totalCols = 4 + customColumns.length
+  const fixedCols = 8
+  const totalCols = fixedCols + customColumns.length
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [filterProjectId])
 
   async function loadData() {
     try {
       setLoading(true)
-      const [tasksRes, membersRes, columnsRes, valuesRes] = await Promise.all([
-        api.get('/Tasks'),
+      const taskUrl = filterProjectId ? `/Tasks?projectId=${filterProjectId}` : '/Tasks'
+      const [tasksRes, membersRes, columnsRes, valuesRes, projectsRes, deptRes] = await Promise.all([
+        api.get(taskUrl),
         api.get('/Profile/members'),
         api.get('/BoardColumns'),
-        api.get('/BoardColumns/cell-values')
+        api.get('/BoardColumns/cell-values'),
+        api.get('/Projects'),
+        api.get('/Departments')
       ])
       setTasks(tasksRes.data)
       setMembers(membersRes.data)
+      setProjects(projectsRes.data)
+      setDepartments(deptRes.data)
       setCustomColumns(columnsRes.data)
 
       const map = {}
@@ -82,8 +124,14 @@ export default function DashboardPage() {
 
       const res = await api.post('/Tasks', {
         title: createForm.title.trim(),
+        description: createForm.description.trim() || null,
         assignedToUserId: createForm.assignedToUserId || null,
-          uploadGoogleDriveLink: createForm.uploadGoogleDriveLink || null
+        projectId: createForm.projectId || null,
+        relatedDepartmentId: createForm.relatedDepartmentId || null,
+        dueDate: createForm.dueDate || null,
+        priority: createForm.priority,
+        status: createForm.status,
+        uploadGoogleDriveLink: createForm.uploadGoogleDriveLink || null
       })
 
       if (createForm.attachment) {
@@ -96,7 +144,13 @@ export default function DashboardPage() {
 
       setCreateForm({
         title: '',
+        description: '',
         assignedToUserId: '',
+        projectId: filterProjectId || '',
+        relatedDepartmentId: '',
+        dueDate: '',
+        priority: 'Medium',
+        status: 'To Do',
         uploadGoogleDriveLink: '',
         attachment: null
       })
@@ -176,9 +230,22 @@ export default function DashboardPage() {
     }
   }
 
-  const openTaskDetail = (task) => {
+  const openTaskDetail = async (task) => {
     setSelectedTask(task)
     setDeliverableLink(task.deliverableGoogleDriveLink || '')
+    setNewComment('')
+    setTaskComments([])
+    setTaskActivity([])
+    try {
+      const [cRes, aRes] = await Promise.all([
+        api.get(`/Tasks/${task.id}/comments`),
+        api.get(`/Tasks/${task.id}/activity`)
+      ])
+      setTaskComments(cRes.data)
+      setTaskActivity(aRes.data)
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const closeTaskDetail = () => {
@@ -217,19 +284,65 @@ const assignMember = async (id, userId) => {
     }
   }
 
+  const patchTask = async (id, body) => {
+    try {
+      const res = await api.put(`/Tasks/${id}`, body)
+      setTasks(prev => prev.map(t => (t.id === id ? res.data : t)))
+      if (selectedTask?.id === id) setSelectedTask(res.data)
+    } catch (err) {
+      console.error(err)
+      alert(err.response?.data?.message || 'Failed to update task.')
+    }
+  }
+
+  const updateProjectLink = (id, projectId) =>
+    patchTask(id, { setProject: true, projectId: projectId || null })
+
+  const updateRelatedDept = (id, relatedDepartmentId) =>
+    patchTask(id, { setRelatedDepartment: true, relatedDepartmentId: relatedDepartmentId || null })
+
+  const updateDueDate = (id, dueDate) =>
+    patchTask(id, { setDueDate: true, dueDate: dueDate || null })
+
+  const updatePriority = (id, priority) => patchTask(id, { priority })
+
+  const postComment = async () => {
+    if (!selectedTask || !newComment.trim() || postingComment) return
+    try {
+      setPostingComment(true)
+      const res = await api.post(`/Tasks/${selectedTask.id}/comments`, { body: newComment.trim() })
+      setTaskComments(prev => [...prev, res.data])
+      setNewComment('')
+      loadData()
+    } catch (err) {
+      console.error(err)
+      alert(err.response?.data?.message || 'Failed to post comment.')
+    } finally {
+      setPostingComment(false)
+    }
+  }
+
+  const filterProject = projects.find(p => p.id === filterProjectId)
+
   return (
     <DashboardLayout>
       <div>
         <h1 style={{ marginBottom: '.25rem', color: '#7a0019' }}>My Tasks</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
           Your workspace — manage tasks, assignments, and progress
+          {filterProject && (
+            <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
+              Filter: {filterProject.title}
+            </span>
+          )}
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
           <MiniStat label="Total Tasks" value={tasks.length} color="#9e1b32" />
+          <MiniStat label="To Do" value={tasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length} color="#7a0019" />
           <MiniStat label="In Progress" value={tasks.filter(t => t.status === 'In Progress').length} color="#f59e0b" />
-          <MiniStat label="Review" value={tasks.filter(t => t.status === 'Review').length} color="#9333ea" />
-          <MiniStat label="Done" value={tasks.filter(t => t.status === 'Done').length} color="#16a34a" />
+          <MiniStat label="Waiting" value={tasks.filter(t => t.status === 'Waiting' || t.status === 'Review').length} color="#9333ea" />
+          <MiniStat label="Completed" value={tasks.filter(t => isCompletedStatus(t.status)).length} color="#16a34a" />
         </div>
 
         {loading ? (
@@ -241,6 +354,10 @@ const assignMember = async (id, userId) => {
                 <tr style={{ background: upshd.tableHeadBg }}>
                   <th style={{ ...thStyle, width: 60 }}></th>
                   <th style={thStyle}>Task</th>
+                  <th style={{ ...thStyle, minWidth: 140 }}>Project</th>
+                  <th style={{ ...thStyle, minWidth: 140 }}>Related dept</th>
+                  <th style={{ ...thStyle, width: 130 }}>Due</th>
+                  <th style={{ ...thStyle, width: 110 }}>Priority</th>
                   <th style={{ ...thStyle, width: 220 }}>Assigned To</th>
                       <th style={{ ...thStyle, width: 180 }}>Status</th>
                       {customColumns.map(col => (
@@ -321,6 +438,54 @@ const assignMember = async (id, userId) => {
                         title="View task details"
                       >     
                         {task.title}
+                        {task.commentCount > 0 && (
+                          <span style={{ marginLeft: 6, fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
+                            ({task.commentCount} comments)
+                          </span>
+                        )}
+                      </td>
+                      <td style={tdStyle}>
+                        <select
+                          value={task.projectId || ''}
+                          onChange={e => updateProjectLink(task.id, e.target.value || null)}
+                          style={selectStyle}
+                        >
+                          <option value="">—</option>
+                          {projects.map(p => (
+                            <option key={p.id} value={p.id}>{p.title}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={tdStyle}>
+                        <select
+                          value={task.relatedDepartmentId || ''}
+                          onChange={e => updateRelatedDept(task.id, e.target.value || null)}
+                          style={selectStyle}
+                        >
+                          <option value="">—</option>
+                          {departments.map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={tdStyle}>
+                        <input
+                          type="date"
+                          style={selectStyle}
+                          value={task.dueDate || ''}
+                          onChange={e => updateDueDate(task.id, e.target.value || null)}
+                        />
+                      </td>
+                      <td style={tdStyle}>
+                        <select
+                          value={task.priority || 'Medium'}
+                          onChange={e => updatePriority(task.id, e.target.value)}
+                          style={selectStyle}
+                        >
+                          {PRIORITY_OPTIONS.map(p => (
+                            <option key={p} value={p}>{p}</option>
+                          ))}
+                        </select>
                       </td>
                       <td style={tdStyle}>
                         <select
@@ -351,12 +516,12 @@ const assignMember = async (id, userId) => {
                           style={{
                             ...selectStyle,
                             color: '#fff',
-                            background: STATUS_COLORS[task.status],
+                            background: statusColor(task.status),
                             fontWeight: 600,
                             border: 'none'
                           }}
                         >
-                          {STATUS_OPTIONS.map(s => (
+                          {statusOptionsFor(task).map(s => (
                             <option key={s} value={s}>{s}</option>
                           ))}
                                   </select>
@@ -392,12 +557,18 @@ const assignMember = async (id, userId) => {
                   borderRadius: 16,
                   padding: '1.5rem',
                   width: '100%',
-                  maxWidth: 520,
+                  maxWidth: 560,
+                  maxHeight: '90vh',
+                  overflow: 'auto',
                   boxShadow: '0 25px 50px rgba(0,0,0,.25)'
                 }}>
                   <h2 style={{ margin: '0 0 .5rem', color: '#7a0019' }}>{selectedTask.title}</h2>
                   <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem' }}>
-                    Status: <strong style={{ color: STATUS_COLORS[selectedTask.status] }}>{selectedTask.status}</strong>
+                    Status: <strong style={{ color: statusColor(selectedTask.status) }}>{selectedTask.status}</strong>
+                    {selectedTask.priority && <> · Priority: {selectedTask.priority}</>}
+                    {selectedTask.dueDate && <> · Due {selectedTask.dueDate}</>}
+                    {selectedTask.projectTitle && <> · {selectedTask.projectTitle}</>}
+                    {selectedTask.relatedDepartmentName && <> · Dept: {selectedTask.relatedDepartmentName}</>}
                     {selectedTask.assignedToName && <> · Assigned to {selectedTask.assignedToName}</>}
                   </p>
 
@@ -442,7 +613,7 @@ const assignMember = async (id, userId) => {
                     </>
                   )}
 
-                  {selectedTask.deliverableGoogleDriveLink && selectedTask.status === 'Done' && (
+                  {selectedTask.deliverableGoogleDriveLink && isCompletedStatus(selectedTask.status) && (
                     <>
                       <label style={labelStyle}>Submitted work</label>
                       <p style={{ margin: '0 0 1rem' }}>
@@ -460,7 +631,7 @@ const assignMember = async (id, userId) => {
 
                   {(selectedTask.assignedToUserId === currentUserId ||
                       selectedTask.createdByUserId === currentUserId) &&
-                      selectedTask.status !== 'Done' && (
+                      !isCompletedStatus(selectedTask.status) && (
                       <>
                         <label style={labelStyle}>Your finished work (Google Drive link)</label>
                       <input
@@ -474,10 +645,52 @@ const assignMember = async (id, userId) => {
                         disabled={submittingDeliverable || !deliverableLink.trim()}
             style={primaryBtn}
           >
-            {submittingDeliverable ? 'Submitting...' : 'Submit & Mark Done'}
+            {submittingDeliverable ? 'Submitting...' : 'Submit & Mark Completed'}
           </button>
         </>
       )}
+
+                  <label style={{ ...labelStyle, marginTop: '1.25rem' }}>Comments</label>
+                  <div style={{ maxHeight: 160, overflow: 'auto', marginBottom: '0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.75rem' }}>
+                    {taskComments.length === 0 ? (
+                      <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>No comments yet.</p>
+                    ) : (
+                      taskComments.map(c => (
+                        <div key={c.id} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                          <strong style={{ color: '#7a0019' }}>{c.authorName}</strong>
+                          <span style={{ color: '#94a3b8', marginLeft: 8, fontSize: '0.8rem' }}>
+                            {new Date(c.createdAt).toLocaleString()}
+                          </span>
+                          <div style={{ color: '#334155', marginTop: 4, whiteSpace: 'pre-wrap' }}>{c.body}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <textarea
+                    style={{ ...inputStyle, width: '100%', minHeight: 72, marginBottom: '0.5rem', boxSizing: 'border-box' }}
+                    placeholder="Add a comment…"
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                  />
+                  <button type="button" onClick={postComment} disabled={postingComment || !newComment.trim()} style={{ ...primaryBtn, marginBottom: '1rem' }}>
+                    {postingComment ? 'Posting…' : 'Post comment'}
+                  </button>
+
+                  {taskActivity.length > 0 && (
+                    <>
+                      <label style={labelStyle}>Activity</label>
+                      <ul style={{ margin: '0 0 1rem', paddingLeft: '1.1rem', color: '#475569', fontSize: '0.85rem' }}>
+                        {taskActivity.slice(0, 8).map(a => (
+                          <li key={a.id} style={{ marginBottom: 4 }}>
+                            <strong>{a.action}</strong>
+                            {a.detail ? ` — ${a.detail}` : ''}
+                            {a.actorName && ` (${a.actorName})`}
+                            <span style={{ color: '#94a3b8' }}> · {new Date(a.createdAt).toLocaleString()}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
         <button onClick={closeTaskDetail} style={ghostBtn}>
@@ -581,6 +794,61 @@ const assignMember = async (id, userId) => {
                     value={createForm.title}
                     onChange={e => setCreateForm({ ...createForm, title: e.target.value })}
                   />
+
+                  <label style={labelStyle}>Description (optional)</label>
+                  <textarea
+                    style={{ ...inputStyle, width: '100%', minHeight: 64, marginBottom: '1rem', boxSizing: 'border-box' }}
+                    value={createForm.description}
+                    onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
+                  />
+
+                  <label style={labelStyle}>Project</label>
+                  <select
+                    style={{ ...selectStyle, marginBottom: '1rem' }}
+                    value={createForm.projectId}
+                    onChange={e => setCreateForm({ ...createForm, projectId: e.target.value })}
+                  >
+                    <option value="">None</option>
+                    {projects.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+
+                  <label style={labelStyle}>Related department (metadata)</label>
+                  <select
+                    style={{ ...selectStyle, marginBottom: '1rem' }}
+                    value={createForm.relatedDepartmentId}
+                    onChange={e => setCreateForm({ ...createForm, relatedDepartmentId: e.target.value })}
+                  >
+                    <option value="">None</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label style={labelStyle}>Due date</label>
+                      <input
+                        type="date"
+                        style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+                        value={createForm.dueDate}
+                        onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Priority</label>
+                      <select
+                        style={{ ...selectStyle, width: '100%' }}
+                        value={createForm.priority}
+                        onChange={e => setCreateForm({ ...createForm, priority: e.target.value })}
+                      >
+                        {PRIORITY_OPTIONS.map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
                   <label style={labelStyle}>Assign to</label>
                   <select
