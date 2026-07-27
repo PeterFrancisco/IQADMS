@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
+import AppIcon from '../components/AppIcon'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
 import { pageTitleStyle, tableHeadRowStyle, linkStyle } from '../theme/pageStyles'
@@ -236,7 +237,10 @@ export default function DocumentsPage() {
                       fontSize: '0.9rem'
                     }}
                   >
-                    📁 {f.folderPath}
+                    <span className="inline-icon-text">
+                      <AppIcon name="folder" size={16} />
+                      {f.folderPath}
+                    </span>
                     <span style={{ color: '#64748b', marginLeft: 6 }}>({f.fileCount})</span>
                   </button>
                 ))
@@ -246,8 +250,9 @@ export default function DocumentsPage() {
             <div style={{ flex: 1, minWidth: 280 }}>
               {activeFolder ? (
                 <>
-                  <h2 style={{ margin: '0 0 1rem', fontSize: '1.15rem' }}>
-                    📁 {activeFolder.folderPath}
+                  <h2 style={{ margin: '0 0 1rem', fontSize: '1.15rem' }} className="inline-icon-text">
+                    <AppIcon name="folder" size={20} />
+                    {activeFolder.folderPath}
                   </h2>
                   <DocumentTable rows={activeFolder.files.filter(matchesSearch)} fileLink={fileLink} />
                 </>
@@ -293,11 +298,15 @@ function DocumentTable({ rows, fileLink, showFolder }) {
                 <tr key={doc.id}>
                   <td style={{ ...tdStyle, fontWeight: 600 }}>
                     {href ? (
-                      <a href={href} target="_blank" rel="noreferrer" style={linkStyle}>
-                        📄 {doc.fileName}
+                      <a href={href} target="_blank" rel="noreferrer" style={linkStyle} className="inline-icon-text">
+                        <AppIcon name="file" size={16} />
+                        {doc.fileName}
                       </a>
                     ) : (
-                      <>📄 {doc.fileName}</>
+                      <span className="inline-icon-text">
+                        <AppIcon name="file" size={16} />
+                        {doc.fileName}
+                      </span>
                     )}
                   </td>
                   {showFolder && <td style={tdStyle}>{doc.autoFolderPath || '—'}</td>}

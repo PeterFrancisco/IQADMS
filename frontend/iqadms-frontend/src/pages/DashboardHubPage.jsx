@@ -1,72 +1,73 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
+import AppIcon from '../components/AppIcon'
 import api from '../services/api'
 
 const TILES = [
   {
     to: '/my-tasks',
-    icon: '✅',
+    icon: 'tasks',
     title: 'My Tasks',
     desc: 'PQAD assignments, status, and deliverables'
   },
   {
     to: '/announcements',
-    icon: '📢',
+    icon: 'announcements',
     title: 'Announcements',
     desc: 'Orientation, meetings, and PACUCOA visits'
   },
   {
     to: '/upcoming-deadlines',
-    icon: '⏰',
+    icon: 'deadlines',
     title: 'Upcoming Deadlines',
     desc: 'Due dates across projects and accreditation work'
   },
   {
     to: '/recent-activities',
-    icon: '📋',
+    icon: 'activities',
     title: 'Recent Activities',
     desc: 'Latest updates from tasks and projects'
   },
   {
     to: '/notifications',
-    icon: '🔔',
+    icon: 'notifications',
     title: 'Notifications',
     desc: 'Assignments, reminders, and account alerts'
   },
   {
     to: '/statistics',
-    icon: '📈',
+    icon: 'statistics',
     title: 'Statistics',
     desc: 'Completion rates, workload, and progress'
   },
   {
     to: '/calendar',
-    icon: '📅',
+    icon: 'calendar',
     title: 'Calendar',
     desc: 'Meetings, visits, and accreditation schedules'
   },
   {
     to: '/projects',
-    icon: '📁',
+    icon: 'projects',
     title: 'Projects',
     desc: 'PACUCOA 2026 and other PQAD initiatives'
   },
   {
     to: '/monitoring',
-    icon: '📊',
+    icon: 'monitoring',
     title: 'Monitoring',
     desc: 'Filter by project, department, task, and staff'
   },
   {
     to: '/documents',
-    icon: '📄',
+    icon: 'documents',
     title: 'Documents',
     desc: 'Uploaded files and submission tracking'
   },
   {
     to: '/reports',
-    icon: '📑',
+    icon: 'reports',
     title: 'Reports',
     desc: 'Export PDF and Excel summaries'
   }
@@ -130,7 +131,9 @@ export default function DashboardHubPage() {
         <div className="dashboard-grid">
           {TILES.map(tile => (
             <Link key={tile.to} to={tile.to} className="dashboard-tile">
-              <div className="dashboard-tile-icon">{tile.icon}</div>
+              <div className="dashboard-tile-icon">
+                <AppIcon name={tile.icon} size={26} strokeWidth={1.65} />
+              </div>
               <div className="dashboard-tile-title">{tile.title}</div>
               <div className="dashboard-tile-desc">{tile.desc}</div>
             </Link>

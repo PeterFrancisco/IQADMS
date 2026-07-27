@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import AppIcon from '../components/AppIcon'
 import { externalLinks } from '../config/externalLinks'
 import {
   aboutHistory,
@@ -126,8 +127,9 @@ export default function LandingPage() {
             <p className="landing-about-name">
               {molinoCampus.institutionName} — {molinoCampus.campusName}
             </p>
-            <p className="landing-about-location">
-              <span aria-hidden>📍</span> {molinoCampus.address}
+            <p className="landing-about-location inline-icon-text">
+              <AppIcon name="map-pin" size={18} />
+              {molinoCampus.address}
             </p>
             <ul className="landing-about-contact">
               <li>Tel. {molinoCampus.phone}</li>
@@ -209,7 +211,9 @@ export default function LandingPage() {
               const ready = Boolean(link.href?.trim())
               const body = (
                 <>
-                  <span className="landing-link-icon" aria-hidden>{link.icon}</span>
+                  <span className="landing-link-icon-wrap" aria-hidden>
+                    <AppIcon name={link.icon} size={22} />
+                  </span>
                   <h3>{link.title}</h3>
                   <p>{link.description}</p>
                   {ready ? (

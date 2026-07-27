@@ -1,0 +1,43 @@
+.app-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.nav-item-icon .app-icon {
+  opacity: 0.92;
+}
+
+.dashboard-tile-icon .app-icon {
+  color: var(--upshd-maroon, #7a0019);
+}
+
+.landing-link-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  background: var(--upshd-maroon-muted, #f3e8eb);
+  color: var(--upshd-maroon, #7a0019);
+  margin-bottom: 0.65rem;
+}
+
+.menu-item .app-icon {
+  color: #64748b;
+}
+
+.menu-item.danger .app-icon {
+  color: #dc2626;
+}
+
+.inline-icon-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  vertical-align: middle;
+}
+
+.inline-icon-text .app-icon {
+  color: var(--upshd-maroon-light, #9e1b32);
+}
