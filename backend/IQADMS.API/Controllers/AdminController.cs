@@ -25,6 +25,9 @@ public class AdminController : ControllerBase
     [HttpGet("account-requests")]
     public async Task<IActionResult> GetAccountRequests()
     {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
         var requests = await _context.AccountRequests
             .OrderByDescending(x => x.RequestedAt)
             .ToListAsync();
@@ -36,6 +39,9 @@ public class AdminController : ControllerBase
     [HttpPost("account-requests/{id}/approve")]
     public async Task<IActionResult> ApproveRequest(Guid id)
     {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
         var request = await _context.AccountRequests.FindAsync(id);
 
         if (request == null)
@@ -65,6 +71,9 @@ public class AdminController : ControllerBase
     [HttpPost("account-requests/{id}/reject")]
     public async Task<IActionResult> RejectRequest(Guid id)
     {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
         var request = await _context.AccountRequests.FindAsync(id);
 
         if (request == null)
@@ -82,6 +91,9 @@ public class AdminController : ControllerBase
     [HttpPost("allowed-users")]
     public async Task<IActionResult> CreateAllowedUser(CreateAllowedUserRequest request)
     {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
         if (string.IsNullOrWhiteSpace(request.Email))
             return BadRequest(new { message = "Email is required." });
 
@@ -112,6 +124,9 @@ public class AdminController : ControllerBase
     [HttpGet("allowed-users")]
     public async Task<IActionResult> GetAllowedUsers()
     {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
         var users = await _context.AllowedUsers
             .OrderBy(x => x.Email)
             .Select(x => new
@@ -213,6 +228,33 @@ public class AdminController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Allowed email removed." });
+    }
+
+    [HttpGet("feedback")]
+    public async Task<IActionResult> GetFeedback([FromQuery] int limit = 50)
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        limit = Math.Clamp(limit, 1, 200);
+
+        var items = await _context.UserFeedbacks
+            .Where(f => !f.IsDeleted)
+            .Include(f => f.User)
+            .OrderByDescending(f => f.CreatedAt)
+            .Take(limit)
+            .Select(f => new AdminFeedbackResponse
+            {
+                Id = f.Id,
+                Type = f.Type,
+                Message = f.Message,
+                Username = f.User.Username,
+                DisplayName = f.User.DisplayName,
+                CreatedAt = f.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(items);
     }
 
     // --- Helper methods (paste at bottom of class) ---

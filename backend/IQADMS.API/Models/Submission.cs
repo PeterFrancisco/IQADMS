@@ -29,5 +29,11 @@ public class Submission : BaseEntity
 
     public string Remarks { get; set; } = string.Empty;
 
+    /// <summary>Virtual folder path e.g. "Operational Plans 2026"</summary>
+    public string AutoFolderPath { get; set; } = string.Empty;
+
+    /// <summary>Relative path under Uploads/ e.g. documents/Operational Plans 2026/file.pdf</summary>
+    public string? StoredRelativePath { get; set; }
+
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
 }

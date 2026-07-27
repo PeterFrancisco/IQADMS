@@ -7,8 +7,25 @@ export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 1024
   )
+  const [unreadNotifications, setUnreadNotifications] = React.useState(0)
   const isAdmin = localStorage.getItem('isAdmin') === 'true'
   const closeMobile = () => closeSidebarMobile(setSidebarOpen)
+
+  useEffect(() => {
+    loadUnreadCount()
+    const onChange = () => loadUnreadCount()
+    window.addEventListener('iqadms-notifications-changed', onChange)
+    return () => window.removeEventListener('iqadms-notifications-changed', onChange)
+  }, [])
+
+  async function loadUnreadCount() {
+    try {
+      const res = await api.get('/Notifications/unread-count')
+      setUnreadNotifications(res.data.count ?? 0)
+    } catch {
+      setUnreadNotifications(0)
+    }
+  }
 
   return (
     <div className="layout">
@@ -28,13 +45,15 @@ export default function DashboardLayout({ children }) {
         <NavItem label="My Tasks" to="/my-tasks" icon="✅" onNavigate={closeMobile} />
         <NavItem label="Projects" to="/projects" icon="📁" onNavigate={closeMobile} />
         <NavItem label="Documents" to="/documents" icon="📄" onNavigate={closeMobile} />
+        <NavItem label="Requests" to="/requests" icon="📨" onNavigate={closeMobile} />
         <NavItem label="Monitoring" to="/monitoring" icon="📈" onNavigate={closeMobile} />
         <NavItem label="Calendar" to="/calendar" icon="📅" onNavigate={closeMobile} />
+        <NavItem label="Announcements" to="/announcements" icon="📢" onNavigate={closeMobile} />
         <NavItem label="Reports" to="/reports" icon="📑" onNavigate={closeMobile} />
 
         <div className="sidebar-divider" />
 
-        <NavItem label="Notifications" to="/notifications" icon="🔔" onNavigate={closeMobile} />
+        <NavItem label="Notifications" to="/notifications" icon="🔔" badge={unreadNotifications} onNavigate={closeMobile} />
         <TeamMembersDropdown label="PQAD Team" icon="👥" onNavigate={closeMobile} />
 
         <div className="sidebar-divider" />
@@ -77,7 +96,7 @@ function closeSidebarMobile(setSidebarOpen) {
   if (window.innerWidth < 1024) setSidebarOpen(false)
 }
 
-function NavItem({ label, to, icon, onNavigate, matchPrefix }) {
+function NavItem({ label, to, icon, onNavigate, matchPrefix, badge = 0 }) {
   const location = useLocation()
   const active = matchPrefix
     ? location.pathname.startsWith(matchPrefix)
@@ -88,6 +107,11 @@ function NavItem({ label, to, icon, onNavigate, matchPrefix }) {
       <div className={`nav-item ${active ? 'active' : ''}`}>
         <span className="nav-item-icon">{icon}</span>
         <span className="nav-item-label">{label}</span>
+        {badge > 0 && (
+          <span className="nav-badge" aria-label={`${badge} unread notifications`}>
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
       </div>
     </Link>
   )

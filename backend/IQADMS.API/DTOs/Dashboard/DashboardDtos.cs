@@ -53,3 +53,15 @@ public class DashboardStatisticsResponse
     public List<TaskStatusCountResponse> TasksByStatus { get; set; } = new();
     public List<ProjectTaskSummaryResponse> ByProject { get; set; } = new();
 }
+
+public class CalendarEventResponse
+{
+    public string ItemType { get; set; } = string.Empty;
+    public string EventKind { get; set; } = string.Empty;
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public DateOnly Date { get; set; }
+    public string? Status { get; set; }
+    public string? Category { get; set; }
+    public string? Location { get; set; }
+}

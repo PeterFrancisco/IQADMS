@@ -1,5 +1,6 @@
 using IQADMS.API.Data;
 using IQADMS.API.DTOs.Profile;
+using IQADMS.API.Services;
 using IQADMS.API.DTOs.Tasks;
 using IQADMS.API.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -16,15 +17,17 @@ public class TasksController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _env;
+    private readonly NotificationService _notifications;
 
-    public TasksController(ApplicationDbContext context, IWebHostEnvironment env)
+    public TasksController(ApplicationDbContext context, IWebHostEnvironment env, NotificationService notifications)
     {
         _context = context;
         _env = env;
+        _notifications = notifications;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetTasks([FromQuery] Guid? projectId)
+    public async Task<IActionResult> GetTasks([FromQuery] Guid? projectId, [FromQuery] Guid? relatedDepartmentId)
     {
         var query = _context.WorkspaceTasks
             .Where(t => !t.IsDeleted)
@@ -38,6 +41,9 @@ public class TasksController : ControllerBase
 
         if (projectId.HasValue)
             query = query.Where(t => t.ProjectId == projectId);
+
+        if (relatedDepartmentId.HasValue)
+            query = query.Where(t => t.RelatedDepartmentId == relatedDepartmentId);
 
         var tasks = await query
             .OrderByDescending(t => t.CreatedAt)
@@ -89,6 +95,19 @@ public class TasksController : ControllerBase
         await _context.SaveChangesAsync();
 
         await LogActivity(task.Id, userId, "created", $"Task \"{task.Title}\" created");
+
+        if (task.AssignedToUserId.HasValue && task.AssignedToUserId != userId)
+        {
+            await _notifications.NotifyAsync(
+                task.AssignedToUserId.Value,
+                "task",
+                "Task assigned to you",
+                $"You were assigned \"{task.Title}\".",
+                "/my-tasks",
+                task.Id,
+                task.ProjectId,
+                $"task-assigned-{task.Id}-{task.AssignedToUserId}");
+        }
 
         return Ok(await MapTaskById(task.Id));
     }
@@ -186,6 +205,15 @@ public class TasksController : ControllerBase
                 {
                     changes.Add("assignee updated");
                     task.AssignedToUserId = request.AssignedToUserId;
+                    await _notifications.NotifyAsync(
+                        request.AssignedToUserId.Value,
+                        "task",
+                        "Task assigned to you",
+                        $"You were assigned \"{task.Title}\".",
+                        "/my-tasks",
+                        task.Id,
+                        task.ProjectId,
+                        $"task-assigned-{task.Id}-{request.AssignedToUserId}");
                 }
             }
             else if (task.AssignedToUserId != null)
@@ -278,6 +306,24 @@ public class TasksController : ControllerBase
         await LogActivity(id, userId, "commented", request.Body.Trim().Length > 120
             ? request.Body.Trim()[..120] + "…"
             : request.Body.Trim());
+
+        var recipients = new HashSet<Guid>();
+        if (task.AssignedToUserId.HasValue && task.AssignedToUserId != userId)
+            recipients.Add(task.AssignedToUserId.Value);
+        if (task.CreatedByUserId != userId)
+            recipients.Add(task.CreatedByUserId);
+
+        foreach (var recipientId in recipients)
+        {
+            await _notifications.NotifyAsync(
+                recipientId,
+                "task",
+                "New comment on task",
+                $"Comment on \"{task.Title}\".",
+                "/my-tasks",
+                task.Id,
+                task.ProjectId);
+        }
 
         await _context.Entry(comment).Reference(c => c.AuthorUser).LoadAsync();
 

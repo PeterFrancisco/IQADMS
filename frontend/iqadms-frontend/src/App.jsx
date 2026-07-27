@@ -21,16 +21,20 @@ import ProjectsPage from './pages/ProjectsPage'
 import UpcomingDeadlinesPage from './pages/UpcomingDeadlinesPage'
 import RecentActivitiesPage from './pages/RecentActivitiesPage'
 import StatisticsPage from './pages/StatisticsPage'
+import NotificationsPage from './pages/NotificationsPage'
+import CalendarPage from './pages/CalendarPage'
+import ReportsPage from './pages/ReportsPage'
+import RequestsPage from './pages/RequestsPage'
+import FeedbackPage from './pages/FeedbackPage'
+import AnnouncementsPage from './pages/AnnouncementsPage'
 import AdminRoute from './components/AdminRoute'
-import {
-  NotificationsPage,
-  CalendarPage,
-  ReportsPage
-} from './pages/ModulePlaceholders'
+import LandingPage from './pages/LandingPage'
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
+
       {/* Public route */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/request-account" element={<RequestAccountPage />} />
@@ -38,8 +42,6 @@ export default function App() {
       <Route path="/complete-registration" element={<CompleteRegistrationPage />} />
       <Route path="/request-access" element={<RequestAccountPage />} />
       <Route path="/request-submitted" element={<RequestSubmittedPage />} />
-
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
       <Route
         path="/dashboard"
@@ -114,10 +116,46 @@ export default function App() {
       />
 
       <Route
+        path="/announcements"
+        element={
+          <ProtectedRoute>
+            <AnnouncementsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/reports"
         element={
           <ProtectedRoute>
             <ReportsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/requests"
+        element={
+          <ProtectedRoute>
+            <RequestsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/report/bug"
+        element={
+          <ProtectedRoute>
+            <FeedbackPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/report/feedback"
+        element={
+          <ProtectedRoute>
+            <FeedbackPage />
           </ProtectedRoute>
         }
       />
@@ -212,7 +250,7 @@ export default function App() {
         }
       />
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

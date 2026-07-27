@@ -15,17 +15,20 @@ public class AuthController : ControllerBase
     private readonly AllowedUserService _allowedUserService;
     private readonly EmailService _emailService;
     private readonly ApplicationDbContext _context;
+    private readonly NotificationService _notifications;
 
     public AuthController(
         AuthService authService,
         AllowedUserService allowedUserService,
         EmailService emailService,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        NotificationService notifications)
     {
         _authService = authService;
         _allowedUserService = allowedUserService;
         _emailService = emailService;
         _context = context;
+        _notifications = notifications;
     }
 
     [HttpPost("register")]
@@ -85,6 +88,11 @@ public class AuthController : ControllerBase
 
         _context.AccountRequests.Add(accountRequest);
         await _context.SaveChangesAsync();
+
+        await _notifications.NotifyAdminsOfAccountRequestAsync(
+            accountRequest.Id,
+            request.FullName,
+            request.Email);
 
         await _emailService.SendAccessRequestAsync(
             request.FullName,

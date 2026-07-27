@@ -46,6 +46,7 @@ builder.Services.AddScoped<DepartmentService>();
 builder.Services.AddScoped<SubmissionMonitoringService>();
 builder.Services.AddScoped<SubmissionService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<NotificationService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

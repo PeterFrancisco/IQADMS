@@ -31,7 +31,7 @@ export default function LoginPage() {
       localStorage.setItem('isAdmin', response.data.isAdmin)
       localStorage.setItem('userId', response.data.userId)
 
-      navigate('/')
+      navigate('/dashboard')
     } catch (err) {
       setError(getApiErrorMessage(err, 'Invalid username/email or password'))
     } finally {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
@@ -46,6 +46,8 @@ function getInitials(name) {
 export default function DashboardPage() {
   const [searchParams] = useSearchParams()
   const filterProjectId = searchParams.get('project') || ''
+  const filterDepartmentId = searchParams.get('department') || ''
+  const filterTaskId = searchParams.get('task') || ''
 
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
@@ -82,16 +84,46 @@ export default function DashboardPage() {
   const fixedCols = 8
   const totalCols = fixedCols + customColumns.length
 
+  const openedTaskLinkRef = useRef(null)
+
   useEffect(() => {
     loadData()
-  }, [filterProjectId])
+  }, [filterProjectId, filterDepartmentId])
+
+  useEffect(() => {
+    if (!filterTaskId || loading) return
+    if (openedTaskLinkRef.current === filterTaskId) return
+
+    let cancelled = false
+
+    async function openFromLink() {
+      const found = tasks.find(t => t.id === filterTaskId)
+      try {
+        const task = found || (await api.get(`/Tasks/${filterTaskId}`)).data
+        if (!cancelled) {
+          openedTaskLinkRef.current = filterTaskId
+          await openTaskDetail(task)
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    openFromLink()
+    return () => {
+      cancelled = true
+    }
+  }, [filterTaskId, loading, tasks])
 
   async function loadData() {
     try {
       setLoading(true)
-      const taskUrl = filterProjectId ? `/Tasks?projectId=${filterProjectId}` : '/Tasks'
+      const taskUrl = '/Tasks'
+      const taskParams = {}
+      if (filterProjectId) taskParams.projectId = filterProjectId
+      if (filterDepartmentId) taskParams.relatedDepartmentId = filterDepartmentId
       const [tasksRes, membersRes, columnsRes, valuesRes, projectsRes, deptRes] = await Promise.all([
-        api.get(taskUrl),
+        api.get(taskUrl, { params: taskParams }),
         api.get('/Profile/members'),
         api.get('/BoardColumns'),
         api.get('/BoardColumns/cell-values'),
@@ -147,7 +179,7 @@ export default function DashboardPage() {
         description: '',
         assignedToUserId: '',
         projectId: filterProjectId || '',
-        relatedDepartmentId: '',
+        relatedDepartmentId: filterDepartmentId || '',
         dueDate: '',
         priority: 'Medium',
         status: 'To Do',
@@ -323,6 +355,7 @@ const assignMember = async (id, userId) => {
   }
 
   const filterProject = projects.find(p => p.id === filterProjectId)
+  const filterDepartment = departments.find(d => d.id === filterDepartmentId)
 
   return (
     <DashboardLayout>
@@ -332,7 +365,12 @@ const assignMember = async (id, userId) => {
           Your workspace — manage tasks, assignments, and progress
           {filterProject && (
             <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
-              Filter: {filterProject.title}
+              Filter: project — {filterProject.title}
+            </span>
+          )}
+          {filterDepartment && (
+            <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
+              Filter: department — {filterDepartment.name}
             </span>
           )}
         </p>

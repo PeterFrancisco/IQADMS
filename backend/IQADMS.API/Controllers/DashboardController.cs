@@ -1,5 +1,6 @@
 using IQADMS.API.Data;
 using IQADMS.API.DTOs.Dashboard;
+using IQADMS.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -108,6 +109,26 @@ public class DashboardController : ControllerBase
             });
         }
 
+        var pqadEvents = await _context.PqadAnnouncements.Where(a => !a.IsDeleted).ToListAsync();
+        foreach (var ev in pqadEvents)
+        {
+            var due = ev.StartDate;
+            var overdue = due < today;
+            if (overdueOnly && !overdue) continue;
+            if (!overdue && due > end) continue;
+
+            items.Add(new DeadlineItemResponse
+            {
+                ItemType = "announcement",
+                Id = ev.Id,
+                Title = ev.Title,
+                DueDate = due,
+                Status = ev.Category,
+                IsOverdue = overdue,
+                DaysUntilDue = DaysBetween(today, due)
+            });
+        }
+
         var ordered = items
             .OrderBy(i => i.IsOverdue ? 0 : 1)
             .ThenBy(i => i.DueDate)
@@ -203,6 +224,146 @@ public class DashboardController : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    [HttpGet("calendar-events")]
+    public async Task<IActionResult> GetCalendarEvents([FromQuery] int year, [FromQuery] int month)
+    {
+        if (month < 1 || month > 12)
+            return BadRequest(new { message = "Month must be 1–12." });
+
+        if (year < 2000 || year > 2100)
+            return BadRequest(new { message = "Year out of range." });
+
+        var events = new List<CalendarEventResponse>();
+
+        var tasks = await _context.WorkspaceTasks
+            .Where(t => !t.IsDeleted && t.DueDate != null)
+            .ToListAsync();
+
+        foreach (var t in tasks)
+        {
+            var d = t.DueDate!.Value;
+            if (d.Year == year && d.Month == month)
+            {
+                events.Add(new CalendarEventResponse
+                {
+                    ItemType = "task",
+                    EventKind = "due",
+                    Id = t.Id,
+                    Title = t.Title,
+                    Date = d,
+                    Status = t.Status
+                });
+            }
+        }
+
+        var projects = await _context.Projects.Where(p => !p.IsDeleted).ToListAsync();
+        foreach (var p in projects)
+        {
+            if (p.StartDate.HasValue)
+            {
+                var d = p.StartDate.Value;
+                if (d.Year == year && d.Month == month)
+                {
+                    events.Add(new CalendarEventResponse
+                    {
+                        ItemType = "project",
+                        EventKind = "start",
+                        Id = p.Id,
+                        Title = p.Title,
+                        Date = d,
+                        Status = p.Status
+                    });
+                }
+            }
+
+            if (p.DueDate.HasValue)
+            {
+                var d = p.DueDate.Value;
+                if (d.Year == year && d.Month == month)
+                {
+                    events.Add(new CalendarEventResponse
+                    {
+                        ItemType = "project",
+                        EventKind = "due",
+                        Id = p.Id,
+                        Title = p.Title,
+                        Date = d,
+                        Status = p.Status
+                    });
+                }
+            }
+        }
+
+        var activities = await _context.AccreditationActivities.Where(a => !a.IsDeleted).ToListAsync();
+        foreach (var a in activities)
+        {
+            if (a.StartDate.Year == year && a.StartDate.Month == month)
+            {
+                events.Add(new CalendarEventResponse
+                {
+                    ItemType = "accreditation",
+                    EventKind = "start",
+                    Id = a.Id,
+                    Title = a.Name,
+                    Date = a.StartDate,
+                    Status = a.Status
+                });
+            }
+
+            if (a.Deadline.Year == year && a.Deadline.Month == month)
+            {
+                events.Add(new CalendarEventResponse
+                {
+                    ItemType = "accreditation",
+                    EventKind = "deadline",
+                    Id = a.Id,
+                    Title = a.Name,
+                    Date = a.Deadline,
+                    Status = a.Status
+                });
+            }
+        }
+
+        var announcements = await _context.PqadAnnouncements.Where(a => !a.IsDeleted).ToListAsync();
+        foreach (var ann in announcements)
+        {
+            AppendAnnouncementDates(events, ann, year, month);
+        }
+
+        var ordered = events
+            .OrderBy(e => e.Date)
+            .ThenBy(e => e.ItemType)
+            .ThenBy(e => e.Title)
+            .ToList();
+
+        return Ok(ordered);
+    }
+
+    private static void AppendAnnouncementDates(
+        List<CalendarEventResponse> events,
+        PqadAnnouncement ann,
+        int year,
+        int month)
+    {
+        var end = ann.EndDate ?? ann.StartDate;
+        for (var d = ann.StartDate; d <= end; d = d.AddDays(1))
+        {
+            if (d.Year != year || d.Month != month) continue;
+
+            events.Add(new CalendarEventResponse
+            {
+                ItemType = "announcement",
+                EventKind = ann.Category,
+                Id = ann.Id,
+                Title = ann.Title,
+                Date = d,
+                Status = ann.Category,
+                Category = ann.Category,
+                Location = ann.Location
+            });
+        }
     }
 
     private static int DaysBetween(DateOnly from, DateOnly to) =>

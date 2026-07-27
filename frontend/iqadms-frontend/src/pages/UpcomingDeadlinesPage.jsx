@@ -5,7 +5,7 @@ import api from '../services/api'
 import { upshd } from '../theme/upshd'
 import { pageTitleStyle } from '../theme/pageStyles'
 
-const TYPE_LABELS = { task: 'Task', project: 'Project', accreditation: 'Accreditation' }
+const TYPE_LABELS = { task: 'Task', project: 'Project', accreditation: 'Accreditation', announcement: 'PQAD event' }
 
 function dueLabel(item) {
   if (item.isOverdue) {
@@ -20,6 +20,7 @@ function dueLabel(item) {
 function itemLink(item) {
   if (item.itemType === 'task') return '/my-tasks'
   if (item.itemType === 'project') return '/projects'
+  if (item.itemType === 'announcement') return '/announcements'
   return '/activities'
 }
 

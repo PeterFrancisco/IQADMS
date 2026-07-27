@@ -41,6 +41,7 @@ public static class DbInitializer
         {
             context.Departments.AddRange(
                 new Department { Name = "Registrar Office", Code = "REG" },
+                new Department { Name = "School Director Office", Code = "SDO" },
                 new Department { Name = "College of Engineering", Code = "COE" },
                 new Department { Name = "College of Business", Code = "COB" },
                 new Department { Name = "College of Education", Code = "CED" },
@@ -48,6 +49,16 @@ public static class DbInitializer
                 new Department { Name = "Finance Office", Code = "FIN" }
             );
 
+            context.SaveChanges();
+        }
+
+        if (!context.Departments.Any(d => d.Code == "SDO"))
+        {
+            context.Departments.Add(new Department
+            {
+                Name = "School Director Office",
+                Code = "SDO"
+            });
             context.SaveChanges();
         }
 
@@ -127,6 +138,45 @@ public static class DbInitializer
                     });
                 }
 
+                context.SaveChanges();
+            }
+        }
+
+        if (!context.PqadAnnouncements.Any())
+        {
+            var creator = context.Users.FirstOrDefault(u => u.IsActive);
+            if (creator != null)
+            {
+                context.PqadAnnouncements.AddRange(
+                    new PqadAnnouncement
+                    {
+                        Title = "PQAD Staff Orientation",
+                        Description = "Welcome session for PQAD members — roles, tools, and accreditation calendar.",
+                        Category = "Orientation",
+                        StartDate = new DateOnly(2026, 8, 15),
+                        Location = "PQAD Office, Molino Campus",
+                        CreatedByUserId = creator.Id
+                    },
+                    new PqadAnnouncement
+                    {
+                        Title = "Monthly PQAD Coordination Meeting",
+                        Description = "Progress review on PACUCOA 2026 tasks and department follow-ups.",
+                        Category = "Meeting",
+                        StartDate = new DateOnly(2026, 8, 5),
+                        Location = "Conference Room / Google Meet",
+                        CreatedByUserId = creator.Id
+                    },
+                    new PqadAnnouncement
+                    {
+                        Title = "PACUCOA Virtual Visit",
+                        Description = "Scheduled PACUCOA virtual accreditation visit — ensure evidence folders are ready.",
+                        Category = "PACUCOA Visit",
+                        StartDate = new DateOnly(2026, 9, 8),
+                        EndDate = new DateOnly(2026, 9, 10),
+                        Location = "Virtual (link to be shared)",
+                        CreatedByUserId = creator.Id
+                    }
+                );
                 context.SaveChanges();
             }
         }

@@ -4,7 +4,9 @@ import DashboardLayout from '../components/DashboardLayout'
 import { pageTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'
 
 export default function SettingsPage() {
+  const [tab, setTab] = useState('accounts')
   const [requests, setRequests] = useState([])
+  const [feedback, setFeedback] = useState([])
   const [loading, setLoading] = useState(true)
 
   const loadRequests = async () => {
@@ -22,6 +24,20 @@ export default function SettingsPage() {
   useEffect(() => {
     loadRequests()
   }, [])
+
+  useEffect(() => {
+    if (tab === 'feedback') loadFeedback()
+  }, [tab])
+
+  const loadFeedback = async () => {
+    try {
+      const res = await api.get('/Admin/feedback')
+      setFeedback(res.data)
+    } catch (err) {
+      console.error(err)
+      alert('Failed to load feedback.')
+    }
+  }
 
   const approveRequest = async (id) => {
     if (!window.confirm('Approve this request?')) return
@@ -53,18 +69,40 @@ export default function SettingsPage() {
         <div style={{ marginBottom: '2rem' }}>
           <h1 style={{ margin: 0, ...pageTitleStyle }}>Admin Settings</h1>
           <p style={{ color: '#64748b' }}>
-            Manage account requests and user access.
+            Account requests, bug reports, and user feedback.
           </p>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+            <TabBtn active={tab === 'accounts'} onClick={() => setTab('accounts')}>Account requests</TabBtn>
+            <TabBtn active={tab === 'feedback'} onClick={() => setTab('feedback')}>Bug & feedback</TabBtn>
+          </div>
         </div>
 
-        <div
-          style={{
-            background: 'white',
-            borderRadius: '16px',
-            padding: '1.5rem',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-          }}
-        >
+        {tab === 'feedback' ? (
+          <div style={panelStyle}>
+            <h2 style={{ margin: '0 0 1rem' }}>Recent reports</h2>
+            {feedback.length === 0 ? (
+              <p style={{ color: '#94a3b8' }}>No feedback submitted yet.</p>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '0.75rem' }}>
+                {feedback.map(item => (
+                  <li key={item.id} style={{ padding: '0.85rem', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                      <strong style={{ textTransform: 'capitalize' }}>{item.type}</strong>
+                      <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                        {new Date(item.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.35rem 0' }}>
+                      {item.displayName || item.username} (@{item.username})
+                    </div>
+                    <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#334155' }}>{item.message}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+        <div style={panelStyle}>
           <div
             style={{
               display: 'flex',
@@ -189,9 +227,37 @@ export default function SettingsPage() {
             </table>
           )}
         </div>
+        )}
       </div>
     </DashboardLayout>
   )
+}
+
+function TabBtn({ active, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '0.5rem 1rem',
+        borderRadius: 999,
+        border: active ? 'none' : '1px solid #cbd5e1',
+        background: active ? '#7a0019' : '#fff',
+        color: active ? '#fff' : '#475569',
+        fontWeight: 600,
+        cursor: 'pointer'
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+const panelStyle = {
+  background: 'white',
+  borderRadius: '16px',
+  padding: '1.5rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
 }
 
 const thStyle = {

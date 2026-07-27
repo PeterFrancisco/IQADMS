@@ -63,7 +63,7 @@ export default function RecentActivitiesPage() {
             <li key={a.id} style={card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                 <div>
-                  <Link to="/my-tasks" style={{ color: upshd.maroon, fontWeight: 700, textDecoration: 'none' }}>
+                  <Link to={`/my-tasks?task=${a.taskId}`} style={{ color: upshd.maroon, fontWeight: 700, textDecoration: 'none' }}>
                     {a.taskTitle}
                   </Link>
                   {a.projectTitle && (
