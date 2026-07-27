@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-/** Public routes that should not redirect to home on browser refresh. */
+/** Routes that must never be replaced by the reload → home behavior. */
 const PUBLIC_PATHS = new Set([
   '/',
   '/login',
@@ -13,20 +13,29 @@ const PUBLIC_PATHS = new Set([
 ])
 
 /**
- * On full page reload, show the public landing page unless the user refreshed
- * a public auth/onboarding route.
+ * On full page reload only (once per load), send authenticated users back to the
+ * public home page from in-app URLs. Unauthenticated reloads on protected routes
+ * are left to ProtectedRoute → /login.
  */
 export default function RefreshToLanding() {
-  const location = useLocation()
   const navigate = useNavigate()
+  const ran = useRef(false)
 
   useEffect(() => {
+    if (ran.current) return
+    ran.current = true
+
     const entry = performance.getEntriesByType('navigation')[0]
-    const isReload = entry?.type === 'reload'
-    if (!isReload) return
-    if (PUBLIC_PATHS.has(location.pathname)) return
+    if (entry?.type !== 'reload') return
+
+    const path = window.location.pathname
+    if (PUBLIC_PATHS.has(path)) return
+
+    const token = localStorage.getItem('token')
+    if (!token) return
+
     navigate('/', { replace: true })
-  }, [location.pathname, navigate])
+  }, [navigate])
 
   return null
 }
