@@ -96,9 +96,6 @@
 }
 
 .workspace-col-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
   min-width: 200px;
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -108,6 +105,25 @@
   padding: 0.35rem 0;
   display: flex;
   flex-direction: column;
+}
+
+.workspace-col-menu-fixed {
+  position: fixed;
+  z-index: 10050;
+}
+
+.workspace-col-menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.35rem 0;
+}
+
+.workspace-col-menu-hint {
+  margin: 0;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.35;
 }
 
 .workspace-col-menu button {

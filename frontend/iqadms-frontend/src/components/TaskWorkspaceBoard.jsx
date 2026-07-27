@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import '../theme/workspace-board.css'
 
 const STATUS_OPTIONS = ['To Do', 'In Progress', 'Waiting', 'Completed', 'Cancelled']
@@ -24,6 +25,16 @@ function statusOptionsFor(task) {
   return STATUS_OPTIONS
 }
 
+function columnBinding(col) {
+  return (col?.binding ?? col?.Binding ?? '').toLowerCase()
+}
+
+function canDeleteColumn(col) {
+  if (columnBinding(col) === 'task') return false
+  if (col?.isLocked === true || col?.IsLocked === true) return false
+  return true
+}
+
 export default function TaskWorkspaceBoard({
   columns,
   tasks,
@@ -45,25 +56,58 @@ export default function TaskWorkspaceBoard({
   saveCellValue
 }) {
   const [headerMenu, setHeaderMenu] = useState(null)
+  const [menuAnchor, setMenuAnchor] = useState(null)
   const [renamingId, setRenamingId] = useState(null)
   const [renameDraft, setRenameDraft] = useState('')
   const menuRef = useRef(null)
+  const menuTriggerRef = useRef(null)
+  const scrollRef = useRef(null)
+
+  const closeHeaderMenu = () => {
+    setHeaderMenu(null)
+    setMenuAnchor(null)
+  }
+
+  const openHeaderMenu = (colId, triggerEl) => {
+    if (headerMenu === colId) {
+      closeHeaderMenu()
+      return
+    }
+    menuTriggerRef.current = triggerEl
+    const rect = triggerEl.getBoundingClientRect()
+    setMenuAnchor({
+      top: rect.bottom + 4,
+      left: Math.max(8, rect.right - 208)
+    })
+    setHeaderMenu(colId)
+  }
 
   useEffect(() => {
     const close = e => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setHeaderMenu(null)
+      if (menuRef.current?.contains(e.target)) return
+      if (menuTriggerRef.current?.contains(e.target)) return
+      closeHeaderMenu()
     }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => closeHeaderMenu()
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
   if (loading) return <p>Loading workspace…</p>
 
   const colCount = columns.length + 1
+  const menuColumn = headerMenu ? columns.find(c => c.id === headerMenu) : null
 
   return (
     <div className="workspace-board-shell">
-      <div className="workspace-board-scroll">
+      <div className="workspace-board-scroll" ref={scrollRef}>
         <table className="workspace-board-table">
           <thead>
             <tr>
@@ -114,35 +158,12 @@ export default function TaskWorkspaceBoard({
                       type="button"
                       className="workspace-col-menu-btn"
                       aria-label={`Column options for ${col.name}`}
-                      onClick={() => setHeaderMenu(headerMenu === col.id ? null : col.id)}
+                      aria-expanded={headerMenu === col.id}
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={e => openHeaderMenu(col.id, e.currentTarget)}
                     >
                       ⋮
                     </button>
-                    {headerMenu === col.id && (
-                      <div className="workspace-col-menu" ref={menuRef}>
-                        <button type="button" onClick={() => { onSort(col.id, 'asc'); setHeaderMenu(null) }}>
-                          Sort A → Z
-                        </button>
-                        <button type="button" onClick={() => { onSort(col.id, 'desc'); setHeaderMenu(null) }}>
-                          Sort Z → A
-                        </button>
-                        <button type="button" onClick={() => { onToggleWrap(col.id, !col.wrapText); setHeaderMenu(null) }}>
-                          {col.wrapText ? 'Disable wrap text' : 'Wrap text'}
-                        </button>
-                        <button type="button" onClick={() => { onAddColumnRight(col.id); setHeaderMenu(null) }}>
-                          Add column to the right
-                        </button>
-                        {!col.isLocked && (
-                          <button
-                            type="button"
-                            className="danger"
-                            onClick={() => { onDeleteColumn(col.id, col.name); setHeaderMenu(null) }}
-                          >
-                            Delete column
-                          </button>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </th>
               ))}
@@ -203,6 +224,70 @@ export default function TaskWorkspaceBoard({
           </tbody>
         </table>
       </div>
+
+      {menuColumn &&
+        menuAnchor &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="workspace-col-menu workspace-col-menu-fixed"
+            style={{ top: menuAnchor.top, left: menuAnchor.left }}
+            role="menu"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                onSort(menuColumn.id, 'asc')
+                closeHeaderMenu()
+              }}
+            >
+              Sort A → Z
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onSort(menuColumn.id, 'desc')
+                closeHeaderMenu()
+              }}
+            >
+              Sort Z → A
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onToggleWrap(menuColumn.id, !menuColumn.wrapText)
+                closeHeaderMenu()
+              }}
+            >
+              {menuColumn.wrapText ? 'Disable wrap text' : 'Wrap text'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onAddColumnRight(menuColumn.id)
+                closeHeaderMenu()
+              }}
+            >
+              Add column to the right
+            </button>
+            <div className="workspace-col-menu-divider" />
+            {canDeleteColumn(menuColumn) ? (
+              <button
+                type="button"
+                className="danger"
+                onClick={() => {
+                  onDeleteColumn(menuColumn.id, menuColumn.name)
+                  closeHeaderMenu()
+                }}
+              >
+                Delete column
+              </button>
+            ) : (
+              <p className="workspace-col-menu-hint">Task column cannot be deleted.</p>
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   )
 }
