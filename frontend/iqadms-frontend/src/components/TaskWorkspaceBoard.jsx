@@ -556,7 +556,7 @@ function OwnerCell({ task, members, onAssign }) {
                       <UserAvatar member={m} size={28} />
                       <span className="workspace-owner-option-text">
                         <strong>{m.displayName || m.username || m.Username}</strong>
-                        <small>@{m.username || m.Username}</small>
+                        <small>{m.email || m.Email || ''}</small>
                       </span>
                     </button>
                   )
