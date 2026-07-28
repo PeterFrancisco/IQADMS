@@ -59,40 +59,54 @@ Please review this request in the admin panel.";
             return (false, "Invalid recipient email.");
 
         var registerUrl = GetRegisterUrl();
+        var siteUrl = GetPublicSiteUrl();
         var greeting = string.IsNullOrWhiteSpace(recipientDisplayName)
             ? "Hello,"
             : $"Hello {recipientDisplayName.Trim()},";
 
         var invitedLine = string.IsNullOrWhiteSpace(invitedByDisplayName)
-            ? "An IQADMS administrator has invited you to create an account."
-            : $"{invitedByDisplayName.Trim()} has invited you to create an IQADMS account.";
+            ? "You have been invited to join IQADMS for the Planning and Quality Assurance Department (PQAD), University of Perpetual Help System DALTA — Molino Campus."
+            : $"{invitedByDisplayName.Trim()} has invited you to join IQADMS (PQAD · UPSHD Molino).";
+
+        var siteBlock = siteUrl is null
+            ? """
+Official website: (your administrator will provide the IQADMS URL)
+Registration: open the site, then choose Register / Sign up.
+"""
+            : $"""
+Official IQADMS website:
+  {siteUrl}
+
+Create your account (registration page):
+  {registerUrl}
+""";
 
         var body = $"""
 {greeting}
 
 {invitedLine}
 
+{siteBlock}
+
 Use this email address when you register:
   {to}
 
-Open the registration page and choose "Register":
-  {registerUrl}
+How to register:
+  1. Open the official website or registration link above.
+  2. Select Register and enter the email address shown here.
+  3. Choose a username and a strong password, then complete your profile.
+  4. Sign in at the same website when you are done.
 
-Steps:
-  1. Enter the email address above.
-  2. Choose a username and a strong password.
-  3. Sign in and complete your profile.
+If you did not expect this invitation, you can safely ignore this email.
 
-If you did not expect this message, you can ignore it.
-
-— IQADMS (UPSHD Molino PQAD)
+— IQADMS · PQAD · UPSHD Molino
 """;
 
         try
         {
             var smtp = _config.GetSection("SmtpSettings");
             var from = RequireFromAddress(smtp);
-            await SendAsync(from, to, "You're invited to IQADMS", body);
+            await SendAsync(from, to, "Register on IQADMS — PQAD Molino", body);
             _logger.LogInformation("Registration invite sent to {Email}", to);
             return (true, null);
         }
@@ -134,11 +148,17 @@ If you did not expect this message, you can ignore it.
 
     private string GetRegisterUrl()
     {
-        var baseUrl = _config["App:PublicUrl"]?.Trim().TrimEnd('/');
-        if (string.IsNullOrEmpty(baseUrl))
-            return "(ask your administrator for the IQADMS website URL, then open Register)";
+        var baseUrl = GetPublicSiteUrl();
+        if (baseUrl is null)
+            return "(set App:PublicUrl in appsettings.json, then open /register on that site)";
 
         return $"{baseUrl}/register";
+    }
+
+    private string? GetPublicSiteUrl()
+    {
+        var baseUrl = _config["App:PublicUrl"]?.Trim().TrimEnd('/');
+        return string.IsNullOrEmpty(baseUrl) ? null : baseUrl;
     }
 
     private bool IsSmtpConfigured(out string? error)
