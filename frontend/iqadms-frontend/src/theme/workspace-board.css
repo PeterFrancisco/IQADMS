@@ -312,7 +312,10 @@
 .workspace-owner-picker {
   position: fixed;
   z-index: 10060;
-  width: min(280px, calc(100vw - 16px));
+  width: min(300px, calc(100vw - 16px));
+  max-height: min(360px, calc(100vh - 16px));
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
@@ -321,6 +324,7 @@
 }
 
 .workspace-owner-picker-search {
+  flex-shrink: 0;
   padding: 0.65rem;
   border-bottom: 1px solid #f1f5f9;
   background: #fafbfc;
@@ -342,8 +346,18 @@
 }
 
 .workspace-owner-picker-list {
-  max-height: 240px;
+  flex: 1;
+  min-height: 0;
+  max-height: 220px;
   overflow-y: auto;
+}
+
+.workspace-owner-picker-hint {
+  margin: 0;
+  padding: 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #64748b;
 }
 
 .workspace-owner-option {

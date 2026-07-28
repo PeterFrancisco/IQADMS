@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import UserAvatar from './UserAvatar'
 import '../theme/workspace-board.css'
@@ -353,6 +353,32 @@ function BoardCell({
   )
 }
 
+function memberSearchText(m) {
+  return [
+    m.displayName,
+    m.DisplayName,
+    m.username,
+    m.Username,
+    m.email,
+    m.Email,
+    m.position,
+    m.Position
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+}
+
+function filterMembersByQuery(members, query) {
+  const q = query.trim().toLowerCase()
+  if (!q) return []
+  const tokens = q.split(/\s+/).filter(Boolean)
+  return members.filter(m => {
+    const hay = memberSearchText(m)
+    return tokens.every(t => hay.includes(t))
+  })
+}
+
 function OwnerCell({ task, members, onAssign }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -360,16 +386,41 @@ function OwnerCell({ task, members, onAssign }) {
   const btnRef = useRef(null)
   const panelRef = useRef(null)
   const searchRef = useRef(null)
+  const openedRef = useRef(false)
 
-  const owner = members.find(m => m.id === task.assignedToUserId)
+  const owner = members.find(
+    m => String(m.id || m.Id) === String(task.assignedToUserId)
+  )
   const displayName = owner?.displayName || owner?.username || task.assignedToName || 'Assign owner'
 
-  const filtered = members.filter(m => {
-    const q = query.trim().toLowerCase()
-    if (!q) return true
-    const hay = `${m.displayName || ''} ${m.username || ''} ${m.email || ''}`.toLowerCase()
-    return hay.includes(q)
-  })
+  const filtered = filterMembersByQuery(members, query)
+  const showResults = query.trim().length > 0
+
+  const placePanel = () => {
+    const btn = btnRef.current
+    const panel = panelRef.current
+    if (!btn || !panel) return
+
+    const rect = btn.getBoundingClientRect()
+    const panelHeight = panel.offsetHeight
+    const panelWidth = panel.offsetWidth
+    const gap = 6
+    const margin = 8
+
+    let top = rect.bottom + gap
+    if (top + panelHeight > window.innerHeight - margin) {
+      top = rect.top - panelHeight - gap
+    }
+    top = Math.max(margin, Math.min(top, window.innerHeight - panelHeight - margin))
+
+    let left = rect.left
+    if (left + panelWidth > window.innerWidth - margin) {
+      left = window.innerWidth - panelWidth - margin
+    }
+    left = Math.max(margin, left)
+
+    setAnchor({ top, left })
+  }
 
   useEffect(() => {
     if (!open) return undefined
@@ -382,25 +433,52 @@ function OwnerCell({ task, members, onAssign }) {
   }, [open])
 
   useEffect(() => {
-    if (open) {
+    if (!open) {
+      openedRef.current = false
+      return
+    }
+    if (!openedRef.current) {
+      openedRef.current = true
       setQuery('')
-      setTimeout(() => searchRef.current?.focus(), 0)
+      requestAnimationFrame(() => {
+        searchRef.current?.focus()
+        placePanel()
+      })
     }
   }, [open])
+
+  useLayoutEffect(() => {
+    if (open) placePanel()
+  }, [open, query, filtered.length, showResults])
+
+  useEffect(() => {
+    if (!open) return undefined
+    const onReflow = () => placePanel()
+    window.addEventListener('resize', onReflow)
+    window.addEventListener('scroll', onReflow, true)
+    return () => {
+      window.removeEventListener('resize', onReflow)
+      window.removeEventListener('scroll', onReflow, true)
+    }
+  }, [open, query, filtered.length, showResults])
+
+  const openPicker = () => {
+    const rect = btnRef.current?.getBoundingClientRect()
+    if (rect) {
+      setAnchor({
+        top: rect.bottom + 6,
+        left: Math.min(rect.left, window.innerWidth - 288)
+      })
+    }
+    setOpen(true)
+  }
 
   const toggle = () => {
     if (open) {
       setOpen(false)
       return
     }
-    const rect = btnRef.current?.getBoundingClientRect()
-    if (rect) {
-      setAnchor({
-        top: rect.bottom + 6,
-        left: Math.min(rect.left, window.innerWidth - 280)
-      })
-    }
-    setOpen(true)
+    openPicker()
   }
 
   const pick = userId => {
@@ -436,14 +514,19 @@ function OwnerCell({ task, members, onAssign }) {
             style={{ top: anchor.top, left: anchor.left }}
             role="listbox"
             aria-label="Assign owner"
+            onMouseDown={e => e.stopPropagation()}
           >
             <div className="workspace-owner-picker-search">
               <input
                 ref={searchRef}
-                type="search"
-                placeholder="Search members…"
+                type="text"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder="Search by name, @username, or email…"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => e.stopPropagation()}
                 className="workspace-owner-search-input"
               />
             </div>
@@ -452,25 +535,32 @@ function OwnerCell({ task, members, onAssign }) {
               <span>Unassigned</span>
             </button>
             <div className="workspace-owner-picker-list">
-              {filtered.length === 0 ? (
-                <p className="workspace-owner-picker-empty">No members match your search.</p>
+              {!showResults ? (
+                <p className="workspace-owner-picker-hint">
+                  Start typing to find a team member. Results appear as you search.
+                </p>
+              ) : filtered.length === 0 ? (
+                <p className="workspace-owner-picker-empty">No members match &ldquo;{query.trim()}&rdquo;.</p>
               ) : (
-                filtered.map(m => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    role="option"
-                    aria-selected={m.id === task.assignedToUserId}
-                    className={`workspace-owner-option ${m.id === task.assignedToUserId ? 'selected' : ''}`}
-                    onClick={() => pick(m.id)}
-                  >
-                    <UserAvatar member={m} size={28} />
-                    <span className="workspace-owner-option-text">
-                      <strong>{m.displayName || m.username}</strong>
-                      <small>@{m.username}</small>
-                    </span>
-                  </button>
-                ))
+                filtered.map(m => {
+                  const id = m.id || m.Id
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      role="option"
+                      aria-selected={String(id) === String(task.assignedToUserId)}
+                      className={`workspace-owner-option ${String(id) === String(task.assignedToUserId) ? 'selected' : ''}`}
+                      onClick={() => pick(id)}
+                    >
+                      <UserAvatar member={m} size={28} />
+                      <span className="workspace-owner-option-text">
+                        <strong>{m.displayName || m.username || m.Username}</strong>
+                        <small>@{m.username || m.Username}</small>
+                      </span>
+                    </button>
+                  )
+                })
               )}
             </div>
           </div>,
