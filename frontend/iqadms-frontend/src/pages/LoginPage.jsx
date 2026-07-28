@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
+import { readAuthTokenFromResponse } from '../utils/authToken'
 import { setPresence } from '../utils/presenceApi'
 import { upshd } from '../theme/upshd'
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('admin')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -27,15 +28,37 @@ export default function LoginPage() {
         password
       })
 
-      const token = (response.data.token || '').trim()
+      const token = readAuthTokenFromResponse(response.data)
       if (!token) {
-        setError('Sign-in succeeded but no session token was returned. Contact your administrator.')
+        const hint =
+          typeof response.data === 'string' && response.data.includes('<!DOCTYPE')
+            ? ' The server returned a web page instead of JSON — check that /api is proxied to the API (port 5135), not the frontend.'
+            : ''
+        setError(
+          `Sign-in succeeded but no session token was returned.${hint} Contact your administrator.`
+        )
         return
       }
 
       localStorage.setItem('token', token)
-      localStorage.setItem('username', username)
-      localStorage.setItem('isAdmin', response.data.isAdmin)
+
+      let isAdmin = response.data.isAdmin === true
+      try {
+        const meRes = await api.get('/Profile/me')
+        isAdmin = meRes.data.isAdmin === true
+        if (meRes.data.username) {
+          localStorage.setItem('username', meRes.data.username)
+        } else {
+          localStorage.setItem('username', username)
+        }
+        if (meRes.data.email) {
+          localStorage.setItem('userEmail', meRes.data.email)
+        }
+      } catch {
+        localStorage.setItem('username', username)
+      }
+
+      localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false')
       localStorage.setItem('userId', response.data.userId)
 
       try {

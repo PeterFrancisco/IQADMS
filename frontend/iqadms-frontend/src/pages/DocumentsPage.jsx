@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import AppIcon from '../components/AppIcon'
 import api from '../services/api'
+import { getApiOrigin } from '../utils/apiOrigin'
 import { upshd } from '../theme/upshd'
 import { pageTitleStyle, tableHeadRowStyle, linkStyle } from '../theme/pageStyles'
-
-const apiOrigin = (import.meta.env.VITE_API_URL || 'http://localhost:5135/api').replace(/\/api\/?$/, '')
 
 const STATUS_COLORS = {
   Approved: '#16a34a',
@@ -108,7 +107,7 @@ export default function DocumentsPage() {
 
   function fileLink(doc) {
     if (doc.downloadUrl) {
-      return `${apiOrigin}${doc.downloadUrl}`
+      return `${getApiOrigin()}${doc.downloadUrl}`
     }
     return doc.googleDriveLink
   }

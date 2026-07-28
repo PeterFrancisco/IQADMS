@@ -357,6 +357,16 @@ public class AdminController : ControllerBase
         return Ok(items);
     }
 
+    // GET: api/Admin/smtp-settings (no secrets — verify pqad config)
+    [HttpGet("smtp-settings")]
+    public async Task<IActionResult> GetSmtpSettings()
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        return Ok(_emailService.GetSmtpConfigSummary());
+    }
+
     // POST: api/Admin/test-smtp?to=optional@email.com
     [HttpPost("test-smtp")]
     public async Task<IActionResult> TestSmtp([FromQuery] string? to = null)

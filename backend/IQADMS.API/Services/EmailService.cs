@@ -168,6 +168,12 @@ If you did not expect this message, you can ignore it.
             return false;
         }
 
+        if (NormalizeSmtpPassword(smtp["Password"]).Length < 8)
+        {
+            error = "SMTP Password looks too short after trimming spaces. For Gmail use a 16-character App Password.";
+            return false;
+        }
+
         var from = smtp["From"]!.Trim();
         var user = smtp["Username"]!.Trim();
         if (!from.Equals(user, StringComparison.OrdinalIgnoreCase)
@@ -190,7 +196,7 @@ If you did not expect this message, you can ignore it.
         var host = smtp["Host"]!.Trim();
         var port = int.Parse(smtp["Port"]!);
         var username = smtp["Username"]!.Trim();
-        var password = smtp["Password"]!;
+        var password = NormalizeSmtpPassword(smtp["Password"]);
 
         var message = new MimeMessage();
         message.From.Add(MailboxAddress.Parse(from));
@@ -221,7 +227,32 @@ If you did not expect this message, you can ignore it.
         return SecureSocketOptions.Auto;
     }
 
-    private static string DescribeSendFailure(Exception ex)
+    public object GetSmtpConfigSummary()
+    {
+        var smtp = _config.GetSection("SmtpSettings");
+        var password = smtp["Password"];
+        var normalizedLen = NormalizeSmtpPassword(password).Length;
+
+        return new
+        {
+            host = smtp["Host"]?.Trim(),
+            port = smtp["Port"]?.Trim(),
+            security = smtp["Security"]?.Trim(),
+            username = smtp["Username"]?.Trim(),
+            from = smtp["From"]?.Trim(),
+            adminEmail = smtp["AdminEmail"]?.Trim(),
+            passwordConfigured = normalizedLen > 0,
+            passwordLength = normalizedLen,
+            gmailFromMatchesUsername = string.Equals(
+                smtp["From"]?.Trim(),
+                smtp["Username"]?.Trim(),
+                StringComparison.OrdinalIgnoreCase),
+            note = "SMTP uses appsettings.json on the machine running dotnet run (pqad). IQADMS login passwords are unrelated."
+        };
+    }
+
+    private static string NormalizeSmtpPassword(string? password) =>
+        (password ?? string.Empty).Replace(" ", string.Empty).Trim();
     {
         var text = ex.Message;
         for (var inner = ex.InnerException; inner != null; inner = inner.InnerException)
@@ -231,7 +262,7 @@ If you did not expect this message, you can ignore it.
             || text.Contains("authentication", StringComparison.OrdinalIgnoreCase)
             || text.Contains("Authentication", StringComparison.Ordinal))
         {
-            return "SMTP login failed. For Gmail use an App Password (not your normal password). For Outlook use smtp.office365.com and your M365 password or app password.";
+            return "SMTP login failed. Use an App Password for the same Gmail as Username/From (create at Google Account → Security → App passwords). Remove spaces from the 16-character password in appsettings.json on pqad, then restart dotnet run. IQADMS registration password is not used for SMTP.";
         }
 
         if (text.Contains("timed out", StringComparison.OrdinalIgnoreCase)

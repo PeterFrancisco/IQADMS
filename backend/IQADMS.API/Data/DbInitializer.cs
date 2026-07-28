@@ -50,12 +50,18 @@ public static class DbInitializer
         var primaryAdmin = context.Users
             .FirstOrDefault(u => u.Email.ToLower() == primaryAdminEmail);
         if (primaryAdmin != null)
+        {
             primaryAdmin.IsAdmin = true;
+            primaryAdmin.IsActive = true;
+        }
 
         var retiredAdmin = context.Users
             .FirstOrDefault(u => u.Email.ToLower() == "isco.jamespeter@gmail.com");
         if (retiredAdmin != null)
+        {
             retiredAdmin.IsAdmin = false;
+            retiredAdmin.IsActive = false;
+        }
 
         if (context.ChangeTracker.HasChanges())
             context.SaveChanges();

@@ -3,12 +3,20 @@ import axios from 'axios'
 function resolveApiBaseUrl() {
   const fromEnv = import.meta.env.VITE_API_URL
   if (fromEnv && String(fromEnv).trim()) {
-    return String(fromEnv).trim().replace(/\/+$/, '')
+    let url = String(fromEnv).trim().replace(/\/+$/, '')
+    if (
+      typeof window !== 'undefined'
+      && window.location.protocol === 'https:'
+      && /^http:\/\//i.test(url)
+    ) {
+      // Live site is HTTPS — never call HTTP API (mixed content + CORS)
+      return '/api'
+    }
+    return url
   }
   if (import.meta.env.DEV) {
     return 'http://localhost:5135/api'
   }
-  // Production: same host as the SPA (reverse proxy /api → API)
   return '/api'
 }
 

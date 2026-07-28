@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage, validateStrongPassword } from '../utils/apiError'
+import { readAuthTokenFromResponse } from '../utils/authToken'
 import {
   authPageStyle,
   authCardStyle,
@@ -57,7 +58,13 @@ export default function CompleteRegistrationPage() {
       })
 
       // Save login session
-      localStorage.setItem('token', response.data.token)
+      const token = readAuthTokenFromResponse(response.data)
+      if (!token) {
+        setError('Registration succeeded but no session token was returned. Check /api proxy on the server.')
+        return
+      }
+
+      localStorage.setItem('token', token)
       localStorage.setItem('username', username)
       localStorage.setItem('isAdmin', response.data.isAdmin)
 

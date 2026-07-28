@@ -5,8 +5,7 @@ import TaskWorkspaceBoard from '../components/TaskWorkspaceBoard'
 import AppModal, { ConfirmDialog } from '../components/AppModal'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
-
-const API_ORIGIN = api.defaults.baseURL.replace(/\/api$/, '')
+import { getApiOrigin } from '../utils/apiOrigin'
 
 const STATUS_OPTIONS = ['To Do', 'In Progress', 'Waiting', 'Completed', 'Cancelled']
 const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical']
@@ -509,7 +508,7 @@ export default function DashboardPage() {
                   <label style={labelStyle}>Reference attachment</label>
                   <p style={{ margin: '0 0 1rem' }}>
                     <a
-                      href={`${API_ORIGIN}${selectedTask.attachmentDownloadUrl}`}
+                      href={`${getApiOrigin()}${selectedTask.attachmentDownloadUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: '#9e1b32', fontWeight: 600 }}
