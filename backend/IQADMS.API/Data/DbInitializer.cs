@@ -9,9 +9,22 @@ public static class DbInitializer
         // Ensure team allowed emails exist
         var teamEmails = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
-            ["isco.jamespeter@gmail.com"] = true,
+            ["franciscopeterj@gmail.com"] = true,
             ["jamespeter.francisco3rd@gmail.com"] = false
         };
+
+        var retiredAllowedEmails = new[]
+        {
+            "isco.jamespeter@gmail.com"
+        };
+
+        foreach (var retired in retiredAllowedEmails)
+        {
+            var allowed = context.AllowedUsers
+                .FirstOrDefault(x => x.Email.ToLower() == retired.ToLower());
+            if (allowed != null)
+                context.AllowedUsers.Remove(allowed);
+        }
 
         foreach (var entry in teamEmails)
         {
@@ -32,6 +45,17 @@ public static class DbInitializer
                 existing.IsAdmin = entry.Value;
             }
         }
+
+        const string primaryAdminEmail = "franciscopeterj@gmail.com";
+        var primaryAdmin = context.Users
+            .FirstOrDefault(u => u.Email.ToLower() == primaryAdminEmail);
+        if (primaryAdmin != null)
+            primaryAdmin.IsAdmin = true;
+
+        var retiredAdmin = context.Users
+            .FirstOrDefault(u => u.Email.ToLower() == "isco.jamespeter@gmail.com");
+        if (retiredAdmin != null)
+            retiredAdmin.IsAdmin = false;
 
         if (context.ChangeTracker.HasChanges())
             context.SaveChanges();
