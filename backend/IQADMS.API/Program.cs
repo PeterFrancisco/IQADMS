@@ -93,7 +93,7 @@ builder.Services.AddCors(options =>
                 if (allowedOrigins.Contains(origin))
                     return true;
 
-                if (uri.Port is not (5173 or 5174))
+                if (uri.Port is not (5173 or 5174 or 8080))
                     return false;
 
                 if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
