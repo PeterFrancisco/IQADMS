@@ -6,6 +6,9 @@ namespace IQADMS.API.Services;
 
 public class EmailService
 {
+    /// <summary>Used when App:PublicUrl is not set in appsettings (pqad).</summary>
+    public const string DefaultPublicSiteUrl = "https://iqadms.iotlab-uphsdm.live";
+
     private readonly IConfiguration _config;
     private readonly ILogger<EmailService> _logger;
 
@@ -60,40 +63,34 @@ Please review this request in the admin panel.";
 
         var registerUrl = GetRegisterUrl();
         var siteUrl = GetPublicSiteUrl();
-        var greeting = string.IsNullOrWhiteSpace(recipientDisplayName)
+        var greetingPlain = string.IsNullOrWhiteSpace(recipientDisplayName)
             ? "Hello,"
             : $"Hello {recipientDisplayName.Trim()},";
+        var greetingHtml = string.IsNullOrWhiteSpace(recipientDisplayName)
+            ? "Hello,"
+            : $"Hello {System.Net.WebUtility.HtmlEncode(recipientDisplayName.Trim())},";
 
         var invitedLine = string.IsNullOrWhiteSpace(invitedByDisplayName)
             ? "You have been invited to join IQADMS for the Planning and Quality Assurance Department (PQAD), University of Perpetual Help System DALTA — Molino Campus."
             : $"{invitedByDisplayName.Trim()} has invited you to join IQADMS (PQAD · UPSHD Molino).";
 
-        var siteBlock = siteUrl is null
-            ? """
-Official website: (your administrator will provide the IQADMS URL)
-Registration: open the site, then choose Register / Sign up.
-"""
-            : $"""
+        var body = $"""
+{greetingPlain}
+
+{invitedLine}
+
 Official IQADMS website:
   {siteUrl}
 
 Create your account (registration page):
   {registerUrl}
-""";
-
-        var body = $"""
-{greeting}
-
-{invitedLine}
-
-{siteBlock}
 
 Use this email address when you register:
   {to}
 
 How to register:
-  1. Open the official website or registration link above.
-  2. Select Register and enter the email address shown here.
+  1. Open the registration link above (or the website, then choose Register).
+  2. Enter the email address shown here.
   3. Choose a username and a strong password, then complete your profile.
   4. Sign in at the same website when you are done.
 
@@ -102,11 +99,30 @@ If you did not expect this invitation, you can safely ignore this email.
 — IQADMS · PQAD · UPSHD Molino
 """;
 
+        var htmlBody = $"""
+<p>{greetingHtml}</p>
+<p>{System.Net.WebUtility.HtmlEncode(invitedLine)}</p>
+<p><strong>Official IQADMS website:</strong><br />
+<a href="{siteUrl}">{System.Net.WebUtility.HtmlEncode(siteUrl)}</a></p>
+<p><strong>Create your account:</strong><br />
+<a href="{registerUrl}">{System.Net.WebUtility.HtmlEncode(registerUrl)}</a></p>
+<p>Use this email address when you register:<br />
+<code>{System.Net.WebUtility.HtmlEncode(to)}</code></p>
+<ol>
+  <li>Open the registration link above.</li>
+  <li>Enter the email address shown here.</li>
+  <li>Choose a username and a strong password, then complete your profile.</li>
+  <li>Sign in at the same website when you are done.</li>
+</ol>
+<p>If you did not expect this invitation, you can safely ignore this email.</p>
+<p>— IQADMS · PQAD · UPSHD Molino</p>
+""";
+
         try
         {
             var smtp = _config.GetSection("SmtpSettings");
             var from = RequireFromAddress(smtp);
-            await SendAsync(from, to, "Register on IQADMS — PQAD Molino", body);
+            await SendAsync(from, to, "Register on IQADMS — PQAD Molino", body, htmlBody);
             _logger.LogInformation("Registration invite sent to {Email}", to);
             return (true, null);
         }
@@ -146,19 +162,18 @@ If you did not expect this invitation, you can safely ignore this email.
         }
     }
 
-    private string GetRegisterUrl()
-    {
-        var baseUrl = GetPublicSiteUrl();
-        if (baseUrl is null)
-            return "(set App:PublicUrl in appsettings.json, then open /register on that site)";
+    private string GetRegisterUrl() => $"{GetPublicSiteUrl()}/register";
 
-        return $"{baseUrl}/register";
-    }
-
-    private string? GetPublicSiteUrl()
+    private string GetPublicSiteUrl()
     {
         var baseUrl = _config["App:PublicUrl"]?.Trim().TrimEnd('/');
-        return string.IsNullOrEmpty(baseUrl) ? null : baseUrl;
+        if (!string.IsNullOrEmpty(baseUrl))
+            return baseUrl;
+
+        _logger.LogWarning(
+            "App:PublicUrl is not set; using default {DefaultUrl} in registration invite emails.",
+            DefaultPublicSiteUrl);
+        return DefaultPublicSiteUrl;
     }
 
     private bool IsSmtpConfigured(out string? error)
@@ -210,7 +225,7 @@ If you did not expect this invitation, you can safely ignore this email.
     private static string RequireFromAddress(IConfigurationSection smtp) =>
         smtp["From"]?.Trim() ?? throw new InvalidOperationException("SMTP From is not configured.");
 
-    private async Task SendAsync(string from, string to, string subject, string body)
+    private async Task SendAsync(string from, string to, string subject, string body, string? htmlBody = null)
     {
         var smtp = _config.GetSection("SmtpSettings");
         var host = smtp["Host"]!.Trim();
@@ -222,7 +237,18 @@ If you did not expect this invitation, you can safely ignore this email.
         message.From.Add(MailboxAddress.Parse(from));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
-        message.Body = new TextPart("plain") { Text = body };
+
+        if (!string.IsNullOrWhiteSpace(htmlBody))
+        {
+            var alternative = new Multipart("alternative");
+            alternative.Add(new TextPart("plain") { Text = body });
+            alternative.Add(new TextPart("html") { Text = htmlBody });
+            message.Body = alternative;
+        }
+        else
+        {
+            message.Body = new TextPart("plain") { Text = body };
+        }
 
         using var client = new SmtpClient();
         client.Timeout = 30_000;
@@ -267,7 +293,9 @@ If you did not expect this invitation, you can safely ignore this email.
                 smtp["From"]?.Trim(),
                 smtp["Username"]?.Trim(),
                 StringComparison.OrdinalIgnoreCase),
-            note = "SMTP uses appsettings.json on the machine running dotnet run (pqad). IQADMS login passwords are unrelated."
+            note = "SMTP uses appsettings.json on the machine running dotnet run (pqad). IQADMS login passwords are unrelated.",
+            publicUrl = GetPublicSiteUrl(),
+            registerUrl = GetRegisterUrl()
         };
     }
 
