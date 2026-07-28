@@ -218,8 +218,21 @@ public class TasksController : ControllerBase
             }
             else if (task.AssignedToUserId != null)
             {
+                var previousAssignee = task.AssignedToUserId.Value;
                 changes.Add("assignee cleared");
                 task.AssignedToUserId = null;
+                if (previousAssignee != userId)
+                {
+                    await _notifications.NotifyAsync(
+                        previousAssignee,
+                        "task",
+                        "Removed from task",
+                        $"You were unassigned from \"{task.Title}\".",
+                        "/my-tasks",
+                        task.Id,
+                        task.ProjectId,
+                        $"task-unassigned-{task.Id}-{previousAssignee}");
+                }
             }
         }
 

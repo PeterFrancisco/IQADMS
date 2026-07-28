@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
+import AppModal from '../components/AppModal'
 import AvatarWithPresence from '../components/AvatarWithPresence'
 import { SocialLinksEditorList, SocialLinksRow } from '../components/SocialLinks'
 import { normalizePresence } from '../config/presence'
@@ -55,6 +56,8 @@ export default function ProfilePage() {
   })
 
   const [workHistory, setWorkHistory] = useState([])
+  const [myAnnouncements, setMyAnnouncements] = useState([])
+  const [editOpen, setEditOpen] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -99,15 +102,21 @@ export default function ProfilePage() {
       localStorage.setItem('isAdmin', res.data.isAdmin ? 'true' : 'false')
 
       if (res.data.username) {
-        const historyRes = await api.get(`/Tasks/user/${res.data.username}/history`)
+        const [historyRes, annRes] = await Promise.all([
+          api.get(`/Tasks/user/${res.data.username}/history`),
+          api.get(`/Profile/${res.data.username}/announcements`)
+        ])
         setWorkHistory(historyRes.data)
+        setMyAnnouncements(annRes.data || [])
       } else {
         setWorkHistory([])
+        setMyAnnouncements([])
       }
     } catch (err) {
       console.error(err)
       setError('Failed to load profile.')
       setWorkHistory([])
+      setMyAnnouncements([])
     } finally {
       setLoading(false)
     }
@@ -157,6 +166,7 @@ export default function ProfilePage() {
       })
       notifyProfileUpdated()
       flash('Profile saved successfully.')
+      setEditOpen(false)
     } catch (err) {
       console.error(err)
       flash(err.response?.data?.message || 'Failed to update profile.', true)
@@ -310,6 +320,11 @@ export default function ProfilePage() {
               }}>
                 {isAdmin ? 'Administrator' : 'PQAD Staff'}
               </span>
+              <div style={{ marginTop: '0.85rem' }}>
+                <button type="button" style={primaryButton} onClick={() => setEditOpen(true)}>
+                  Edit profile
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -348,92 +363,41 @@ export default function ProfilePage() {
 
           {/* Main */}
           <div style={profileStyles.main}>
-            <SectionCard
-              title="Personal information"
-              subtitle="Update how you appear to your team"
-            >
-              <div style={profileGridStyle}>
-                <Input
-                  label="Display name"
-                  value={profile.displayName}
-                  onChange={v => handleProfileChange('displayName', v)}
-                />
-                <Input
-                  label="Position / role"
-                  value={profile.position}
-                  onChange={v => handleProfileChange('position', v)}
-                  placeholder="e.g. QA Coordinator"
-                />
-                <Input
-                  label="Age"
-                  type="number"
-                  value={profile.age}
-                  onChange={v => handleProfileChange('age', v)}
-                />
-              </div>
-              <div style={{ marginTop: '1rem' }}>
-                <label style={labelStyle}>Bio</label>
-                <textarea
-                  rows="4"
-                  value={profile.bio}
-                  onChange={e => handleProfileChange('bio', e.target.value)}
-                  style={textareaStyle}
-                  placeholder="Tell your team a little about yourself..."
-                />
+            <SectionCard title="About" subtitle="How you appear to your team">
+              {profile.bio ? (
+                <p style={{ margin: 0, color: '#475569', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{profile.bio}</p>
+              ) : (
+                <p style={profileStyles.emptyText}>No bio yet. Use Edit profile to add one.</p>
+              )}
+              <div style={{ ...profileGridStyle, marginTop: '1rem' }}>
+                <InfoRow label="Display name" value={profile.displayName} />
+                <InfoRow label="Position" value={profile.position} />
+                {profile.age !== '' && profile.age != null && <InfoRow label="Age" value={profile.age} />}
+                <InfoRow label="Website" value={profile.website} />
               </div>
             </SectionCard>
 
-            <SectionCard title="Social & portfolio links">
-              <SocialLinksEditorList links={socialEditorLinks} onEdit={onSocialEdit} />
-              <div style={{ marginTop: '1rem' }}>
-                <Input
-                  label="Website / portfolio"
-                  placeholder="https://yourwebsite.com"
-                  value={profile.website}
-                  onChange={v => handleProfileChange('website', v)}
-                />
-              </div>
-              <div style={{ marginTop: '1.25rem', textAlign: 'right' }}>
-                <button onClick={saveProfile} disabled={saving} style={primaryButton}>
-                  {saving ? 'Saving...' : 'Save profile'}
-                </button>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Security">
-              <div style={profileGridStyle}>
-                <Input
-                  label="Current password"
-                  type="password"
-                  value={passwords.currentPassword}
-                  onChange={v => handlePasswordChange('currentPassword', v)}
-                />
-                <div />
-                <Input
-                  label="New password"
-                  type="password"
-                  value={passwords.newPassword}
-                  onChange={v => handlePasswordChange('newPassword', v)}
-                />
-                <Input
-                  label="Confirm new password"
-                  type="password"
-                  value={passwords.confirmPassword}
-                  onChange={v => handlePasswordChange('confirmPassword', v)}
-                />
-              </div>
-              <div style={profileStyles.hintBox}>
-                <strong>Password requirements</strong>
-                <ul style={profileStyles.hintList}>
-                  <li>At least 8 characters</li>
-                  <li>Uppercase, lowercase, number, and special character</li>
-                </ul>
-              </div>
-              <div style={{ marginTop: '1.25rem', textAlign: 'right' }}>
-                <button onClick={changePassword} disabled={saving} style={secondaryButton}>
-                  Change password
-                </button>
-              </div>
+            <SectionCard title="Announcements & meetings" subtitle="Items you published">
+              {myAnnouncements.length === 0 ? (
+                <p style={profileStyles.emptyText}>No announcements or meetings published yet.</p>
+              ) : (
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  {myAnnouncements.map(a => (
+                    <div key={a.id} style={profileStyles.historyCard}>
+                      <div style={profileStyles.historyTitle}>{a.title}</div>
+                      <div style={profileStyles.historyMeta}>
+                        {a.category} · {a.startDate}
+                        {a.location ? <> · {a.location}</> : null}
+                      </div>
+                      {a.description && (
+                        <p style={{ margin: '0.35rem 0 0', fontSize: '0.88rem', color: '#64748b' }}>
+                          {a.description.length > 120 ? `${a.description.slice(0, 120)}…` : a.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </SectionCard>
 
             <SectionCard title="Work history" subtitle="Tasks you completed as assignee">
@@ -467,6 +431,47 @@ export default function ProfilePage() {
             </SectionCard>
           </div>
         </div>
+
+        <AppModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          title="Edit profile"
+          size="lg"
+          footer={
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button type="button" style={secondaryButton} onClick={() => setEditOpen(false)}>Cancel</button>
+              <button type="button" style={primaryButton} onClick={saveProfile} disabled={saving}>
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          }
+        >
+          <div style={{ display: 'grid', gap: '1.25rem' }}>
+            <div style={profileGridStyle}>
+              <Input label="Display name" value={profile.displayName} onChange={v => handleProfileChange('displayName', v)} />
+              <Input label="Position / role" value={profile.position} onChange={v => handleProfileChange('position', v)} placeholder="e.g. QA Coordinator" />
+              <Input label="Age" type="number" value={profile.age} onChange={v => handleProfileChange('age', v)} />
+            </div>
+            <div>
+              <label style={labelStyle}>Bio</label>
+              <textarea rows="4" value={profile.bio} onChange={e => handleProfileChange('bio', e.target.value)} style={textareaStyle} placeholder="Tell your team a little about yourself..." />
+            </div>
+            <SocialLinksEditorList links={socialEditorLinks} onEdit={onSocialEdit} />
+            <Input label="Website / portfolio" placeholder="https://yourwebsite.com" value={profile.website} onChange={v => handleProfileChange('website', v)} />
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: upshd.maroon }}>Change password</h3>
+              <div style={profileGridStyle}>
+                <Input label="Current password" type="password" value={passwords.currentPassword} onChange={v => handlePasswordChange('currentPassword', v)} />
+                <div />
+                <Input label="New password" type="password" value={passwords.newPassword} onChange={v => handlePasswordChange('newPassword', v)} />
+                <Input label="Confirm new password" type="password" value={passwords.confirmPassword} onChange={v => handlePasswordChange('confirmPassword', v)} />
+              </div>
+              <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
+                <button type="button" onClick={changePassword} disabled={saving} style={secondaryButton}>Update password</button>
+              </div>
+            </div>
+          </div>
+        </AppModal>
       </div>
     </DashboardLayout>
   )

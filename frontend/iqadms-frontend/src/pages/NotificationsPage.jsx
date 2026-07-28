@@ -8,7 +8,8 @@ import { pageTitleStyle } from '../theme/pageStyles'
 const CATEGORY_LABELS = {
   task: 'Task',
   reminder: 'Reminder',
-  admin: 'Admin'
+  admin: 'Admin',
+  announcement: 'Announcement'
 }
 
 export default function NotificationsPage() {

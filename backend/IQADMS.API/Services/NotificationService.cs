@@ -129,4 +129,71 @@ public class NotificationService
                 dedupKey: $"account-request-{accountRequestId}");
         }
     }
+
+    public async Task NotifyAnnouncementPublishedAsync(
+        Guid announcementId,
+        string category,
+        string title,
+        string? description,
+        Guid authorUserId,
+        string authorEmail)
+    {
+        var author = await _context.Users.FindAsync(authorUserId);
+        if (author == null) return;
+
+        var tokens = MentionParser.ExtractTokens(title, description);
+        var recipientIds = new HashSet<Guid>();
+
+        if (tokens.Count == 0 || MentionParser.ContainsEveryone(tokens))
+        {
+            var all = await _context.Users
+                .Where(u => u.IsActive && u.Id != authorUserId)
+                .Select(u => u.Id)
+                .ToListAsync();
+            foreach (var id in all) recipientIds.Add(id);
+        }
+        else
+        {
+            var activeUsers = await _context.Users
+                .Where(u => u.IsActive && u.Id != authorUserId)
+                .Select(u => new { u.Id, u.Username, u.Email })
+                .ToListAsync();
+
+            foreach (var token in tokens)
+            {
+                if (token.Equals("everyone", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var match = activeUsers.FirstOrDefault(u =>
+                    u.Username.Equals(token, StringComparison.OrdinalIgnoreCase)
+                    || u.Email.Equals(token, StringComparison.OrdinalIgnoreCase)
+                    || u.Email.StartsWith(token + "@", StringComparison.OrdinalIgnoreCase));
+
+                if (match != null)
+                    recipientIds.Add(match.Id);
+            }
+        }
+
+        var preview = TruncatePreview(title, 96);
+        var kind = category.Equals("Meeting", StringComparison.OrdinalIgnoreCase) ? "meeting" : "announcement";
+        var notifyTitle = $"{authorEmail} published a {kind}";
+
+        foreach (var userId in recipientIds)
+        {
+            await NotifyAsync(
+                userId,
+                "announcement",
+                notifyTitle,
+                preview,
+                "/announcements",
+                dedupKey: $"announcement-{announcementId}-{userId}");
+        }
+    }
+
+    private static string TruncatePreview(string text, int maxLen)
+    {
+        var t = (text ?? string.Empty).Trim();
+        if (t.Length <= maxLen) return t;
+        return t[..(maxLen - 1)] + "…";
+    }
 }

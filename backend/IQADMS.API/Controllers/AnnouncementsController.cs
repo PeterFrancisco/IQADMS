@@ -22,10 +22,12 @@ public class AnnouncementsController : ControllerBase
     };
 
     private readonly ApplicationDbContext _context;
+    private readonly NotificationService _notifications;
 
-    public AnnouncementsController(ApplicationDbContext context)
+    public AnnouncementsController(ApplicationDbContext context, NotificationService notifications)
     {
         _context = context;
+        _notifications = notifications;
     }
 
     [HttpGet]
@@ -87,6 +89,16 @@ public class AnnouncementsController : ControllerBase
         await _context.SaveChangesAsync();
 
         await _context.Entry(entity).Reference(e => e.CreatedByUser).LoadAsync();
+
+        var authorEmail = entity.CreatedByUser?.Email ?? "A team member";
+        await _notifications.NotifyAnnouncementPublishedAsync(
+            entity.Id,
+            entity.Category,
+            entity.Title,
+            entity.Description,
+            entity.CreatedByUserId,
+            authorEmail);
+
         return Ok(Map(entity));
     }
 

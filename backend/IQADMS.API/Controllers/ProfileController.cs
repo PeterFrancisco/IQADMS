@@ -179,6 +179,35 @@ public class ProfileController : ControllerBase
         return Ok(members);
     }
 
+    [HttpGet("{username}/announcements")]
+    public async Task<IActionResult> GetMemberAnnouncements(string username)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+
+        if (user == null)
+            return NotFound();
+
+        var items = await _context.PqadAnnouncements
+            .Where(a => !a.IsDeleted && a.CreatedByUserId == user.Id)
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(25)
+            .Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.Description,
+                a.Category,
+                startDate = a.StartDate,
+                endDate = a.EndDate,
+                a.Location,
+                createdAt = a.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(items);
+    }
+
     // GET: api/Profile/{username}
     [HttpGet("{username}")]
     public async Task<IActionResult> GetMemberProfile(string username)

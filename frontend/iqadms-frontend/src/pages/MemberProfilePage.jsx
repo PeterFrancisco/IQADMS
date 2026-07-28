@@ -19,6 +19,7 @@ export default function MemberProfilePage() {
   const navigate = useNavigate()
   const [member, setMember] = useState(null)
   const [workHistory, setWorkHistory] = useState([])
+  const [memberAnnouncements, setMemberAnnouncements] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -34,15 +35,18 @@ export default function MemberProfilePage() {
   async function loadMember(silent = false) {
     try {
       if (!silent) setLoading(true)
-      const [profileRes, historyRes] = await Promise.all([
+      const [profileRes, historyRes, annRes] = await Promise.all([
         api.get(`/Profile/${username}`),
-        api.get(`/Tasks/user/${username}/history`)
+        api.get(`/Tasks/user/${username}/history`),
+        api.get(`/Profile/${username}/announcements`)
       ])
       setMember(profileRes.data)
       setWorkHistory(historyRes.data)
+      setMemberAnnouncements(annRes.data || [])
     } catch {
       setMember(null)
       setWorkHistory([])
+      setMemberAnnouncements([])
     } finally {
       if (!silent) setLoading(false)
     }
@@ -160,6 +164,29 @@ export default function MemberProfilePage() {
                 </a>
               </SectionCard>
             )}
+
+            <SectionCard title="Announcements & meetings" subtitle="Published by this member">
+              {memberAnnouncements.length === 0 ? (
+                <p style={profileStyles.emptyText}>No announcements or meetings published yet.</p>
+              ) : (
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  {memberAnnouncements.map(a => (
+                    <div key={a.id} style={profileStyles.historyCard}>
+                      <div style={profileStyles.historyTitle}>{a.title}</div>
+                      <div style={profileStyles.historyMeta}>
+                        {a.category} · {a.startDate}
+                        {a.location ? <> · {a.location}</> : null}
+                      </div>
+                      {a.description && (
+                        <p style={{ margin: '0.35rem 0 0', fontSize: '0.88rem', color: '#64748b' }}>
+                          {a.description.length > 120 ? `${a.description.slice(0, 120)}…` : a.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
 
             <SectionCard title="Work history" subtitle="Tasks completed as assignee">
               {workHistory.length === 0 ? (

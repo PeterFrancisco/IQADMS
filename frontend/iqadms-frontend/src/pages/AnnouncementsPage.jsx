@@ -197,6 +197,9 @@ export default function AnnouncementsPage() {
             <input style={input} value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="Room, virtual link, campus…" />
 
             <label style={label}>Details</label>
+            <p style={{ margin: '0 0 0.35rem', fontSize: '0.78rem', color: '#64748b' }}>
+              Use @everyone or @username in the text to notify specific members.
+            </p>
             <textarea style={{ ...input, minHeight: 80 }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>

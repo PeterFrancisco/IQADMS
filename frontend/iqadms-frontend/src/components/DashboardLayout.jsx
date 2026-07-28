@@ -7,6 +7,7 @@ import AvatarWithPresence from './AvatarWithPresence'
 import ActivityStatusText from './ActivityStatusText'
 import { setPresence, startPresenceHeartbeat } from '../utils/presenceApi'
 import { Menu } from 'lucide-react'
+import NotificationBellDropdown from './NotificationBellDropdown'
 import { normalizePresence } from '../config/presence'
 
 export default function DashboardLayout({ children }) {
@@ -95,7 +96,10 @@ export default function DashboardLayout({ children }) {
             </button>
             <h2 className="main-title">IQADMS</h2>
           </div>
-          <ProfileMenu />
+          <div className="main-header-actions">
+            <NotificationBellDropdown />
+            <ProfileMenu />
+          </div>
         </header>
         {children}
       </main>
