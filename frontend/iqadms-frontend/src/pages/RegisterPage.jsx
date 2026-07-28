@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { upshd } from '../theme/upshd'
+import api from '../services/api'
+import { getApiErrorMessage } from '../utils/apiError'
 import {
   authPageStyle,
   authCardStyle,
@@ -23,7 +24,10 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const res = await api.get(`/Auth/check-email?email=${email}`)
+      const normalized = email.trim().toLowerCase()
+      const res = await api.get(
+        `/Auth/check-email?email=${encodeURIComponent(normalized)}`
+      )
 
       if (!res.data.allowed) {
         setError('This email is not yet authorized.')
@@ -35,10 +39,16 @@ export default function RegisterPage() {
         return
       }
 
-      sessionStorage.setItem('verifiedEmail', email)
+      sessionStorage.setItem('verifiedEmail', normalized)
       navigate('/complete-registration')
-    } catch {
-      setError('Unable to verify email.')
+    } catch (err) {
+      if (!err?.response) {
+        setError(
+          'Cannot reach the server. Confirm the API is running and rebuild the frontend after pulling the latest code (hard refresh the page).'
+        )
+      } else {
+        setError(getApiErrorMessage(err, 'Unable to verify email.'))
+      }
     } finally {
       setLoading(false)
     }

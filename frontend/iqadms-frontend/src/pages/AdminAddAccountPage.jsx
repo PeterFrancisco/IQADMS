@@ -31,12 +31,21 @@ export default function AdminAddAccountPage() {
     setLoading(true)
 
     try {
-      await api.post('/Admin/allowed-users', {
+      const res = await api.post('/Admin/allowed-users', {
         email,
         isAdmin
       })
 
-      alert('Allowed user added successfully.')
+      const data = res.data || {}
+      if (data.inviteEmailSent) {
+        alert(data.message || 'User added. Invitation email sent.')
+      } else if (data.inviteEmailError) {
+        alert(
+          `${data.message || 'User added.'}\n\nEmail: ${data.inviteEmailError}`
+        )
+      } else {
+        alert(data.message || 'Allowed user added successfully.')
+      }
 
       setEmail('')
       setIsAdmin(false)
@@ -68,7 +77,7 @@ export default function AdminAddAccountPage() {
           </h1>
 
           <p style={{ color: '#64748b' }}>
-            Add an email to the allowed registration list. The user can register only after being added here.
+            Add an email to the allowed registration list. An invitation is sent to that address (Gmail, Outlook, etc.) with a link to register.
           </p>
 
           <form

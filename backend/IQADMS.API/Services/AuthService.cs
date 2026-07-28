@@ -25,12 +25,14 @@ public class AuthService
 
     public async Task<LoginResponse> RegisterAsync(RegisterRequest request)
     {
+        var email = request.Email.Trim().ToLowerInvariant();
+
         // Check if email is allowed
-        if (!await _allowedUserService.IsEmailAllowedAsync(request.Email))
+        if (!await _allowedUserService.IsEmailAllowedAsync(email))
             throw new Exception("This email is not authorized to register.");
 
         var allowedUser = await _context.AllowedUsers
-            .FirstOrDefaultAsync(x => x.Email == request.Email);
+            .FirstOrDefaultAsync(x => x.Email.ToLower() == email);
 
         if (allowedUser == null)
             throw new Exception("This email is not authorized to register.");
@@ -46,7 +48,7 @@ public class AuthService
 
         // Prevent duplicate username or email
         if (await _context.Users.AnyAsync(x =>
-                x.Email.ToLower() == request.Email.ToLower() ||
+                x.Email.ToLower() == email ||
                 x.Username!.ToLower() == request.Username.ToLower()))
         {
             throw new Exception("Username or email is already in use.");
@@ -55,7 +57,7 @@ public class AuthService
         var user = new User
         {
             Username = request.Username,
-            Email = request.Email.Trim().ToLower(),
+            Email = email,
             DisplayName = request.Username,
             Position = string.Empty,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
@@ -66,7 +68,7 @@ public class AuthService
 
         await _context.SaveChangesAsync();
 
-        await _allowedUserService.MarkAsRegisteredAsync(request.Email);
+        await _allowedUserService.MarkAsRegisteredAsync(email);
 
         var token = _jwtService.GenerateToken(user);
 

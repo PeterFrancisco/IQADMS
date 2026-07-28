@@ -14,6 +14,9 @@ public class AllowedUserService
         _context = context;
     }
 
+    private static string NormalizeEmail(string email) =>
+        email.Trim().ToLowerInvariant();
+
     public async Task<List<AllowedUserResponse>> GetAllAsync()
     {
         return await _context.AllowedUsers
@@ -28,12 +31,14 @@ public class AllowedUserService
 
     public async Task AddAsync(CreateAllowedUserRequest request)
     {
-        if (await _context.AllowedUsers.AnyAsync(x => x.Email == request.Email))
+        var email = NormalizeEmail(request.Email);
+
+        if (await _context.AllowedUsers.AnyAsync(x => x.Email.ToLower() == email))
             throw new Exception("Email already exists.");
 
         var allowedUser = new AllowedUser
         {
-            Email = request.Email,
+            Email = email,
             IsRegistered = false
         };
 
@@ -56,14 +61,18 @@ public class AllowedUserService
 
     public async Task<bool> IsEmailAllowedAsync(string email)
     {
+        var normalized = NormalizeEmail(email);
+
         return await _context.AllowedUsers
-            .AnyAsync(x => x.Email == email && !x.IsRegistered);
+            .AnyAsync(x => x.Email.ToLower() == normalized && !x.IsRegistered);
     }
 
     public async Task MarkAsRegisteredAsync(string email)
     {
+        var normalized = NormalizeEmail(email);
+
         var allowedUser = await _context.AllowedUsers
-            .FirstOrDefaultAsync(x => x.Email == email);
+            .FirstOrDefaultAsync(x => x.Email.ToLower() == normalized);
 
         if (allowedUser == null)
             return;

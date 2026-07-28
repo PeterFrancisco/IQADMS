@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using IQADMS.API.DTOs.AllowedUsers;
 using Microsoft.AspNetCore.Authorization;
 using IQADMS.API.DTOs.Admin;
+using IQADMS.API.Services;
 using System.Security.Claims;
 
 namespace IQADMS.API.Controllers;
@@ -15,10 +16,12 @@ namespace IQADMS.API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly EmailService _emailService;
 
-    public AdminController(ApplicationDbContext context)
+    public AdminController(ApplicationDbContext context, EmailService emailService)
     {
         _context = context;
+        _emailService = emailService;
     }
 
     // GET: api/Admin/account-requests
@@ -50,19 +53,33 @@ public class AdminController : ControllerBase
         request.Status = "Approved";
         request.ReviewedAt = DateTime.UtcNow;
 
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
         var exists = await _context.AllowedUsers
-            .AnyAsync(x => x.Email == request.Email);
+            .AnyAsync(x => x.Email.ToLower() == normalizedEmail);
 
         if (!exists)
         {
             _context.AllowedUsers.Add(new AllowedUser
             {
-                Email = request.Email,
+                Email = normalizedEmail,
                 IsRegistered = false
             });
         }
 
         await _context.SaveChangesAsync();
+
+        var alreadyRegistered = await _context.Users
+            .AnyAsync(u => u.Email.ToLower() == normalizedEmail && u.IsActive && !u.IsDeleted);
+
+        if (!alreadyRegistered)
+        {
+            var invitedBy = await GetCurrentUserInviteLabelAsync();
+            await _emailService.TrySendRegistrationInviteAsync(
+                normalizedEmail,
+                invitedBy,
+                request.FullName);
+        }
 
         return Ok(new { message = "Request approved." });
     }
@@ -114,9 +131,18 @@ public class AdminController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        var invitedBy = await GetCurrentUserInviteLabelAsync();
+        var (inviteSent, inviteError) = await _emailService.TrySendRegistrationInviteAsync(
+            email,
+            invitedBy);
+
         return Ok(new
         {
-            message = "Allowed user added successfully."
+            message = inviteSent
+                ? "Allowed user added and invitation email sent."
+                : "Allowed user added, but the invitation email could not be sent.",
+            inviteEmailSent = inviteSent,
+            inviteEmailError = inviteError
         });
     }
 
@@ -272,5 +298,20 @@ public class AdminController : ControllerBase
     {
         var user = await _context.Users.FindAsync(GetCurrentUserId());
         return user != null && user.IsAdmin;
+    }
+
+    private async Task<string?> GetCurrentUserInviteLabelAsync()
+    {
+        var user = await _context.Users.FindAsync(GetCurrentUserId());
+        if (user == null)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(user.DisplayName))
+            return user.DisplayName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(user.Username))
+            return user.Username.Trim();
+
+        return user.Email;
     }
 }

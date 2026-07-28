@@ -1,6 +1,7 @@
 using IQADMS.API.Data;
 using IQADMS.API.DTOs.Auth;
 using IQADMS.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IQADMS.API.Models;
@@ -9,6 +10,7 @@ namespace IQADMS.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
@@ -62,10 +64,15 @@ public class AuthController : ControllerBase
     [HttpGet("check-email")]
     public async Task<IActionResult> CheckEmail([FromQuery] string email)
     {
-        var allowed = await _allowedUserService.IsEmailAllowedAsync(email);
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest(new { message = "Email is required." });
+
+        var normalized = email.Trim().ToLowerInvariant();
+
+        var allowed = await _allowedUserService.IsEmailAllowedAsync(normalized);
 
         var alreadyRegistered = await _context.Users
-            .AnyAsync(x => x.Email == email);
+            .AnyAsync(x => x.Email.ToLower() == normalized);
 
         return Ok(new
         {
