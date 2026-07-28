@@ -72,6 +72,23 @@ export default function AdminAddAccountPage() {
     }
   }
 
+  const handleTestRegistrationInvite = async () => {
+    try {
+      const res = await api.post('/Admin/test-registration-invite')
+      const links = res.data?.links
+      const extra = links
+        ? `\n\nRegister link:\n${links.registerUrl}\n\nSite:\n${links.publicUrl}`
+        : ''
+      alert((res.data?.message || 'Sample invite sent.') + extra)
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.inviteEmailError ||
+        'Sample invite failed.'
+      alert(msg)
+    }
+  }
+
   async function resendInvite(id, addr) {
     try {
       const res = await api.post(`/Admin/allowed-users/${id}/resend-invite`)
@@ -187,6 +204,23 @@ export default function AdminAddAccountPage() {
             }}
           >
             Send test email (SMTP check)
+          </button>
+
+          <button
+            type="button"
+            onClick={handleTestRegistrationInvite}
+            style={{
+              marginTop: '0.5rem',
+              background: 'none',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+              padding: '0.5rem 1rem',
+              color: '#475569',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            Send sample registration invite (to admin email)
           </button>
         </div>
 

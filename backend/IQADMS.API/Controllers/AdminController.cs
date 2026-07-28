@@ -381,6 +381,37 @@ public class AdminController : ControllerBase
         return Ok(new { message = "Test email sent.", inviteEmailSent = true });
     }
 
+    // POST: api/Admin/test-registration-invite?to=optional@email.com
+    [HttpPost("test-registration-invite")]
+    public async Task<IActionResult> TestRegistrationInvite([FromQuery] string? to = null)
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var smtp = _config.GetSection("SmtpSettings");
+        var adminEmail = smtp["AdminEmail"]?.Trim();
+        var recipient = (to ?? adminEmail)?.Trim();
+        if (string.IsNullOrWhiteSpace(recipient))
+            return BadRequest(new { message = "Pass ?to=email or set SmtpSettings:AdminEmail." });
+
+        var invitedBy = await GetCurrentUserInviteLabelAsync();
+        var (sent, error) = await _emailService.TrySendRegistrationInviteAsync(
+            recipient,
+            invitedBy,
+            "Sample invite");
+
+        if (!sent)
+            return BadRequest(new { message = error, inviteEmailSent = false, inviteEmailError = error });
+
+        var links = _emailService.GetInviteLinkPreview();
+        return Ok(new
+        {
+            message = $"Sample registration invite sent to {recipient}.",
+            inviteEmailSent = true,
+            links
+        });
+    }
+
     // --- Helper methods (paste at bottom of class) ---
 
     private Guid GetCurrentUserId()

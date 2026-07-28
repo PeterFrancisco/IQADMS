@@ -240,10 +240,12 @@ If you did not expect this invitation, you can safely ignore this email.
 
         if (!string.IsNullOrWhiteSpace(htmlBody))
         {
-            var alternative = new Multipart("alternative");
-            alternative.Add(new TextPart("plain") { Text = body });
-            alternative.Add(new TextPart("html") { Text = htmlBody });
-            message.Body = alternative;
+            var builder = new BodyBuilder
+            {
+                TextBody = body,
+                HtmlBody = htmlBody
+            };
+            message.Body = builder.ToMessageBody();
         }
         else
         {
@@ -298,6 +300,12 @@ If you did not expect this invitation, you can safely ignore this email.
             registerUrl = GetRegisterUrl()
         };
     }
+
+    public object GetInviteLinkPreview() => new
+    {
+        publicUrl = GetPublicSiteUrl(),
+        registerUrl = GetRegisterUrl()
+    };
 
     private static string NormalizeSmtpPassword(string? password) =>
         (password ?? string.Empty).Replace(" ", string.Empty).Trim();
