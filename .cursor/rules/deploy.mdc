@@ -1,0 +1,22 @@
+---
+description: IQADMS deploy — always ask before push, pull, or migrate
+alwaysApply: true
+---
+
+# Deploy discipline (IQADMS)
+
+Before running **git push**, **git pull on pqad**, or **database migrate** for this repo:
+
+1. **Ask the user explicitly** what they want this deploy:
+   - What to **push** (branch, commits; confirm no secrets in `appsettings.json`, `.env`)
+   - What to **pull** on pqad (branch)
+   - Whether to **migrate** (any new files in `backend/IQADMS.API/Migrations/` — API auto-migrates on start unless user wants manual `dotnet ef database update`)
+
+2. Do **not** push, pull, or migrate until the user confirms.
+
+3. After pqad pull, remind the user of the usual steps when relevant:
+   - Frontend: `npm run build` → `cp -a dist/. /var/www/iqadms/` → `chown -R nginx:nginx /var/www/iqadms`
+   - Backend: restart `IQADMS.API` on 5135
+   - nginx: only if `deploy/nginx/` changed
+
+Reference: `deploy/DEPLOY.md`
