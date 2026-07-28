@@ -72,6 +72,37 @@ export default function AdminAddAccountPage() {
     }
   }
 
+  async function resendInvite(id, addr) {
+    try {
+      const res = await api.post(`/Admin/allowed-users/${id}/resend-invite`)
+      const data = res.data || {}
+      if (data.inviteEmailSent) {
+        alert(`Invitation sent to ${addr}.`)
+      } else {
+        alert(`${data.message || 'Send failed.'}\n\n${data.inviteEmailError || ''}`)
+      }
+      loadAllowedUsers()
+    } catch (err) {
+      alert(err.response?.data?.message || err.response?.data?.inviteEmailError || 'Failed to resend invite.')
+    }
+  }
+
+  async function resendAllPending() {
+    const pending = allowedUsers.filter(u => !u.isRegistered)
+    if (pending.length === 0) {
+      alert('No pending emails.')
+      return
+    }
+    if (!confirm(`Resend registration invites to ${pending.length} pending email(s)?`)) return
+    try {
+      const res = await api.post('/Admin/allowed-users/resend-pending-invites')
+      alert(res.data?.message || 'Done.')
+      loadAllowedUsers()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to resend invites.')
+    }
+  }
+
   return (
     <DashboardLayout>
       <div style={{ display: 'grid', gap: '1.5rem' }}>
@@ -178,8 +209,23 @@ export default function AdminAddAccountPage() {
           >
             <h2 style={{ margin: 0, ...sectionTitleStyle }}>Allowed Users</h2>
 
-            <button
-              onClick={loadAllowedUsers}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={resendAllPending}
+                style={{
+                  padding: '0.6rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  background: 'white',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+              >
+                Resend pending
+              </button>
+              <button
+                onClick={loadAllowedUsers}
               style={{
                 padding: '0.6rem 1rem',
                 borderRadius: '8px',
@@ -190,6 +236,7 @@ export default function AdminAddAccountPage() {
             >
               Refresh
             </button>
+            </div>
           </div>
 
           <table
@@ -202,6 +249,8 @@ export default function AdminAddAccountPage() {
               <tr style={tableHeadRowStyle}>
                 <th style={thStyle}>Email</th>
                 <th style={thStyle}>Status</th>
+                <th style={thStyle}>Invite</th>
+                <th style={thStyle}>Action</th>
               </tr>
             </thead>
 
@@ -223,12 +272,56 @@ export default function AdminAddAccountPage() {
                       {user.isRegistered ? 'Registered' : 'Pending Registration'}
                     </span>
                   </td>
+
+                  <td style={tdStyle}>
+                    {user.isRegistered ? (
+                      '—'
+                    ) : (
+                      <span
+                        title={user.lastInviteError || ''}
+                        style={{
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          color: user.lastInviteError
+                            ? '#dc2626'
+                            : user.lastInviteSentAt
+                              ? '#16a34a'
+                              : '#f59e0b'
+                        }}
+                      >
+                        {user.lastInviteError
+                          ? 'Failed'
+                          : user.lastInviteSentAt
+                            ? 'Sent'
+                            : 'Not sent'}
+                      </span>
+                    )}
+                  </td>
+
+                  <td style={tdStyle}>
+                    {!user.isRegistered && (
+                      <button
+                        type="button"
+                        onClick={() => resendInvite(user.id, user.email)}
+                        style={{
+                          padding: '0.4rem 0.75rem',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          background: '#fff',
+                          cursor: 'pointer',
+                          fontWeight: 600
+                        }}
+                      >
+                        Resend invite
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
 
               {allowedUsers.length === 0 && (
                 <tr>
-                  <td colSpan="2" style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan="4" style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
                     No allowed users yet.
                   </td>
                 </tr>

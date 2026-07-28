@@ -141,6 +141,12 @@ namespace IQADMS.API.Migrations
                     b.Property<bool>("IsRegistered")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("LastInviteError")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastInviteSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 

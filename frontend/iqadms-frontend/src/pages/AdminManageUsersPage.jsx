@@ -73,6 +73,52 @@ export default function AdminManageUsersPage() {
     }
   }
 
+  async function resendInvite(id, email) {
+    try {
+      const res = await api.post(`/Admin/allowed-users/${id}/resend-invite`)
+      const data = res.data || {}
+      if (data.inviteEmailSent) {
+        alert(`Invitation sent to ${email}.`)
+      } else {
+        alert(`${data.message || 'Send failed.'}\n\n${data.inviteEmailError || ''}`)
+      }
+      loadAll()
+    } catch (err) {
+      alert(err.response?.data?.message || err.response?.data?.inviteEmailError || 'Failed to resend invite.')
+    }
+  }
+
+  async function resendAllPending() {
+    const pending = allowedUsers.filter(u => !u.isRegistered)
+    if (pending.length === 0) {
+      alert('No pending emails.')
+      return
+    }
+    if (!confirm(`Resend registration invites to ${pending.length} pending email(s)?`)) return
+
+    try {
+      const res = await api.post('/Admin/allowed-users/resend-pending-invites')
+      alert(res.data?.message || 'Done.')
+      loadAll()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to resend invites.')
+    }
+  }
+
+  function inviteLabel(item) {
+    if (item.isRegistered) return '—'
+    if (item.lastInviteError) return 'Failed'
+    if (item.lastInviteSentAt) return 'Sent'
+    return 'Not sent'
+  }
+
+  function inviteColor(item) {
+    if (item.isRegistered) return '#94a3b8'
+    if (item.lastInviteError) return '#dc2626'
+    if (item.lastInviteSentAt) return '#16a34a'
+    return '#f59e0b'
+  }
+
   const currentUsername = localStorage.getItem('username')
 
   return (
@@ -152,12 +198,18 @@ export default function AdminManageUsersPage() {
 
             {/* Allowed emails (not registered yet) */}
             <Section title="Allowed Emails (Pending Registration)">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+                <button type="button" onClick={resendAllPending} style={secondaryBtn}>
+                  Resend all pending invites
+                </button>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={tableHeadRowStyle}>
                     <th style={thStyle}>Email</th>
                     <th style={thStyle}>Admin?</th>
                     <th style={thStyle}>Status</th>
+                    <th style={thStyle}>Invite</th>
                     <th style={thStyle}>Action</th>
                   </tr>
                 </thead>
@@ -173,22 +225,40 @@ export default function AdminManageUsersPage() {
                         />
                       </td>
                       <td style={tdStyle}>
+                        {!item.isRegistered ? (
+                          <span title={item.lastInviteError || ''}>
+                            <Badge label={inviteLabel(item)} color={inviteColor(item)} />
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94a3b8' }}>—</span>
+                        )}
+                      </td>
+                      <td style={tdStyle}>
                         {item.isRegistered ? (
                           <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Use table above</span>
                         ) : (
-                          <button
-                            onClick={() => removeAllowedUser(item.id, item.email)}
-                            style={dangerBtn}
-                          >
-                            Remove
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => resendInvite(item.id, item.email)}
+                              style={secondaryBtn}
+                            >
+                              Resend invite
+                            </button>
+                            <button
+                              onClick={() => removeAllowedUser(item.id, item.email)}
+                              style={dangerBtn}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
                   ))}
                   {allowedUsers.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
+                      <td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>
                         No allowed emails.
                       </td>
                     </tr>
@@ -235,6 +305,15 @@ const dangerBtn = {
   borderRadius: 8,
   background: '#dc2626',
   color: '#fff',
+  cursor: 'pointer',
+  fontWeight: 600
+}
+const secondaryBtn = {
+  padding: '0.45rem 0.85rem',
+  border: '1px solid #cbd5e1',
+  borderRadius: 8,
+  background: '#fff',
+  color: '#1e293b',
   cursor: 'pointer',
   fontWeight: 600
 }

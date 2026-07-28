@@ -74,11 +74,10 @@ public class AdminController : ControllerBase
 
         if (!alreadyRegistered)
         {
-            var invitedBy = await GetCurrentUserInviteLabelAsync();
-            await _emailService.TrySendRegistrationInviteAsync(
-                normalizedEmail,
-                invitedBy,
-                request.FullName);
+            var allowedRow = await _context.AllowedUsers
+                .FirstOrDefaultAsync(x => x.Email.ToLower() == normalizedEmail);
+            if (allowedRow != null)
+                await SendInviteForAllowedUserAsync(allowedRow, request.FullName);
         }
 
         return Ok(new { message = "Request approved." });
@@ -131,10 +130,10 @@ public class AdminController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        var invitedBy = await GetCurrentUserInviteLabelAsync();
-        var (inviteSent, inviteError) = await _emailService.TrySendRegistrationInviteAsync(
-            email,
-            invitedBy);
+        var allowed = await _context.AllowedUsers
+            .FirstAsync(x => x.Email == email);
+
+        var (inviteSent, inviteError) = await SendInviteForAllowedUserAsync(allowed);
 
         return Ok(new
         {
@@ -143,6 +142,79 @@ public class AdminController : ControllerBase
                 : "Allowed user added, but the invitation email could not be sent.",
             inviteEmailSent = inviteSent,
             inviteEmailError = inviteError
+        });
+    }
+
+    // POST: api/Admin/allowed-users/{id}/resend-invite
+    [HttpPost("allowed-users/{id}/resend-invite")]
+    public async Task<IActionResult> ResendInvite(Guid id)
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var allowed = await _context.AllowedUsers.FindAsync(id);
+        if (allowed == null)
+            return NotFound(new { message = "Allowed email not found." });
+
+        if (allowed.IsRegistered)
+            return BadRequest(new { message = "This email is already registered." });
+
+        var (sent, error) = await SendInviteForAllowedUserAsync(allowed);
+
+        return Ok(new
+        {
+            message = sent ? "Invitation email sent." : "Invitation email could not be sent.",
+            inviteEmailSent = sent,
+            inviteEmailError = error,
+            lastInviteSentAt = allowed.LastInviteSentAt,
+            lastInviteError = allowed.LastInviteError
+        });
+    }
+
+    // POST: api/Admin/allowed-users/resend-pending-invites
+    [HttpPost("allowed-users/resend-pending-invites")]
+    public async Task<IActionResult> ResendAllPendingInvites()
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var pending = await _context.AllowedUsers
+            .Where(x => !x.IsRegistered)
+            .OrderBy(x => x.Email)
+            .ToListAsync();
+
+        if (pending.Count == 0)
+            return Ok(new { message = "No pending emails to invite.", sent = 0, failed = 0, results = Array.Empty<object>() });
+
+        var results = new List<object>();
+        var sentCount = 0;
+        var failedCount = 0;
+
+        foreach (var allowed in pending)
+        {
+            var (sent, error) = await SendInviteForAllowedUserAsync(allowed);
+            if (sent)
+                sentCount++;
+            else
+                failedCount++;
+
+            results.Add(new
+            {
+                allowed.Id,
+                allowed.Email,
+                inviteEmailSent = sent,
+                inviteEmailError = error,
+                allowed.LastInviteSentAt,
+                allowed.LastInviteError
+            });
+        }
+
+        return Ok(new
+        {
+            message = $"Sent {sentCount} invite(s), {failedCount} failed.",
+            sent = sentCount,
+            failed = failedCount,
+            results
         });
     }
 
@@ -160,7 +232,9 @@ public class AdminController : ControllerBase
                 x.Id,
                 x.Email,
                 x.IsRegistered,
-                x.IsAdmin
+                x.IsAdmin,
+                x.LastInviteSentAt,
+                x.LastInviteError
             })
             .ToListAsync();
 
@@ -327,5 +401,26 @@ public class AdminController : ControllerBase
             return user.Username.Trim();
 
         return user.Email;
+    }
+
+    private async Task<(bool Sent, string? Error)> SendInviteForAllowedUserAsync(
+        AllowedUser allowed,
+        string? recipientDisplayName = null)
+    {
+        if (allowed.IsRegistered)
+            return (false, "This email is already registered.");
+
+        var invitedBy = await GetCurrentUserInviteLabelAsync();
+        var (sent, error) = await _emailService.TrySendRegistrationInviteAsync(
+            allowed.Email,
+            invitedBy,
+            recipientDisplayName);
+
+        allowed.LastInviteSentAt = DateTime.UtcNow;
+        allowed.LastInviteError = sent ? null : error;
+        allowed.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return (sent, error);
     }
 }
