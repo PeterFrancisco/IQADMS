@@ -4,7 +4,7 @@ import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
 import { readAuthTokenFromResponse } from '../utils/authToken'
 import { setPresence } from '../utils/presenceApi'
-import { upshd } from '../theme/upshd'
+import IqadmsLogo from '../components/IqadmsLogo'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -99,12 +99,11 @@ export default function LoginPage() {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, color: '#7a0019' }}>IQADMS</h1>
-          <p style={{ color: '#64748b' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <IqadmsLogo size={56} className="iqadms-logo--center" />
+          </div>
+          <p style={{ color: '#64748b', margin: '0.5rem 0 0' }}>
             Planning and Quality Assurance Department
-          </p>
-          <p style={{ color: upshd.maroonLight, fontSize: '0.85rem', marginTop: '0.25rem' }}>
-            UPSHD · Molino Campus
           </p>
         </div>
 

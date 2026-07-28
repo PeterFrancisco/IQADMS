@@ -10,6 +10,7 @@ import {
   authOutlineButtonStyle,
   authInputStyle
 } from '../theme/pageStyles'
+import IqadmsLogo from '../components/IqadmsLogo'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -57,6 +58,9 @@ export default function RegisterPage() {
   return (
     <div style={pageStyle}>
       <form onSubmit={handleContinue} style={cardStyle}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+          <IqadmsLogo size={48} className="iqadms-logo--center" />
+        </div>
         <h1 style={authHeadingStyle}>Register</h1>
         <p style={{ color: '#64748b' }}>
           Enter your institutional email address.

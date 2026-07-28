@@ -7,6 +7,7 @@ import AvatarWithPresence from './AvatarWithPresence'
 import ActivityStatusText from './ActivityStatusText'
 import { setPresence, startPresenceHeartbeat } from '../utils/presenceApi'
 import { Menu } from 'lucide-react'
+import IqadmsLogo from './IqadmsLogo'
 import NotificationBellDropdown from './NotificationBellDropdown'
 import { normalizePresence } from '../config/presence'
 
@@ -48,8 +49,7 @@ export default function DashboardLayout({ children }) {
 
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <Link to="/" className="sidebar-brand sidebar-brand-link" onClick={closeMobile}>
-          <h2>IQADMS</h2>
-          <small>PQAD · UPSHD Molino</small>
+          <IqadmsLogo size={36} wordmarkLayout="stack" />
         </Link>
 
         <NavItem label="Home" to="/" icon="home" onNavigate={closeMobile} />

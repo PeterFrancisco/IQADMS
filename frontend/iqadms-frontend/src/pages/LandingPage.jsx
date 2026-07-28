@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AppIcon from '../components/AppIcon'
+import IqadmsLogo from '../components/IqadmsLogo'
 import { externalLinks } from '../config/externalLinks'
 import {
   aboutHistory,
@@ -36,8 +37,7 @@ export default function LandingPage() {
       <header className="landing-topbar">
         <div className="landing-topbar-inner">
           <Link to="/" className="landing-brand">
-            <span className="landing-brand-mark">IQADMS</span>
-            <span className="landing-brand-sub">PQAD · UPSHD Molino</span>
+            <IqadmsLogo size={40} wordmarkLayout="stack" />
           </Link>
           <nav className="landing-nav" aria-label="Primary">
             <div className="landing-nav-scroll">

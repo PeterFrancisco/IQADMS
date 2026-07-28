@@ -67,7 +67,21 @@
   color: inherit;
 }
 
-.sidebar-brand-link:hover h2 {
+.sidebar-brand-link .iqadms-logo-title {
+  font-size: 1rem;
+  color: #fff;
+}
+
+.sidebar-brand-link .iqadms-logo-sub {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.sidebar-brand-link .iqadms-logo {
+  gap: 0.5rem;
+}
+
+.sidebar-brand-link:hover .iqadms-logo-title {
   opacity: 0.92;
 }
 

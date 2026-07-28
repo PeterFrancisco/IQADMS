@@ -1,0 +1,40 @@
+.iqadms-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+}
+
+.iqadms-logo--stack .iqadms-logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.iqadms-logo-mark {
+  flex-shrink: 0;
+  display: block;
+}
+
+.iqadms-logo-title {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--upshd-maroon, #7a0019);
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+.iqadms-logo-sub {
+  font-size: 0.72rem;
+  color: var(--upshd-text-muted, #64748b);
+  line-height: 1.2;
+}
+
+.iqadms-logo--center {
+  justify-content: center;
+  text-align: center;
+}
+
+.iqadms-logo--center .iqadms-logo-text {
+  align-items: center;
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="IQADMS">
+  <defs>
+    <linearGradient id="g" x1="32" y1="4" x2="32" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9e1b32"/>
+      <stop stop-color="#7a0019"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#g)" d="M32 4 54 13v21c0 14-10.5 23.8-22 26.2C20.5 57.8 10 48 10 34V13L32 4z"/>
+  <path fill="none" stroke="#c5a572" stroke-width="2" d="M32 8.5 49.5 16v17.5c0 11.5-8.5 19.8-17.5 21.8-9-2-17.5-10.3-17.5-21.8V16L32 8.5z"/>
+  <text x="32" y="38" text-anchor="middle" fill="#fff" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="700">IQ</text>
+  <rect x="24" y="44" width="16" height="2.5" rx="1" fill="#c5a572"/>
+</svg>
