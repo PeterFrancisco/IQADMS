@@ -253,6 +253,8 @@ If you did not expect this message, you can ignore it.
 
     private static string NormalizeSmtpPassword(string? password) =>
         (password ?? string.Empty).Replace(" ", string.Empty).Trim();
+
+    private static string DescribeSendFailure(Exception ex)
     {
         var text = ex.Message;
         for (var inner = ex.InnerException; inner != null; inner = inner.InnerException)
