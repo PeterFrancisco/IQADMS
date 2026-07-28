@@ -1,5 +1,6 @@
-using System.Net;
-using System.Net.Mail;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
 
 namespace IQADMS.API.Services;
 
@@ -42,10 +43,6 @@ Please review this request in the admin panel.";
         await SendAsync(from, adminEmail, "IQADMS Access Request", body);
     }
 
-    /// <summary>
-    /// Sends a registration invite to the invited user's inbox (Gmail, Outlook, etc.).
-    /// Returns false if SMTP is not configured or send fails (user may still be added in the database).
-    /// </summary>
     public async Task<(bool Sent, string? Error)> TrySendRegistrationInviteAsync(
         string recipientEmail,
         string? invitedByDisplayName = null,
@@ -101,8 +98,37 @@ If you did not expect this message, you can ignore it.
         }
         catch (Exception ex)
         {
+            var detail = DescribeSendFailure(ex);
             _logger.LogError(ex, "Failed to send registration invite to {Email}", to);
-            return (false, "Could not send email. Check SMTP settings on the server.");
+            return (false, detail);
+        }
+    }
+
+    public async Task<(bool Sent, string? Error)> TrySendTestEmailAsync(string? toEmail = null)
+    {
+        if (!IsSmtpConfigured(out var configError))
+            return (false, configError);
+
+        var smtp = _config.GetSection("SmtpSettings");
+        var from = RequireFromAddress(smtp);
+        var to = (toEmail ?? smtp["AdminEmail"])?.Trim();
+        if (string.IsNullOrWhiteSpace(to))
+            return (false, "Set SmtpSettings:AdminEmail or pass a recipient address.");
+
+        try
+        {
+            await SendAsync(
+                from,
+                to,
+                "IQADMS SMTP test",
+                "If you received this message, SMTP is configured correctly for IQADMS.");
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            var detail = DescribeSendFailure(ex);
+            _logger.LogError(ex, "SMTP test email failed to {Email}", to);
+            return (false, detail);
         }
     }
 
@@ -120,13 +146,13 @@ If you did not expect this message, you can ignore it.
         var smtp = _config.GetSection("SmtpSettings");
         if (string.IsNullOrWhiteSpace(smtp["Host"]))
         {
-            error = "SMTP Host is not configured.";
+            error = "SMTP Host is not configured in appsettings.json.";
             return false;
         }
 
-        if (string.IsNullOrWhiteSpace(smtp["Port"]))
+        if (string.IsNullOrWhiteSpace(smtp["Port"]) || !int.TryParse(smtp["Port"], out var port) || port <= 0)
         {
-            error = "SMTP Port is not configured.";
+            error = "SMTP Port is missing or invalid (use 587 for Gmail/Outlook).";
             return false;
         }
 
@@ -138,7 +164,16 @@ If you did not expect this message, you can ignore it.
 
         if (string.IsNullOrWhiteSpace(smtp["Username"]) || string.IsNullOrWhiteSpace(smtp["Password"]))
         {
-            error = "SMTP username or password is not configured.";
+            error = "SMTP Username or Password is empty on the server. Edit backend/IQADMS.API/appsettings.json on pqad.";
+            return false;
+        }
+
+        var from = smtp["From"]!.Trim();
+        var user = smtp["Username"]!.Trim();
+        if (!from.Equals(user, StringComparison.OrdinalIgnoreCase)
+            && smtp["Host"]!.Contains("gmail", StringComparison.OrdinalIgnoreCase))
+        {
+            error = "For Gmail, SmtpSettings:From must match SmtpSettings:Username.";
             return false;
         }
 
@@ -152,17 +187,63 @@ If you did not expect this message, you can ignore it.
     private async Task SendAsync(string from, string to, string subject, string body)
     {
         var smtp = _config.GetSection("SmtpSettings");
-        using var client = CreateSmtpClient(smtp);
-        using var message = new MailMessage(from, to, subject, body);
-        await client.SendMailAsync(message);
+        var host = smtp["Host"]!.Trim();
+        var port = int.Parse(smtp["Port"]!);
+        var username = smtp["Username"]!.Trim();
+        var password = smtp["Password"]!;
+
+        var message = new MimeMessage();
+        message.From.Add(MailboxAddress.Parse(from));
+        message.To.Add(MailboxAddress.Parse(to));
+        message.Subject = subject;
+        message.Body = new TextPart("plain") { Text = body };
+
+        using var client = new SmtpClient();
+        client.Timeout = 30_000;
+
+        var socketOptions = ResolveSocketOptions(smtp, port);
+        await client.ConnectAsync(host, port, socketOptions);
+        await client.AuthenticateAsync(username, password);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
     }
 
-    private static SmtpClient CreateSmtpClient(IConfigurationSection smtp)
+    private static SecureSocketOptions ResolveSocketOptions(IConfigurationSection smtp, int port)
     {
-        return new SmtpClient(smtp["Host"]!, int.Parse(smtp["Port"]!))
+        var mode = smtp["Security"]?.Trim();
+        if (string.Equals(mode, "None", StringComparison.OrdinalIgnoreCase))
+            return SecureSocketOptions.None;
+        if (string.Equals(mode, "Ssl", StringComparison.OrdinalIgnoreCase) || port == 465)
+            return SecureSocketOptions.SslOnConnect;
+        if (string.Equals(mode, "StartTls", StringComparison.OrdinalIgnoreCase) || port == 587)
+            return SecureSocketOptions.StartTls;
+
+        return SecureSocketOptions.Auto;
+    }
+
+    private static string DescribeSendFailure(Exception ex)
+    {
+        var text = ex.Message;
+        for (var inner = ex.InnerException; inner != null; inner = inner.InnerException)
+            text += " " + inner.Message;
+
+        if (text.Contains("535", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("authentication", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("Authentication", StringComparison.Ordinal))
         {
-            Credentials = new NetworkCredential(smtp["Username"], smtp["Password"]),
-            EnableSsl = true
-        };
+            return "SMTP login failed. For Gmail use an App Password (not your normal password). For Outlook use smtp.office365.com and your M365 password or app password.";
+        }
+
+        if (text.Contains("timed out", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("connection", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("refused", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Cannot reach the mail server (timeout or blocked). On pqad, ensure outbound port 587 is allowed, or try port 465 with Security: Ssl in appsettings.";
+        }
+
+        if (text.Length > 220)
+            text = text[..220] + "…";
+
+        return $"Mail send failed: {text}";
     }
 }

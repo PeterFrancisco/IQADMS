@@ -59,6 +59,19 @@ export default function AdminAddAccountPage() {
     }
   }
 
+  const handleTestSmtp = async () => {
+    try {
+      const res = await api.post('/Admin/test-smtp')
+      alert(res.data?.message || 'Test email sent.')
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.inviteEmailError ||
+        'SMTP test failed.'
+      alert(msg)
+    }
+  }
+
   return (
     <DashboardLayout>
       <div style={{ display: 'grid', gap: '1.5rem' }}>
@@ -127,6 +140,23 @@ export default function AdminAddAccountPage() {
               {loading ? 'Adding...' : 'Add Email'}
             </button>
           </form>
+
+          <button
+            type="button"
+            onClick={handleTestSmtp}
+            style={{
+              marginTop: '1rem',
+              background: 'none',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+              padding: '0.5rem 1rem',
+              color: '#475569',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            Send test email (SMTP check)
+          </button>
         </div>
 
         {/* Allowed users table */}

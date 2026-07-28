@@ -9,4 +9,8 @@ public class AllowedUser : BaseEntity
     public bool IsRegistered { get; set; } = false;
 
     public bool IsAdmin { get; set; } = false;
+
+    public DateTime? LastInviteSentAt { get; set; }
+
+    public string? LastInviteError { get; set; }
 }

@@ -160,7 +160,8 @@ namespace IQADMS.API.Migrations
 
                     b.Property<string>("Binding")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("ColumnType")
                         .IsRequired()
@@ -783,44 +784,27 @@ namespace IQADMS.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("GitHubUrl")
-                        .HasColumnType("text");
-
-                    b.Property<string>("InstagramUrl")
+                    b.Property<string>("FacebookDisplayName")
                         .HasColumnType("text");
 
                     b.Property<string>("FacebookUrl")
                         .HasColumnType("text");
 
-                    b.Property<string>("FacebookDisplayName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("InstagramDisplayName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("TwitterDisplayName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("LinkedInDisplayName")
+                    b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("GitHubDisplayName")
                         .HasColumnType("text");
 
-                    b.Property<string>("TwitterUrl")
+                    b.Property<string>("GitHubUrl")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("LastActiveAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("InstagramDisplayName")
+                        .HasColumnType("text");
 
-                    b.Property<string>("PresenceStatus")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                    b.Property<string>("InstagramUrl")
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -831,8 +815,14 @@ namespace IQADMS.API.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("LastActiveAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("LastName")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LinkedInDisplayName")
                         .HasColumnType("text");
 
                     b.Property<string>("LinkedInUrl")
@@ -846,7 +836,18 @@ namespace IQADMS.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PresenceStatus")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<string>("ProfilePictureUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TwitterDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TwitterUrl")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")

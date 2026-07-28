@@ -283,6 +283,20 @@ public class AdminController : ControllerBase
         return Ok(items);
     }
 
+    // POST: api/Admin/test-smtp?to=optional@email.com
+    [HttpPost("test-smtp")]
+    public async Task<IActionResult> TestSmtp([FromQuery] string? to = null)
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var (sent, error) = await _emailService.TrySendTestEmailAsync(to);
+        if (!sent)
+            return BadRequest(new { message = error, inviteEmailSent = false, inviteEmailError = error });
+
+        return Ok(new { message = "Test email sent.", inviteEmailSent = true });
+    }
+
     // --- Helper methods (paste at bottom of class) ---
 
     private Guid GetCurrentUserId()
