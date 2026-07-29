@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import { pageTitleStyle } from '../theme/pageStyles'
+import '../theme/projects-page.css'
+import { appDialog } from '../utils/appDialog'
 
 
 const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled']
@@ -156,14 +158,23 @@ export default function ProjectsPage() {
       ) : (
         <div style={{ display: 'grid', gap: '1rem' }}>
           {projects.map(p => (
-            <div key={p.id} style={projectCard}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-                <div>
-                  <h2 style={{ margin: '0 0 0.35rem', color: upshd.maroon, fontSize: '1.25rem' }}>{p.title}</h2>
+            <div key={p.id} className="projects-page-card">
+              <div className="projects-page-card__top">
+                <div
+                  className="projects-page-card__progress"
+                  style={{
+                    background: `conic-gradient(#7a0019 ${(p.taskProgressPercent ?? 0) * 3.6}deg, #e2e8f0 0deg)`
+                  }}
+                  aria-hidden
+                >
+                  <span>{p.taskProgressPercent ?? 0}%</span>
+                </div>
+                <div className="projects-page-card__main">
+                  <h2 className="projects-page-card__title">{p.title}</h2>
                   {p.description && (
-                    <p style={{ margin: '0 0 0.75rem', color: '#475569', maxWidth: 640 }}>{p.description}</p>
+                    <p className="projects-page-card__desc">{p.description}</p>
                   )}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.85rem' }}>
+                  <div className="projects-page-card__badges">
                     <Badge label={p.status} />
                     <Badge label={`Priority: ${p.priority}`} muted />
                     {p.dueDate && <Badge label={`Due ${p.dueDate}`} muted />}
@@ -176,21 +187,21 @@ export default function ProjectsPage() {
                     )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                  <Link to={`/my-tasks?project=${p.id}`} style={linkBtn}>
+                <div className="projects-page-card__actions">
+                  <Link to={`/my-tasks?project=${p.id}`} className="projects-page-card__link">
                     View tasks
                   </Link>
-                  <button type="button" onClick={() => openEdit(p)} style={ghostBtn}>
+                  <button type="button" onClick={() => openEdit(p)} className="projects-page-card__ghost">
                     Edit
                   </button>
-                  <button type="button" onClick={() => deleteProject(p.id, p.title)} style={dangerBtn}>
+                  <button type="button" onClick={() => deleteProject(p.id, p.title)} className="projects-page-card__danger">
                     Delete
                   </button>
                 </div>
               </div>
 
               {(p.members.length > 0 || p.departments.length > 0) && (
-                <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '1rem', fontSize: '0.9rem' }}>
+                <div className="projects-page-card__meta">
                   {p.members.length > 0 && (
                     <div>
                       <div style={metaLabel}>PQAD members</div>

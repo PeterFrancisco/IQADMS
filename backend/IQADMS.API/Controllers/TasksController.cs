@@ -38,9 +38,6 @@ public class TasksController : ControllerBase
         var userId = GetUserId();
         var isAdmin = await IsAdminAsync(userId);
 
-        if (isAdmin && !projectId.HasValue && !relatedDepartmentId.HasValue)
-            return Ok(new List<TaskResponse>());
-
         var query = _context.WorkspaceTasks
             .Where(t => !t.IsDeleted)
             .Include(t => t.AssignedToUser)

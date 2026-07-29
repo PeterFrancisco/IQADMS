@@ -28,7 +28,13 @@ import {
   User,
   UserPlus,
   Users,
-  Clock
+  Clock,
+  Search,
+  LayoutGrid,
+  List,
+  ArrowLeft,
+  Maximize2,
+  Plus
 } from 'lucide-react'
 
 /** @type {Record<string, import('lucide-react').LucideIcon>} */
@@ -63,7 +69,13 @@ export const APP_ICONS = {
   iot: Radio,
   chat: MessageCircle,
   bot: Bot,
-  deadlines: Clock
+  deadlines: Clock,
+  search: Search,
+  grid: LayoutGrid,
+  list: List,
+  arrowLeft: ArrowLeft,
+  maximize: Maximize2,
+  plus: Plus
 }
 
 /**
