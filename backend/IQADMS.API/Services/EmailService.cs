@@ -289,7 +289,6 @@ If you did not request a reset, contact your administrator.
         string recipientEmail)
     {
         var logoUrl = $"{siteUrl.TrimEnd('/')}/logo.svg";
-        var enc = System.Net.WebUtility.HtmlEncode;
         return $"""
 <!DOCTYPE html>
 <html>
@@ -308,13 +307,13 @@ If you did not request a reset, contact your administrator.
           <tr>
             <td style="padding:24px;">
               <p style="margin:0 0 12px;">{greetingHtml}</p>
-              <p style="margin:0 0 16px;line-height:1.5;">{enc(invitedLine)}</p>
+              <p style="margin:0 0 16px;line-height:1.5;">{System.Net.WebUtility.HtmlEncode(invitedLine)}</p>
               <p style="margin:0 0 8px;font-weight:600;">Create your account</p>
               <p style="margin:0 0 20px;">
                 <a href="{registerUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Register on IQADMS</a>
               </p>
-              <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Official website: <a href="{siteUrl}">{enc(siteUrl)}</a></p>
-              <p style="margin:0 0 16px;font-size:13px;">Use this email when you register: <strong>{enc(recipientEmail)}</strong></p>
+              <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Official website: <a href="{siteUrl}">{System.Net.WebUtility.HtmlEncode(siteUrl)}</a></p>
+              <p style="margin:0 0 16px;font-size:13px;">Use this email when you register: <strong>{System.Net.WebUtility.HtmlEncode(recipientEmail)}</strong></p>
               <p style="margin:0;font-size:12px;color:#94a3b8;">If you did not expect this invitation, you can ignore this email.</p>
             </td>
           </tr>
