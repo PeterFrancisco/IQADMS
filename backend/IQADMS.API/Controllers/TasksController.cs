@@ -138,8 +138,17 @@ public class TasksController : ControllerBase
                 task.ProjectId,
                 $"task-assigned-{task.Id}-{task.AssignedToUserId}");
 
-            var (_, err) = await SendTaskAssignedEmailsAsync(task.Id, userId, task.AssignedToUserId.Value);
+            var (sent, err) = await SendTaskAssignedEmailsAsync(task.Id, userId, task.AssignedToUserId.Value);
             taskEmailError = err;
+            if (sent)
+            {
+                var assigneeEmail = await _context.Users.AsNoTracking()
+                    .Where(u => u.Id == task.AssignedToUserId)
+                    .Select(u => u.Email)
+                    .FirstOrDefaultAsync();
+                if (!string.IsNullOrWhiteSpace(assigneeEmail))
+                    Response.Headers["X-IQADMS-Task-Email-To"] = assigneeEmail.Trim();
+            }
         }
 
         var mapped = await MapTaskById(task.Id);
@@ -283,8 +292,17 @@ public class TasksController : ControllerBase
                         task.ProjectId,
                         $"task-assigned-{task.Id}-{request.AssignedToUserId}");
 
-                    var (_, err) = await SendTaskAssignedEmailsAsync(task.Id, userId, request.AssignedToUserId.Value);
+                    var (sent, err) = await SendTaskAssignedEmailsAsync(task.Id, userId, request.AssignedToUserId.Value);
                     taskEmailError = err;
+                    if (sent)
+                    {
+                        var assigneeEmail = await _context.Users.AsNoTracking()
+                            .Where(u => u.Id == request.AssignedToUserId)
+                            .Select(u => u.Email)
+                            .FirstOrDefaultAsync();
+                        if (!string.IsNullOrWhiteSpace(assigneeEmail))
+                            Response.Headers["X-IQADMS-Task-Email-To"] = assigneeEmail.Trim();
+                    }
                 }
             }
             else if (task.AssignedToUserId != null)
@@ -484,6 +502,34 @@ public class TasksController : ControllerBase
         await _context.SaveChangesAsync();
         await LogActivity(id, userId, "attachment", file.FileName);
 
+        var isAdmin = await IsAdminAsync(userId);
+        if (task.AssignedToUserId.HasValue)
+        {
+            if (!isAdmin && task.AssignedToUserId == userId)
+            {
+                var (sent, err) = await SendTaskAttachmentUploadedToAdminsAsync(id, userId, file.FileName);
+                if (!sent && err != null)
+                    Response.Headers["X-IQADMS-Task-Email-Error"] = err;
+                else if (sent)
+                    Response.Headers["X-IQADMS-Task-Email-Sent"] = "admins";
+            }
+            else if (isAdmin && task.AssignedToUserId != userId)
+            {
+                var (sent, err) = await SendTaskReferenceFileToAssigneeAsync(id, userId, file.FileName);
+                if (!sent && err != null)
+                    Response.Headers["X-IQADMS-Task-Email-Error"] = err;
+                else if (sent)
+                {
+                    var to = await _context.Users.AsNoTracking()
+                        .Where(u => u.Id == task.AssignedToUserId)
+                        .Select(u => u.Email)
+                        .FirstOrDefaultAsync();
+                    if (!string.IsNullOrWhiteSpace(to))
+                        Response.Headers["X-IQADMS-Task-Email-To"] = to.Trim();
+                }
+            }
+        }
+
         return Ok(new { message = "Attachment uploaded.", fileName = file.FileName });
     }
 
@@ -524,7 +570,11 @@ public class TasksController : ControllerBase
                 task.ProjectId,
                 dedupKey: $"task-submitted-{task.Id}-{task.SubmittedAt:O}");
 
-            await SendTaskSubmittedEmailsAsync(task.Id, userId);
+            var (sentCount, submitErr) = await SendTaskSubmittedEmailsWithResultAsync(task.Id, userId);
+            if (submitErr != null && sentCount == 0)
+                Response.Headers["X-IQADMS-Task-Email-Error"] = submitErr;
+            else if (sentCount > 0)
+                Response.Headers["X-IQADMS-Task-Email-Sent"] = $"admins:{sentCount}";
         }
 
         return Ok(await MapTaskById(id));
@@ -831,13 +881,20 @@ public class TasksController : ControllerBase
 
     private async Task SendTaskSubmittedEmailsAsync(Guid taskId, Guid submitterUserId)
     {
+        _ = await SendTaskSubmittedEmailsWithResultAsync(taskId, submitterUserId);
+    }
+
+    private async Task<(int SentCount, string? LastError)> SendTaskSubmittedEmailsWithResultAsync(
+        Guid taskId,
+        Guid submitterUserId)
+    {
         var task = await _context.WorkspaceTasks
             .AsNoTracking()
             .Include(t => t.Project)
             .Include(t => t.AssignedToUser)
             .FirstOrDefaultAsync(t => t.Id == taskId && !t.IsDeleted);
         if (task == null)
-            return;
+            return (0, "Task not found.");
 
         var submitter = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == submitterUserId);
         var submitterName = submitter == null
@@ -853,23 +910,21 @@ public class TasksController : ControllerBase
 
         var link = _email.BuildTaskLink(task.Id, task.ProjectId);
 
-        var adminIds = await _context.Users
-            .Where(u => u.IsAdmin && u.IsActive)
-            .Select(u => u.Id)
-            .ToListAsync();
-
         var admins = await _context.Users
             .AsNoTracking()
-            .Where(u => adminIds.Contains(u.Id))
+            .Where(u => u.IsAdmin && u.IsActive)
             .ToListAsync();
+
+        var sentCount = 0;
+        string? lastError = null;
 
         foreach (var admin in admins)
         {
             var adminGreeting = EmailService.FormatPersonName(admin.DisplayName, admin.Username, admin.Email);
-            if (string.IsNullOrWhiteSpace(adminGreeting))
+            if (string.IsNullOrWhiteSpace(adminGreeting) || adminGreeting == admin.Username)
                 adminGreeting = EmailService.DeriveGreetingNameFromEmail(admin.Email) ?? "there";
 
-            await _email.TrySendTaskSubmittedEmailAsync(
+            var (sent, err) = await _email.TrySendTaskSubmittedEmailAsync(
                 admin.Email,
                 adminGreeting,
                 assigneeName,
@@ -877,7 +932,84 @@ public class TasksController : ControllerBase
                 task.Title,
                 task.Project?.Title,
                 link);
+            if (sent)
+                sentCount++;
+            else
+                lastError = err;
         }
+
+        return (sentCount, lastError);
+    }
+
+    private async Task<(bool Sent, string? Error)> SendTaskAttachmentUploadedToAdminsAsync(
+        Guid taskId,
+        Guid uploaderUserId,
+        string fileName)
+    {
+        var task = await _context.WorkspaceTasks.AsNoTracking()
+            .Include(t => t.Project)
+            .Include(t => t.AssignedToUser)
+            .FirstOrDefaultAsync(t => t.Id == taskId && !t.IsDeleted);
+        if (task == null)
+            return (false, "Task not found.");
+
+        var uploader = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == uploaderUserId);
+        var uploaderName = uploader == null
+            ? "Assignee"
+            : _email.FormatEmailActorName(uploader);
+
+        var link = _email.BuildTaskLink(task.Id, task.ProjectId);
+        var admins = await _context.Users.AsNoTracking().Where(u => u.IsAdmin && u.IsActive).ToListAsync();
+
+        var anySent = false;
+        string? lastError = null;
+        foreach (var admin in admins)
+        {
+            var greeting = EmailService.DeriveGreetingNameFromEmail(admin.Email) ?? "there";
+            var (sent, err) = await _email.TrySendTaskAttachmentEmailAsync(
+                admin.Email,
+                greeting,
+                uploaderName,
+                task.Title,
+                fileName,
+                task.Project?.Title,
+                link,
+                notifyAdmins: true);
+            if (sent) anySent = true;
+            else lastError = err;
+        }
+
+        return (anySent, lastError);
+    }
+
+    private async Task<(bool Sent, string? Error)> SendTaskReferenceFileToAssigneeAsync(
+        Guid taskId,
+        Guid adminUserId,
+        string fileName)
+    {
+        var task = await _context.WorkspaceTasks.AsNoTracking()
+            .Include(t => t.Project)
+            .Include(t => t.AssignedToUser)
+            .FirstOrDefaultAsync(t => t.Id == taskId && !t.IsDeleted);
+        if (task?.AssignedToUser == null || !task.AssignedToUser.IsActive)
+            return (false, "Task has no active assignee.");
+
+        var admin = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == adminUserId);
+        var actorName = admin == null ? _email.PublicSenderName : _email.FormatEmailActorName(admin);
+        var greeting = EmailService.DeriveGreetingNameFromEmail(task.AssignedToUser.Email)
+            ?? task.AssignedToUser.DisplayName
+            ?? "there";
+        var link = _email.BuildTaskLink(task.Id, task.ProjectId);
+
+        return await _email.TrySendTaskAttachmentEmailAsync(
+            task.AssignedToUser.Email,
+            greeting,
+            actorName,
+            task.Title,
+            fileName,
+            task.Project?.Title,
+            link,
+            notifyAdmins: false);
     }
 
     private Guid GetUserId()

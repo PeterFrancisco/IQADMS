@@ -12,6 +12,7 @@ import { getApiOrigin } from '../utils/apiOrigin'
 import AppIcon from '../components/AppIcon'
 import '../theme/tasks-page.css'
 import { appDialog } from '../utils/appDialog'
+import { notifyTaskEmailFromResponse, explainNoAssigneeEmail } from '../utils/taskEmailFeedback'
 
 
 const STATUS_OPTIONS = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
@@ -268,6 +269,8 @@ export default function DashboardPage() {
         uploadGoogleDriveLink: createForm.uploadGoogleDriveLink || null
       })
 
+      const assignedToOther = Boolean(createForm.assignedToUserId?.trim())
+
       if (createForm.attachment) {
         const formData = new FormData()
         formData.append('file', createForm.attachment)
@@ -298,6 +301,13 @@ export default function DashboardPage() {
       })
       setShowCreateModal(false)
       loadData()
+
+      const hadAssignee = assignedToOther
+      if (res.headers?.['x-iqadms-task-email-error'] || res.headers?.['x-iqadms-task-email-to']) {
+        await notifyTaskEmailFromResponse(res, 'Task created.')
+      } else if (isAdmin && !hadAssignee) {
+        await appDialog.alert(`Task created.\n\n${explainNoAssigneeEmail()}`)
+      }
     } catch (err) {
       console.error(err)
       if (err.response?.status === 401) {
@@ -706,11 +716,17 @@ export default function DashboardPage() {
     try {
       const formData = new FormData()
       formData.append('file', memberAttachment)
-      await api.post(`/Tasks/${selectedTask.id}/attachment`, formData)
+      const uploadRes = await api.post(`/Tasks/${selectedTask.id}/attachment`, formData)
       setMemberAttachment(null)
       const refreshed = (await api.get(`/Tasks/${selectedTask.id}`)).data
       setSelectedTask(refreshed)
       loadData()
+      if (
+        uploadRes.headers?.['x-iqadms-task-email-error'] ||
+        uploadRes.headers?.['x-iqadms-task-email-sent']
+      ) {
+        await notifyTaskEmailFromResponse(uploadRes, 'File uploaded.')
+      }
     } catch (err) {
       await appDialog.alert(err.response?.data?.message || 'Failed to upload attachment.')
     }
@@ -731,6 +747,12 @@ export default function DashboardPage() {
       })
       setSelectedTask(res.data)
       setTasks(prev => prev.map(t => (t.id === selectedTask.id ? res.data : t)))
+      if (
+        res.headers?.['x-iqadms-task-email-error'] ||
+        res.headers?.['x-iqadms-task-email-sent']
+      ) {
+        await notifyTaskEmailFromResponse(res, 'Deliverable submitted for review.')
+      }
       closeTaskDetail()
       loadData()
     } catch (err) {
@@ -747,11 +769,8 @@ export default function DashboardPage() {
         setAssignee: true,
         assignedToUserId: userId || null
       })
-      const emailErr = res.headers?.['x-iqadms-task-email-error']
-      if (emailErr) {
-        await appDialog.alert(
-          `Assignee updated, but email was not sent:\n\n${emailErr}\n\nCheck Add Account → SMTP test, and pqad appsettings SmtpSettings.`
-        )
+      if (res.headers?.['x-iqadms-task-email-error'] || res.headers?.['x-iqadms-task-email-to']) {
+        await notifyTaskEmailFromResponse(res, 'Assignee updated.')
       }
       setTasks(prev => prev.map(t => (t.id === id ? res.data : t)))
     } catch (err) {

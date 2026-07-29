@@ -317,6 +317,8 @@ If you did not request a reset, contact your administrator.
         return string.IsNullOrWhiteSpace(name) ? "IQADMS · PQAD" : name;
     }
 
+    public string PublicSenderName => GetFromDisplayName();
+
     private static string BuildRegistrationInviteHtml(
         string greetingHtml,
         string invitedLine,
@@ -663,6 +665,74 @@ IQADMS
         {
             var detail = DescribeSendFailure(ex);
             _logger.LogWarning(ex, "Task submitted email failed for {Email}", to);
+            return (false, detail);
+        }
+    }
+
+    public async Task<(bool Sent, string? Error)> TrySendTaskAttachmentEmailAsync(
+        string recipientEmail,
+        string recipientGreeting,
+        string actorName,
+        string taskTitle,
+        string fileName,
+        string? projectTitle,
+        string taskLink,
+        bool notifyAdmins)
+    {
+        if (!IsSmtpConfigured(out var configError))
+        {
+            _logger.LogWarning("Task attachment email not sent: {Reason}", configError);
+            return (false, configError);
+        }
+
+        if (string.IsNullOrWhiteSpace(recipientEmail))
+            return (false, "Recipient has no email address.");
+
+        var to = recipientEmail.Trim();
+        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "—" : projectTitle.Trim();
+        var subject = notifyAdmins
+            ? "IQADMS — Task file uploaded"
+            : "IQADMS — Reference file on your task";
+        var intro = notifyAdmins
+            ? $"<strong>{System.Net.WebUtility.HtmlEncode(actorName)}</strong> uploaded a file on a task assigned to them."
+            : $"<strong>{System.Net.WebUtility.HtmlEncode(actorName)}</strong> added a reference file to your task.";
+
+        var body = $"""
+Hello {recipientGreeting},
+
+{(notifyAdmins ? $"{actorName} uploaded a file on a task." : $"{actorName} added a reference file to your task.")}
+
+Task: {taskTitle}
+Project: {projectLine}
+File: {fileName}
+
+Open task: {taskLink}
+
+Regards,
+IQADMS
+""";
+
+        var htmlBody = BuildTaskActionHtml(
+            $"Hello {System.Net.WebUtility.HtmlEncode(recipientGreeting)},",
+            $"<p>{intro}</p>" +
+            $"<p><strong>Task:</strong> {System.Net.WebUtility.HtmlEncode(taskTitle)}<br />" +
+            $"<strong>Project:</strong> {System.Net.WebUtility.HtmlEncode(projectLine)}<br />" +
+            $"<strong>File:</strong> {System.Net.WebUtility.HtmlEncode(fileName)}</p>" +
+            $"""<p><a href="{taskLink}" style="display:inline-block;background:#7a0019;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">Open task</a></p>""",
+            null);
+
+        try
+        {
+            var smtp = _config.GetSection("SmtpSettings");
+            var from = RequireFromAddress(smtp);
+            await SendAsync(from, to, subject, body, htmlBody, GetFromDisplayName());
+            _logger.LogInformation("Task attachment email sent to {Email} for {TaskTitle}", to, taskTitle);
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            var detail = DescribeSendFailure(ex);
+            _logger.LogWarning(ex, "Task attachment email failed for {Email}", to);
             return (false, detail);
         }
     }

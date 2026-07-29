@@ -126,7 +126,7 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()
-            .WithExposedHeaders("X-IQADMS-Task-Email-Error");
+            .WithExposedHeaders("X-IQADMS-Task-Email-Error", "X-IQADMS-Task-Email-To", "X-IQADMS-Task-Email-Sent");
     });
 });
 
