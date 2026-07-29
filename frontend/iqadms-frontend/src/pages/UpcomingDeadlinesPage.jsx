@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 const TYPE_LABELS = { task: 'Task', project: 'Project', accreditation: 'Accreditation', announcement: 'PQAD event' }
 
@@ -43,7 +44,7 @@ export default function UpcomingDeadlinesPage() {
       setItems(res.data)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to load deadlines.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to load deadlines.')
     } finally {
       setLoading(false)
     }

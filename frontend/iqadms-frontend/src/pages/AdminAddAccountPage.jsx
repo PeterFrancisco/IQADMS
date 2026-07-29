@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle, primaryButtonStyle } from '../theme/pageStyles'
+import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle, primaryButtonStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 export default function AdminAddAccountPage() {
   const [email, setEmail] = useState('')
@@ -19,7 +20,7 @@ export default function AdminAddAccountPage() {
       setAllowedUsers(res.data)
     } catch (err) {
       console.error(err)
-      alert('Failed to load allowed users.')
+      await appDialog.alert('Failed to load allowed users.')
     }
   }
 
@@ -38,13 +39,13 @@ export default function AdminAddAccountPage() {
 
       const data = res.data || {}
       if (data.inviteEmailSent) {
-        alert(data.message || 'User added. Invitation email sent.')
+        await appDialog.alert(data.message || 'User added. Invitation email sent.')
       } else if (data.inviteEmailError) {
-        alert(
+        await appDialog.alert(
           `${data.message || 'User added.'}\n\nEmail: ${data.inviteEmailError}`
         )
       } else {
-        alert(data.message || 'Allowed user added successfully.')
+        await appDialog.alert(data.message || 'Allowed user added successfully.')
       }
 
       setEmail('')
@@ -53,7 +54,7 @@ export default function AdminAddAccountPage() {
       loadAllowedUsers()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to add allowed user.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to add allowed user.')
     } finally {
       setLoading(false)
     }
@@ -62,13 +63,13 @@ export default function AdminAddAccountPage() {
   const handleTestSmtp = async () => {
     try {
       const res = await api.post('/Admin/test-smtp')
-      alert(res.data?.message || 'Test email sent.')
+      await appDialog.alert(res.data?.message || 'Test email sent.')
     } catch (err) {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.inviteEmailError ||
         'SMTP test failed.'
-      alert(msg)
+      await appDialog.alert(msg)
     }
   }
 
@@ -79,13 +80,13 @@ export default function AdminAddAccountPage() {
       const extra = links
         ? `\n\nRegister link:\n${links.registerUrl}\n\nSite:\n${links.publicUrl}`
         : ''
-      alert((res.data?.message || 'Sample invite sent.') + extra)
+      await appDialog.alert((res.data?.message || 'Sample invite sent.') + extra)
     } catch (err) {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.inviteEmailError ||
         'Sample invite failed.'
-      alert(msg)
+      await appDialog.alert(msg)
     }
   }
 
@@ -94,29 +95,29 @@ export default function AdminAddAccountPage() {
       const res = await api.post(`/Admin/allowed-users/${id}/resend-invite`)
       const data = res.data || {}
       if (data.inviteEmailSent) {
-        alert(`Invitation sent to ${addr}.`)
+        await appDialog.alert(`Invitation sent to ${addr}.`)
       } else {
-        alert(`${data.message || 'Send failed.'}\n\n${data.inviteEmailError || ''}`)
+        await appDialog.alert(`${data.message || 'Send failed.'}\n\n${data.inviteEmailError || ''}`)
       }
       loadAllowedUsers()
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.inviteEmailError || 'Failed to resend invite.')
+      await appDialog.alert(err.response?.data?.message || err.response?.data?.inviteEmailError || 'Failed to resend invite.')
     }
   }
 
   async function resendAllPending() {
     const pending = allowedUsers.filter(u => !u.isRegistered)
     if (pending.length === 0) {
-      alert('No pending emails.')
+      await appDialog.alert('No pending emails.')
       return
     }
     if (!confirm(`Resend registration invites to ${pending.length} pending email(s)?`)) return
     try {
       const res = await api.post('/Admin/allowed-users/resend-pending-invites')
-      alert(res.data?.message || 'Done.')
+      await appDialog.alert(res.data?.message || 'Done.')
       loadAllowedUsers()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to resend invites.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to resend invites.')
     }
   }
 

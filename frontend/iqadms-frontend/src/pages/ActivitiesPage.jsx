@@ -1,3 +1,4 @@
+import { appDialog } from '../utils/appDialog'
     import { useEffect, useState } from 'react'
     import DashboardLayout from '../components/DashboardLayout'
     import api from '../services/api'
@@ -90,9 +91,9 @@
             console.error(err)
 
             if (err.response) {
-                alert(JSON.stringify(err.response.data, null, 2))
+                await appDialog.alert(JSON.stringify(err.response.data, null, 2))
             } else {
-                alert(err.message)
+                await appDialog.alert(err.message)
             }
         } finally {
             setCreating(false)

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'
+import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 export default function AdminManageUsersPage() {
   const [users, setUsers] = useState([])
@@ -57,7 +58,7 @@ export default function AdminManageUsersPage() {
       await api.put(`/Admin/users/${user.id}/admin`, { isAdmin: next })
       loadAll()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update role.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to update role.')
     }
   }
 
@@ -66,10 +67,10 @@ export default function AdminManageUsersPage() {
 
     try {
       await api.delete(`/Admin/users/${id}`)
-      alert('User removed.')
+      await appDialog.alert('User removed.')
       loadAll()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to remove user.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to remove user.')
     }
   }
 
@@ -78,10 +79,10 @@ export default function AdminManageUsersPage() {
 
     try {
       await api.delete(`/Admin/allowed-users/${id}`)
-      alert('Allowed email removed.')
+      await appDialog.alert('Allowed email removed.')
       loadAll()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to remove allowed email.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to remove allowed email.')
     }
   }
 
@@ -90,30 +91,30 @@ export default function AdminManageUsersPage() {
       const res = await api.post(`/Admin/allowed-users/${id}/resend-invite`)
       const data = res.data || {}
       if (data.inviteEmailSent) {
-        alert(`Invitation sent to ${email}.`)
+        await appDialog.alert(`Invitation sent to ${email}.`)
       } else {
-        alert(`${data.message || 'Send failed.'}\n\n${data.inviteEmailError || ''}`)
+        await appDialog.alert(`${data.message || 'Send failed.'}\n\n${data.inviteEmailError || ''}`)
       }
       loadAll()
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.inviteEmailError || 'Failed to resend invite.')
+      await appDialog.alert(err.response?.data?.message || err.response?.data?.inviteEmailError || 'Failed to resend invite.')
     }
   }
 
   async function resendAllPending() {
     const pending = allowedUsers.filter(u => !u.isRegistered)
     if (pending.length === 0) {
-      alert('No pending emails.')
+      await appDialog.alert('No pending emails.')
       return
     }
     if (!confirm(`Resend registration invites to ${pending.length} pending email(s)?`)) return
 
     try {
       const res = await api.post('/Admin/allowed-users/resend-pending-invites')
-      alert(res.data?.message || 'Done.')
+      await appDialog.alert(res.data?.message || 'Done.')
       loadAll()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to resend invites.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to resend invites.')
     }
   }
 

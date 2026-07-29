@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState([])
@@ -26,7 +27,7 @@ export default function DepartmentsPage() {
       setDepartments(res.data)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to load departments.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to load departments.')
     } finally {
       setLoading(false)
     }
@@ -46,7 +47,7 @@ export default function DepartmentsPage() {
       })
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to load department details.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to load department details.')
       setSelectedId(null)
     } finally {
       setDetailLoading(false)
@@ -71,7 +72,7 @@ export default function DepartmentsPage() {
       await openDetail(selectedId)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to save contacts.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to save contacts.')
     } finally {
       setSavingContacts(false)
     }

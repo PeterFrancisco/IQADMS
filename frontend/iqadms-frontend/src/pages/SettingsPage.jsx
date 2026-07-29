@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
 import { pageTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
+
 
 export default function SettingsPage() {
   const [searchParams] = useSearchParams()
@@ -18,7 +20,7 @@ export default function SettingsPage() {
       setRequests(res.data)
     } catch (err) {
       console.error(err)
-      alert('Failed to load account requests.')
+      await appDialog.alert('Failed to load account requests.')
     } finally {
       setLoading(false)
     }
@@ -39,28 +41,43 @@ export default function SettingsPage() {
       setPasswordResets(res.data)
     } catch (err) {
       console.error(err)
-      alert('Failed to load password reset requests.')
+      await appDialog.alert('Failed to load password reset requests.')
     }
   }
 
   const approvePasswordReset = async id => {
-    if (!window.confirm('Approve and email a reset link to this user?')) return
+    if (
+      !(await appDialog.confirm({
+        title: 'Approve password reset',
+        message: 'Approve and email a reset link to this user?',
+        confirmLabel: 'Approve'
+      }))
+    )
+      return
     try {
       const res = await api.post(`/Admin/password-reset-requests/${id}/approve`)
-      alert(res.data?.message || 'Approved.')
+      await appDialog.alert(res.data?.message || 'Approved.')
       loadPasswordResets()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to approve.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to approve.')
     }
   }
 
   const rejectPasswordReset = async id => {
-    if (!window.confirm('Reject this password reset request?')) return
+    if (
+      !(await appDialog.confirm({
+        title: 'Reject request',
+        message: 'Reject this password reset request?',
+        confirmLabel: 'Reject',
+        danger: true
+      }))
+    )
+      return
     try {
       await api.post(`/Admin/password-reset-requests/${id}/reject`)
       loadPasswordResets()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to reject.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to reject.')
     }
   }
 
@@ -70,31 +87,46 @@ export default function SettingsPage() {
       setFeedback(res.data)
     } catch (err) {
       console.error(err)
-      alert('Failed to load feedback.')
+      await appDialog.alert('Failed to load feedback.')
     }
   }
 
   const approveRequest = async (id) => {
-    if (!window.confirm('Approve this request?')) return
+    if (
+      !(await appDialog.confirm({
+        title: 'Approve account request',
+        message: 'Approve this request?',
+        confirmLabel: 'Approve'
+      }))
+    )
+      return
 
     try {
       await api.post(`/Admin/account-requests/${id}/approve`)
       await loadRequests()
     } catch (err) {
       console.error(err)
-      alert('Failed to approve request.')
+      await appDialog.alert('Failed to approve request.')
     }
   }
 
   const rejectRequest = async (id) => {
-    if (!window.confirm('Reject this request?')) return
+    if (
+      !(await appDialog.confirm({
+        title: 'Reject account request',
+        message: 'Reject this request?',
+        confirmLabel: 'Reject',
+        danger: true
+      }))
+    )
+      return
 
     try {
       await api.post(`/Admin/account-requests/${id}/reject`)
       await loadRequests()
     } catch (err) {
       console.error(err)
-      alert('Failed to reject request.')
+      await appDialog.alert('Failed to reject request.')
     }
   }
 

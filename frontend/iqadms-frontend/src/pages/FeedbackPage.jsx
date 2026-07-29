@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 export default function FeedbackPage() {
   const navigate = useNavigate()
@@ -23,11 +24,11 @@ export default function FeedbackPage() {
         message: message.trim()
       })
       setMessage('')
-      alert('Thank you. PQAD admins can review reports in the system.')
+      await appDialog.alert('Thank you. PQAD admins can review reports in the system.')
       navigate('/dashboard')
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to send report.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to send report.')
     } finally {
       setSaving(false)
     }

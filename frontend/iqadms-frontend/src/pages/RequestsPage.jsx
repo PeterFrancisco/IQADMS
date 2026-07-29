@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 export default function RequestsPage() {
   const navigate = useNavigate()
@@ -58,7 +59,7 @@ export default function RequestsPage() {
       else setPendingExtensions([])
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to load requests.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to load requests.')
     } finally {
       setLoading(false)
     }
@@ -80,7 +81,7 @@ export default function RequestsPage() {
       window.dispatchEvent(new Event('iqadms-notifications-changed'))
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to submit extension request.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to submit extension request.')
     } finally {
       setSubmitting(false)
     }
@@ -104,7 +105,7 @@ export default function RequestsPage() {
       window.dispatchEvent(new Event('iqadms-notifications-changed'))
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to submit document request.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to submit document request.')
     } finally {
       setSubmittingDoc(false)
     }
@@ -116,12 +117,20 @@ export default function RequestsPage() {
       await loadAll()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Update failed.')
+      await appDialog.alert(err.response?.data?.message || 'Update failed.')
     }
   }
 
   async function reviewExtension(id, approve) {
-    const note = window.prompt(approve ? 'Optional note for approval:' : 'Optional reason for rejection:') ?? ''
+    const note =
+      (await appDialog.prompt({
+        title: approve ? 'Approve extension' : 'Reject extension',
+        message: approve ? 'Add an optional note for the assignee.' : 'Add an optional reason for rejection.',
+        label: 'Note',
+        multiline: true,
+        required: false,
+        confirmLabel: approve ? 'Approve' : 'Reject'
+      })) ?? ''
     try {
       await api.post(`/Requests/extensions/${id}/${approve ? 'approve' : 'reject'}`, {
         reviewNote: note || null
@@ -130,7 +139,7 @@ export default function RequestsPage() {
       window.dispatchEvent(new Event('iqadms-notifications-changed'))
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Action failed.')
+      await appDialog.alert(err.response?.data?.message || 'Action failed.')
     }
   }
 

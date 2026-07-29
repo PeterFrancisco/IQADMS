@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled']
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical']
@@ -46,7 +47,7 @@ export default function ProjectsPage() {
       setDepartments(deptRes.data)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to load projects.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to load projects.')
     } finally {
       setLoading(false)
     }
@@ -107,20 +108,28 @@ export default function ProjectsPage() {
       loadAll()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to save project.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to save project.')
     } finally {
       setSaving(false)
     }
   }
 
   async function deleteProject(id, title) {
-    if (!window.confirm(`Delete project "${title}"? Tasks will remain but lose project link.`)) return
+    if (
+      !(await appDialog.confirm({
+        title: 'Delete project',
+        message: `Delete project "${title}"? Tasks will remain but lose project link.`,
+        confirmLabel: 'Delete',
+        danger: true
+      }))
+    )
+      return
     try {
       await api.delete(`/Projects/${id}`)
       loadAll()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to delete project.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to delete project.')
     }
   }
 

@@ -1,36 +1,48 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import AppIcon from '../components/AppIcon'
+import AppModal from '../components/AppModal'
+import { useAppDialog } from '../components/AppDialogProvider'
 import api from '../services/api'
 import { getApiOrigin } from '../utils/apiOrigin'
-import { upshd } from '../theme/upshd'
-import { pageTitleStyle, tableHeadRowStyle, linkStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'
+import '../theme/documents.css'
 
-const STATUS_COLORS = {
-  Approved: '#16a34a',
-  Submitted: upshd.maroon,
-  Pending: '#f59e0b',
-  Reviewed: '#9333ea',
-  Returned: '#ef4444',
-  Rejected: '#ef4444'
+function folderDepth(path) {
+  if (!path) return 0
+  return path.split('/').filter(Boolean).length - 1
 }
 
 export default function DocumentsPage() {
+  const dialog = useAppDialog()
   const [folders, setFolders] = useState([])
   const [storageStats, setStorageStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedFolder, setSelectedFolder] = useState('General')
-  const [viewMode, setViewMode] = useState('folders')
-  const [uploadFolder, setUploadFolder] = useState('General')
-  const [uploadFile, setUploadFile] = useState(null)
   const [uploading, setUploading] = useState(false)
-  const [uploadMessage, setUploadMessage] = useState('')
-  const [newFolderName, setNewFolderName] = useState('')
-  const [renameFolderName, setRenameFolderName] = useState('')
+  const [message, setMessage] = useState('')
+  const [dragOver, setDragOver] = useState(false)
+  const [createFolderOpen, setCreateFolderOpen] = useState(false)
+  const [createFolderName, setCreateFolderName] = useState('')
+  const [createFolderParent, setCreateFolderParent] = useState(null)
+  const [folderMenu, setFolderMenu] = useState(null)
+  const [menuAnchor, setMenuAnchor] = useState(null)
+  const menuRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     loadData()
+  }, [])
+
+  useEffect(() => {
+    const close = e => {
+      if (menuRef.current?.contains(e.target)) return
+      setFolderMenu(null)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
   }, [])
 
   async function loadData() {
@@ -53,390 +65,358 @@ export default function DocumentsPage() {
     }
   }
 
-  async function handleUpload(e) {
-    e.preventDefault()
-    if (!uploadFile || !uploadFolder.trim()) return
+  function openCreateFolder(parentPath) {
+    setCreateFolderName('')
+    setCreateFolderParent(parentPath ?? null)
+    setCreateFolderOpen(true)
+  }
+
+  async function uploadFiles(fileList, folderPath) {
+    const files = Array.from(fileList || [])
+    if (!files.length || !folderPath) return
 
     setUploading(true)
-    setUploadMessage('')
+    setMessage('')
     try {
-      const form = new FormData()
-      form.append('file', uploadFile)
-      form.append('folderPath', uploadFolder.trim())
-
-      const res = await api.post('/Submissions/upload', form, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-
-      setUploadMessage(res.data.message || 'Upload successful.')
-      setUploadFile(null)
-      e.target.reset()
-      await loadData()
-      if (res.data.submission?.autoFolderPath) {
-        setSelectedFolder(res.data.submission.autoFolderPath)
-        setViewMode('folders')
+      for (const file of files) {
+        const form = new FormData()
+        form.append('file', file)
+        form.append('folderPath', folderPath)
+        await api.post('/Submissions/upload', form, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
       }
+      setMessage(`Uploaded ${files.length} file(s) to "${folderPath}".`)
+      await loadData()
+      setSelectedFolder(folderPath)
     } catch (err) {
-      setUploadMessage(err.response?.data?.message || 'Upload failed.')
+      setMessage(err.response?.data?.message || 'Upload failed.')
     } finally {
       setUploading(false)
+      setDragOver(false)
     }
   }
 
-  async function createFolder(e) {
+  async function submitCreateFolder(e) {
     e.preventDefault()
-    if (!newFolderName.trim()) return
+    if (!createFolderName.trim()) return
     try {
       await api.post('/Submissions/folders', {
-        name: newFolderName.trim(),
-        parentPath: selectedFolder || null
+        name: createFolderName.trim(),
+        parentPath: createFolderParent
       })
-      setNewFolderName('')
+      const parent = createFolderParent
+      const name = createFolderName.trim()
+      const newPath = parent ? `${parent}/${name}` : name
+      setCreateFolderOpen(false)
+      setCreateFolderName('')
       await loadData()
-      setUploadMessage('Folder created.')
+      setSelectedFolder(newPath)
+      setMessage('Folder created.')
     } catch (err) {
-      setUploadMessage(err.response?.data?.message || 'Could not create folder.')
+      await dialog.alert({
+        title: 'Could not create folder',
+        message: err.response?.data?.message || 'Could not create folder.'
+      })
     }
   }
 
-  async function renameFolder(e) {
-    e.preventDefault()
-    if (!selectedFolder || !renameFolderName.trim()) return
-    try {
-      await api.put('/Submissions/folders/rename', {
-        oldPath: selectedFolder,
-        newPath: renameFolderName.trim()
-      })
-      setSelectedFolder(renameFolderName.trim())
-      setRenameFolderName('')
-      await loadData()
-      setUploadMessage('Folder renamed.')
-    } catch (err) {
-      setUploadMessage(err.response?.data?.message || 'Could not rename folder.')
-    }
-  }
-
-  async function exportFolder() {
-    if (!selectedFolder) return
+  async function exportFolderPath(path) {
     try {
       const res = await api.get('/Submissions/folders/export', {
-        params: { path: selectedFolder },
+        params: { path },
         responseType: 'blob'
       })
       const blob = new Blob([res.data], { type: 'application/zip' })
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
-      link.download = `${selectedFolder.replace(/\//g, '_')}.zip`
+      link.download = `${path.replace(/\//g, '_')}.zip`
       link.click()
       URL.revokeObjectURL(link.href)
+      setFolderMenu(null)
     } catch (err) {
-      setUploadMessage(err.response?.data?.message || 'Export failed.')
+      setMessage(err.response?.data?.message || 'Export failed.')
     }
   }
 
-  const allFiles = folders.flatMap(f => f.files || [])
-  const filteredFolders = folders
-    .map(f => {
-      const files = (f.files || []).filter(matchesSearch)
-      return { ...f, files, fileCount: files.length }
+  async function renameFolderPath(oldPath) {
+    setFolderMenu(null)
+    const shortName = oldPath.split('/').pop()
+    const next = await dialog.prompt({
+      title: 'Rename folder',
+      label: 'Folder name',
+      defaultValue: shortName,
+      required: true,
+      confirmLabel: 'Rename'
     })
-    .filter(f => f.files.length > 0 || !search)
+    if (!next || next === shortName) return
+
+    const parts = oldPath.split('/')
+    parts[parts.length - 1] = next
+    const newPath = parts.join('/')
+
+    try {
+      await api.put('/Submissions/folders/rename', { oldPath, newPath })
+      if (selectedFolder === oldPath) setSelectedFolder(newPath)
+      if (selectedFolder.startsWith(`${oldPath}/`)) {
+        setSelectedFolder(selectedFolder.replace(oldPath, newPath))
+      }
+      await loadData()
+      setMessage('Folder renamed.')
+    } catch (err) {
+      await dialog.alert({
+        title: 'Rename failed',
+        message: err.response?.data?.message || 'Could not rename folder.'
+      })
+    }
+  }
+
+  function openFolderMenu(path, el) {
+    const rect = el.getBoundingClientRect()
+    setMenuAnchor({ top: rect.bottom + 4, left: Math.max(8, rect.right - 180) })
+    setFolderMenu(path)
+  }
 
   function matchesSearch(doc) {
-    const q = search.toLowerCase()
+    const q = search.toLowerCase().trim()
+    if (!q) return true
     return (
       doc.fileName?.toLowerCase().includes(q) ||
       doc.uploadedBy?.toLowerCase().includes(q) ||
-      doc.activity?.toLowerCase().includes(q) ||
-      doc.autoFolderPath?.toLowerCase().includes(q) ||
-      doc.department?.toLowerCase().includes(q)
+      doc.autoFolderPath?.toLowerCase().includes(q)
     )
   }
 
-  const activeFolder = filteredFolders.find(f => f.folderPath === selectedFolder)
-    || filteredFolders[0]
+  const folderList = folders
+    .map(f => ({
+      ...f,
+      files: (f.files || []).filter(matchesSearch),
+      fileCount: (f.files || []).filter(matchesSearch).length
+    }))
+    .filter(f => f.files.length > 0 || !search.trim())
 
-  const flatFiltered = allFiles.filter(matchesSearch)
+  const activeFolder = folderList.find(f => f.folderPath === selectedFolder) || folderList[0]
+  const activeFiles = activeFolder?.files || []
 
   function fileLink(doc) {
-    if (doc.downloadUrl) {
-      return `${getApiOrigin()}${doc.downloadUrl}`
-    }
+    if (doc.downloadUrl) return `${getApiOrigin()}${doc.downloadUrl}`
     return doc.googleDriveLink
   }
 
+  const maxMb = storageStats ? Math.round(storageStats.maxUploadBytes / (1024 * 1024)) : 100
+  const createLocationLabel = createFolderParent
+    ? `Inside “${createFolderParent}”`
+    : 'Top level (no parent folder)'
+
   return (
     <DashboardLayout>
-      <div>
+      <div className="docs-page">
         <h1 style={pageTitleStyle}>Documents</h1>
-        <p style={{ color: '#666', marginBottom: '1rem' }}>
-          Admin document library: choose or create folders, upload files (max {storageStats ? Math.round(storageStats.maxUploadBytes / (1024 * 1024)) : 100} MB each), and export folders as ZIP.
+        <div className="docs-toolbar">
+          <input
+            className="docs-search"
+            placeholder="Search files…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
           {storageStats && (
-            <span style={{ display: 'block', marginTop: 6, fontSize: '0.9rem' }}>
-              Storage: {(storageStats.usedBytes / (1024 ** 3)).toFixed(2)} GB / {(storageStats.maxBytes / (1024 ** 3)).toFixed(0)} GB
+            <span className="docs-storage-pill">
+              {(storageStats.usedBytes / (1024 ** 3)).toFixed(2)} / {(storageStats.maxBytes / (1024 ** 3)).toFixed(0)} GB · max {maxMb} MB per file
             </span>
           )}
-        </p>
-
-        <div style={{
-          background: '#fff',
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,.08)',
-          padding: '1.25rem',
-          marginBottom: '1.5rem'
-        }}>
-          <h2 style={{ margin: '0 0 1rem', fontSize: '1.1rem', color: upshd.maroon }}>Upload document</h2>
-          <form onSubmit={handleUpload} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.9rem' }}>
-              Folder
-              <select
-                value={uploadFolder}
-                onChange={e => setUploadFolder(e.target.value)}
-                style={{ padding: '0.6rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 220 }}
-              >
-                {folders.map(f => (
-                  <option key={f.folderPath} value={f.folderPath}>{f.folderPath}</option>
-                ))}
-                {!folders.some(f => f.folderPath === 'General') && (
-                  <option value="General">General</option>
-                )}
-              </select>
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.9rem' }}>
-              File
-              <input
-                type="file"
-                required
-                onChange={e => setUploadFile(e.target.files?.[0] || null)}
-                style={{ fontSize: '0.9rem' }}
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={uploading}
-              style={{
-                padding: '0.65rem 1.25rem',
-                background: upshd.maroon,
-                color: '#fff',
-                border: 'none',
-                borderRadius: 8,
-                fontWeight: 600,
-                cursor: uploading ? 'wait' : 'pointer'
-              }}
-            >
-              {uploading ? 'Uploading…' : 'Upload'}
-            </button>
-          </form>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem', alignItems: 'flex-end' }}>
-            <form onSubmit={createFolder} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <label style={{ fontSize: '0.9rem' }}>
-                New subfolder in {selectedFolder || 'General'}
-                <input
-                  value={newFolderName}
-                  onChange={e => setNewFolderName(e.target.value)}
-                  placeholder="Folder name"
-                  style={{ display: 'block', marginTop: 4, padding: '0.5rem 0.65rem', borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 180 }}
-                />
-              </label>
-              <button type="submit" style={{ padding: '0.55rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', fontWeight: 600, cursor: 'pointer' }}>
-                Create folder
-              </button>
-            </form>
-            <form onSubmit={renameFolder} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <label style={{ fontSize: '0.9rem' }}>
-                Rename selected folder
-                <input
-                  value={renameFolderName}
-                  onChange={e => setRenameFolderName(e.target.value)}
-                  placeholder={selectedFolder || 'New name'}
-                  style={{ display: 'block', marginTop: 4, padding: '0.5rem 0.65rem', borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 180 }}
-                />
-              </label>
-              <button type="submit" style={{ padding: '0.55rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', fontWeight: 600, cursor: 'pointer' }}>
-                Rename
-              </button>
-            </form>
-            <button type="button" onClick={exportFolder} style={{ padding: '0.55rem 1rem', borderRadius: 8, border: 'none', background: '#1e293b', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
-              Export folder (ZIP)
-            </button>
-          </div>
-          {uploadMessage && (
-            <p style={{ marginTop: '0.75rem', color: uploadMessage.includes('failed') ? '#dc2626' : '#16a34a' }}>
-              {uploadMessage}
-            </p>
-          )}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={() => setViewMode('folders')}
-            style={tabStyle(viewMode === 'folders')}
-          >
-            By folder
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('all')}
-            style={tabStyle(viewMode === 'all')}
-          >
-            All files
-          </button>
-        </div>
-
-        <input
-          placeholder="Search documents…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            width: '100%', maxWidth: 400, padding: '0.75rem 1rem',
-            borderRadius: 10, border: '1px solid #cbd5e1',
-            marginBottom: '1.5rem', fontSize: '0.95rem'
-          }}
-        />
+        {message && (
+          <div className={`docs-toast ${message.toLowerCase().includes('fail') ? 'err' : 'ok'}`}>{message}</div>
+        )}
 
         {loading ? (
-          <p>Loading documents…</p>
-        ) : viewMode === 'folders' ? (
-          <div className="documents-folder-layout" style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <aside style={{
-              minWidth: 240,
-              background: '#fff',
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,.08)',
-              padding: '0.75rem 0',
-              maxHeight: 520,
-              overflowY: 'auto'
-            }}>
-              {filteredFolders.length === 0 ? (
-                <p style={{ padding: '1rem', color: '#94a3b8', margin: 0 }}>No folders yet.</p>
-              ) : (
-                filteredFolders.map(f => (
+          <p>Loading…</p>
+        ) : (
+          <div className="docs-layout">
+            <aside className="docs-sidebar">
+              <div className="docs-sidebar-head">
+                <h2>Folders</h2>
+                <button type="button" className="docs-btn-primary" onClick={() => openCreateFolder(null)}>
+                  + New folder
+                </button>
+              </div>
+              {selectedFolder && (
+                <div style={{ padding: '0.5rem 0.75rem 0', fontSize: '0.8rem', color: '#64748b' }}>
+                  Selected: <strong style={{ color: '#334155' }}>{selectedFolder}</strong>
+                  {' · '}
                   <button
-                    key={f.folderPath}
                     type="button"
-                    onClick={() => setSelectedFolder(f.folderPath)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '0.65rem 1rem',
-                      border: 'none',
-                      background: selectedFolder === f.folderPath ? '#fef2f2' : 'transparent',
-                      borderLeft: selectedFolder === f.folderPath ? `3px solid ${upshd.maroon}` : '3px solid transparent',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem'
-                    }}
+                    style={{ border: 'none', background: 'none', color: '#9e1b32', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    onClick={() => openCreateFolder(selectedFolder)}
                   >
-                    <span className="inline-icon-text">
-                      <AppIcon name="folder" size={16} />
-                      {f.folderPath}
-                    </span>
-                    <span style={{ color: '#64748b', marginLeft: 6 }}>({f.fileCount})</span>
+                    Add subfolder
                   </button>
-                ))
+                </div>
               )}
+              <div className="docs-folder-list">
+                {folderList.length === 0 ? (
+                  <p className="docs-empty">No folders yet. Create one to get started.</p>
+                ) : (
+                  folderList.map(f => (
+                    <div
+                      key={f.folderPath}
+                      className={`docs-folder-row ${selectedFolder === f.folderPath ? 'active' : ''}`}
+                      style={{ paddingLeft: `${0.35 + folderDepth(f.folderPath) * 0.65}rem` }}
+                    >
+                      <button type="button" className="docs-folder-btn" onClick={() => setSelectedFolder(f.folderPath)}>
+                        <AppIcon name="folder" size={18} />
+                        <span className="docs-folder-label" title={f.folderPath}>
+                          {f.folderPath.includes('/') ? f.folderPath.split('/').pop() : f.folderPath}
+                        </span>
+                        <span className="docs-folder-count">{f.fileCount}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="docs-folder-menu-btn"
+                        aria-label="Folder options"
+                        onClick={e => openFolderMenu(f.folderPath, e.currentTarget)}
+                      >
+                        ⋮
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
             </aside>
 
-            <div style={{ flex: 1, minWidth: 280 }}>
-              {activeFolder ? (
-                <>
-                  <h2 style={{ margin: '0 0 1rem', fontSize: '1.15rem' }} className="inline-icon-text">
-                    <AppIcon name="folder" size={20} />
-                    {activeFolder.folderPath}
-                  </h2>
-                  <DocumentTable rows={activeFolder.files.filter(matchesSearch)} fileLink={fileLink} />
-                </>
-              ) : (
-                <p style={{ color: '#94a3b8' }}>Select a folder or upload a file.</p>
-              )}
+            <div className="docs-main">
+              <div
+                className={`docs-dropzone ${dragOver ? 'drag-over' : ''}`}
+                onDragOver={e => {
+                  e.preventDefault()
+                  setDragOver(true)
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={e => {
+                  e.preventDefault()
+                  uploadFiles(e.dataTransfer.files, selectedFolder || 'General')
+                }}
+              >
+                <p className="docs-dropzone-title">
+                  {uploading ? 'Uploading…' : `Drop files into “${selectedFolder || 'General'}”`}
+                </p>
+                <p className="docs-dropzone-hint">Drag and drop here, or choose files from your computer.</p>
+                <button
+                  type="button"
+                  className="docs-btn-primary"
+                  style={{ marginTop: '1rem' }}
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Browse files
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  hidden
+                  onChange={e => uploadFiles(e.target.files, selectedFolder || 'General')}
+                />
+              </div>
+
+              <div className="docs-file-grid">
+                {activeFiles.length === 0 ? (
+                  <div className="docs-empty">No files in this folder yet.</div>
+                ) : (
+                  activeFiles.map(doc => {
+                    const href = fileLink(doc)
+                    return (
+                      <div key={doc.id} className="docs-file-row">
+                        <AppIcon name="file" size={20} />
+                        {href ? (
+                          <a className="docs-file-name" href={href} target="_blank" rel="noreferrer">
+                            {doc.fileName}
+                          </a>
+                        ) : (
+                          <span className="docs-file-name" style={{ color: '#334155' }}>
+                            {doc.fileName}
+                          </span>
+                        )}
+                        <span className="docs-file-meta">
+                          {doc.uploadedBy} · {new Date(doc.submittedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
             </div>
           </div>
-        ) : (
-          <DocumentTable rows={flatFiltered} fileLink={fileLink} showFolder />
         )}
+
+        <AppModal
+          open={createFolderOpen}
+          onClose={() => setCreateFolderOpen(false)}
+          title={createFolderParent ? 'New subfolder' : 'New folder'}
+          size="sm"
+          footer={
+            <div className="app-modal-actions">
+              <button type="button" className="app-modal-btn app-modal-btn-ghost" onClick={() => setCreateFolderOpen(false)}>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="docs-create-folder-form"
+                className="app-modal-btn app-modal-btn-primary"
+                disabled={!createFolderName.trim()}
+              >
+                Create
+              </button>
+            </div>
+          }
+        >
+          <form id="docs-create-folder-form" onSubmit={submitCreateFolder}>
+            <p className="app-modal-message" style={{ marginBottom: '1rem' }}>
+              Location: {createLocationLabel}
+            </p>
+            {!createFolderParent && (
+              <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#64748b' }}>
+                To nest folders, select a parent in the sidebar and use <strong>Add subfolder</strong> or the folder menu.
+              </p>
+            )}
+            <label className="app-modal-field-label" htmlFor="docs-new-folder-name">
+              Folder name
+            </label>
+            <input
+              id="docs-new-folder-name"
+              autoFocus
+              className="app-modal-field"
+              value={createFolderName}
+              onChange={e => setCreateFolderName(e.target.value)}
+              placeholder="e.g. Operational plans"
+            />
+          </form>
+        </AppModal>
+
+        {folderMenu &&
+          menuAnchor &&
+          createPortal(
+            <div ref={menuRef} className="docs-folder-menu" style={{ top: menuAnchor.top, left: menuAnchor.left }}>
+              <button
+                type="button"
+                onClick={() => {
+                  openCreateFolder(folderMenu)
+                  setFolderMenu(null)
+                }}
+              >
+                New subfolder
+              </button>
+              <button type="button" onClick={() => exportFolderPath(folderMenu)}>
+                Download as ZIP
+              </button>
+              <button type="button" onClick={() => renameFolderPath(folderMenu)}>
+                Rename
+              </button>
+            </div>,
+            document.body
+          )}
       </div>
     </DashboardLayout>
   )
 }
-
-function DocumentTable({ rows, fileLink, showFolder }) {
-  return (
-    <div className="table-responsive" style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={tableHeadRowStyle}>
-            <th style={thStyle}>Document</th>
-            {showFolder && <th style={thStyle}>Folder</th>}
-            <th style={thStyle}>Department</th>
-            <th style={thStyle}>Uploaded By</th>
-            <th style={thStyle}>Activity</th>
-            <th style={thStyle}>Date</th>
-            <th style={thStyle}>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={showFolder ? 7 : 6} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
-                No documents found.
-              </td>
-            </tr>
-          ) : (
-            rows.map(doc => {
-              const href = fileLink(doc)
-              return (
-                <tr key={doc.id}>
-                  <td style={{ ...tdStyle, fontWeight: 600 }}>
-                    {href ? (
-                      <a href={href} target="_blank" rel="noreferrer" style={linkStyle} className="inline-icon-text">
-                        <AppIcon name="file" size={16} />
-                        {doc.fileName}
-                      </a>
-                    ) : (
-                      <span className="inline-icon-text">
-                        <AppIcon name="file" size={16} />
-                        {doc.fileName}
-                      </span>
-                    )}
-                  </td>
-                  {showFolder && <td style={tdStyle}>{doc.autoFolderPath || '-'}</td>}
-                  <td style={tdStyle}>{doc.department}</td>
-                  <td style={tdStyle}>{doc.uploadedBy}</td>
-                  <td style={tdStyle}>{doc.activity}</td>
-                  <td style={tdStyle}>{new Date(doc.submittedAt).toLocaleDateString()}</td>
-                  <td style={tdStyle}>
-                    <span style={{
-                      background: STATUS_COLORS[doc.status] || '#64748b',
-                      color: '#fff',
-                      padding: '0.3rem 0.75rem',
-                      borderRadius: 999,
-                      fontSize: '0.85rem',
-                      fontWeight: 600
-                    }}>
-                      {doc.status}
-                    </span>
-                  </td>
-                </tr>
-              )
-            })
-          )}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function tabStyle(active) {
-  return {
-    padding: '0.5rem 1rem',
-    borderRadius: 8,
-    border: active ? `2px solid ${upshd.maroon}` : '1px solid #cbd5e1',
-    background: active ? '#fef2f2' : '#fff',
-    fontWeight: 600,
-    cursor: 'pointer'
-  }
-}
-
-const thStyle = { textAlign: 'left', padding: '1rem', borderBottom: '1px solid #ddd', fontWeight: 600 }
-const tdStyle = { padding: '1rem', borderBottom: '1px solid #eee' }

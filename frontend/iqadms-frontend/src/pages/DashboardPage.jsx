@@ -6,6 +6,10 @@ import AppModal, { ConfirmDialog } from '../components/AppModal'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
 import { getApiOrigin } from '../utils/apiOrigin'
+import AppIcon from '../components/AppIcon'
+import '../theme/tasks-page.css'
+import { appDialog } from '../utils/appDialog'
+
 
 const STATUS_OPTIONS = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
 const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical']
@@ -32,6 +36,26 @@ function isCompletedStatus(status) {
 
 function taskAssigneeId(task) {
   return task?.assignedToUserId ?? task?.AssignedToUserId ?? ''
+}
+
+function taskReferenceDownloads(task) {
+  const items = []
+  const seen = new Set()
+  for (const a of task.attachments || []) {
+    const url = `${getApiOrigin()}${a.downloadUrl}`
+    const key = url
+    if (!seen.has(key)) {
+      seen.add(key)
+      items.push({ fileName: a.fileName, url })
+    }
+  }
+  if (task.attachmentFileName && task.attachmentDownloadUrl) {
+    const url = `${getApiOrigin()}${task.attachmentDownloadUrl}`
+    if (!seen.has(url)) {
+      items.push({ fileName: task.attachmentFileName, url })
+    }
+  }
+  return items
 }
 
 function isTaskAssignee(task, userId) {
@@ -149,7 +173,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error(err)
       if (err.response?.status !== 401) {
-        alert(getApiErrorMessage(err, 'Failed to load My Tasks. Check your connection and try again.'))
+        await appDialog.alert(getApiErrorMessage(err, 'Failed to load My Tasks. Check your connection and try again.'))
       }
     } finally {
       setLoading(false)
@@ -183,7 +207,7 @@ export default function DashboardPage() {
           await api.post(`/Tasks/${res.data.id}/attachment`, formData)
         } catch (attachErr) {
           console.error(attachErr)
-          alert(
+          await appDialog.alert(
             getApiErrorMessage(
               attachErr,
               'Task was created, but the attachment could not be uploaded.'
@@ -209,9 +233,9 @@ export default function DashboardPage() {
     } catch (err) {
       console.error(err)
       if (err.response?.status === 401) {
-        alert('Your session expired or is invalid. You will be redirected to sign in again.')
+        await appDialog.alert('Your session expired or is invalid. You will be redirected to sign in again.')
       } else {
-        alert(getApiErrorMessage(err, 'Failed to create task.'))
+        await appDialog.alert(getApiErrorMessage(err, 'Failed to create task.'))
       }
     } finally {
       setSaving(false)
@@ -246,7 +270,7 @@ export default function DashboardPage() {
       const res = await api.put(`/BoardColumns/${id}`, { name })
       setBoardColumns(prev => prev.map(c => (c.id === id ? { ...c, ...res.data } : c)))
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to rename column.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to rename column.')
     }
   }
 
@@ -255,7 +279,7 @@ export default function DashboardPage() {
       const res = await api.put(`/BoardColumns/${id}`, { wrapText })
       setBoardColumns(prev => prev.map(c => (c.id === id ? { ...c, ...res.data } : c)))
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update column.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to update column.')
     }
   }
 
@@ -275,7 +299,7 @@ export default function DashboardPage() {
       await api.put('/BoardColumns/cell-values', { taskId, columnId, value })
     } catch (err) {
       console.error(err)
-      alert('Failed to save cell value.')
+      await appDialog.alert('Failed to save cell value.')
       loadData()
     }
   }
@@ -294,7 +318,7 @@ export default function DashboardPage() {
       loadData()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || `Failed to delete column "${columnName}".`)
+      await appDialog.alert(err.response?.data?.message || `Failed to delete column "${columnName}".`)
     }
   }
   
@@ -324,7 +348,7 @@ export default function DashboardPage() {
 
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to add column.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to add column.')
     }
   }
 
@@ -337,12 +361,11 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to update status.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to update status.')
     }
   }
 
   const openTaskDetail = async (task) => {
-    setSelectedTask(task)
     setDeliverableLink(task.deliverableGoogleDriveLink || '')
     setAdminReturnRemark('')
     setAdminCompleteRemark('')
@@ -351,6 +374,9 @@ export default function DashboardPage() {
     setTaskComments([])
     setTaskActivity([])
     try {
+      const full = (await api.get(`/Tasks/${task.id}`)).data
+      setSelectedTask(full)
+      setDeliverableLink(full.deliverableGoogleDriveLink || '')
       const requests = [api.get(`/Tasks/${task.id}/activity`)]
       if (isAdmin) {
         requests.unshift(api.get(`/Tasks/${task.id}/comments`))
@@ -368,12 +394,21 @@ export default function DashboardPage() {
   }
 
   const deleteTask = async task => {
-    if (!isAdmin || !window.confirm(`Delete task "${task.title}"? This cannot be undone.`)) return
+    if (
+      !isAdmin ||
+      !(await appDialog.confirm({
+        title: 'Delete task',
+        message: `Delete task "${task.title}"? This cannot be undone.`,
+        confirmLabel: 'Delete',
+        danger: true
+      }))
+    )
+      return
     try {
       await api.delete(`/Tasks/${task.id}`)
       loadData()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete task.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to delete task.')
     }
   }
 
@@ -386,7 +421,7 @@ export default function DashboardPage() {
       loadData()
       closeTaskDetail()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to return task.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to return task.')
     } finally {
       setTaskActionLoading(false)
     }
@@ -403,7 +438,7 @@ export default function DashboardPage() {
       loadData()
       closeTaskDetail()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to complete task.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to complete task.')
     } finally {
       setTaskActionLoading(false)
     }
@@ -420,7 +455,7 @@ export default function DashboardPage() {
       setSelectedTask(refreshed)
       loadData()
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to upload attachment.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to upload attachment.')
     }
   }
 
@@ -443,7 +478,7 @@ export default function DashboardPage() {
       loadData()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to submit deliverable.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to submit deliverable.')
     } finally {
       setSubmittingDeliverable(false)
     }
@@ -458,7 +493,7 @@ export default function DashboardPage() {
       setTasks(prev => prev.map(t => (t.id === id ? res.data : t)))
     } catch (err) {
       console.error(err)
-      alert('Failed to assign member.')
+      await appDialog.alert('Failed to assign member.')
     }
   }
 
@@ -469,7 +504,7 @@ export default function DashboardPage() {
       if (selectedTask?.id === id) setSelectedTask(res.data)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to update task.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to update task.')
     }
   }
 
@@ -496,7 +531,7 @@ export default function DashboardPage() {
       loadData()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to post comment.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to post comment.')
     } finally {
       setPostingComment(false)
     }
@@ -508,8 +543,9 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div>
+        <header className="tasks-page-header">
         <h1 style={{ marginBottom: '.25rem', color: '#7a0019' }}>My Tasks</h1>
-        <p style={{ color: '#666', marginBottom: '1.5rem' }}>
+        <p className="tasks-page-sub">
           Flexible workspace: rename columns from the header menu (⋮), scroll horizontally, sort, and add columns to the right.
           {filterProject && (
             <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
@@ -522,14 +558,15 @@ export default function DashboardPage() {
             </span>
           )}
         </p>
+        </header>
 
         {!isAdmin && (
           <p style={{ color: '#475569', marginBottom: '1rem', fontSize: '0.95rem', maxWidth: 720 }}>
-            Open a task with <strong>Open</strong> on the task row. Move <strong>Status</strong> to In Progress, upload to the admin&apos;s Google Drive folder, then submit your finished-work link from the task panel.
+            Open a task with <strong>Open</strong> on the task row. Download reference files from the work package, edit them on your device, upload to the admin&apos;s Google Drive folder, then submit your finished-work link.
           </p>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div className="tasks-stats-grid">
           {isAdmin && (
             <MiniStat label="Total Tasks" value={tasks.length} color="#9e1b32" />
           )}
@@ -599,46 +636,63 @@ export default function DashboardPage() {
                 {selectedTask.assignedToName && <> · Assigned to {selectedTask.assignedToName}</>}
               </p>
 
-              {selectedTask.description && (
+              {(selectedTask.description ||
+                taskReferenceDownloads(selectedTask).length > 0 ||
+                selectedTask.uploadGoogleDriveLink) ? (
+                <div className="task-work-package">
+                  <h3>Work package</h3>
+                  {selectedTask.description && (
+                    <p style={{ margin: '0 0 0.85rem', color: '#374151', whiteSpace: 'pre-wrap' }}>
+                      {selectedTask.description}
+                    </p>
+                  )}
+                  {!isAdmin && isTaskAssignee(selectedTask, currentUserId) && (
+                    <ol className="task-work-steps">
+                      <li>Download each reference file below and edit it on your computer.</li>
+                      <li>Upload your finished work to the admin&apos;s Google Drive folder.</li>
+                      <li>Set status to <strong>In Progress</strong>, paste your Drive link, and submit for review.</li>
+                    </ol>
+                  )}
+                  {taskReferenceDownloads(selectedTask).length > 0 && (
+                    <div className="task-ref-files">
+                      <label style={{ ...labelStyle, marginBottom: 0 }}>Files to edit</label>
+                      {taskReferenceDownloads(selectedTask).map(f => (
+                        <a
+                          key={f.url}
+                          className="task-ref-download"
+                          href={f.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download
+                        >
+                          <AppIcon name="file" size={18} />
+                          Download {f.fileName}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {selectedTask.uploadGoogleDriveLink && (
+                    <>
+                      <label style={{ ...labelStyle, marginBottom: '0.5rem' }}>Where to upload finished work</label>
+                      <a
+                        className="task-gdrive-cta"
+                        href={selectedTask.uploadGoogleDriveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Open Google Drive folder
+                      </a>
+                    </>
+                  )}
+                </div>
+              ) : selectedTask.description ? (
                 <>
                   <label style={labelStyle}>Description</label>
                   <p style={{ margin: '0 0 1rem', color: '#374151', whiteSpace: 'pre-wrap' }}>
                     {selectedTask.description}
                   </p>
                 </>
-              )}
-
-              {selectedTask.attachmentFileName && (
-                <>
-                  <label style={labelStyle}>Reference attachment</label>
-                  <p style={{ margin: '0 0 1rem' }}>
-                    <a
-                      href={`${getApiOrigin()}${selectedTask.attachmentDownloadUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#9e1b32', fontWeight: 600 }}
-                    >
-                      Download {selectedTask.attachmentFileName}
-                    </a>
-                  </p>
-                </>
-              )}
-
-              {selectedTask.uploadGoogleDriveLink && (
-                <>
-                  <label style={labelStyle}>Upload folder (Google Drive)</label>
-                  <p style={{ margin: '0 0 1rem' }}>
-                    <a
-                      href={selectedTask.uploadGoogleDriveLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#9e1b32', wordBreak: 'break-all' }}
-                    >
-                      Open Google Drive folder
-                    </a>
-                  </p>
-                </>
-              )}
+              ) : null}
 
               {selectedTask.deliverableGoogleDriveLink && (
                 <>
@@ -1026,7 +1080,7 @@ export default function DashboardPage() {
 
 function MiniStat({ label, value, color }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 10, padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)', borderLeft: `4px solid ${color}` }}>
+    <div className="tasks-stat-card" style={{ borderLeftColor: color }}>
       <div style={{ color: '#64748b', fontSize: '0.85rem' }}>{label}</div>
       <div style={{ fontSize: '1.75rem', fontWeight: 700, color }}>{value}</div>
     </div>

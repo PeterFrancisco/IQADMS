@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 const CATEGORY_LABELS = {
   task: 'Task',
@@ -31,7 +32,7 @@ export default function NotificationsPage() {
       setItems(res.data)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to load notifications.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to load notifications.')
     } finally {
       setLoading(false)
     }
@@ -55,7 +56,7 @@ export default function NotificationsPage() {
       window.dispatchEvent(new Event('iqadms-notifications-changed'))
     } catch (err) {
       console.error(err)
-      alert('Failed to mark all as read.')
+      await appDialog.alert('Failed to mark all as read.')
     }
   }
 

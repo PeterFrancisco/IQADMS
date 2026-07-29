@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { appDialog } from '../utils/appDialog'
 import {
   authPageStyle,
   authCardStyle,
@@ -35,16 +36,16 @@ export default function RequestAccountPage() {
 
         navigate('/request-submitted')
     } catch (err) {
-        console.error(err)
+      console.error(err)
 
-        alert(
-            err.response?.data?.message ||
-            err.response?.data ||
-            err.message ||
-            'Failed to submit request.'
-        )
-        }
+      await appDialog.alert(
+        err.response?.data?.message ||
+          err.response?.data ||
+          err.message ||
+          'Failed to submit request.'
+      )
     }
+  }
 
   return (
     <div style={pageStyle}>

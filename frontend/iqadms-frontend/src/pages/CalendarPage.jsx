@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 const TYPE_COLORS = {
   task: '#7a0019',
@@ -67,7 +68,7 @@ export default function CalendarPage() {
       setSelectedDay(null)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to load calendar.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to load calendar.')
     } finally {
       setLoading(false)
     }

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 export default function StatisticsPage() {
   const [stats, setStats] = useState(null)
@@ -14,7 +15,7 @@ export default function StatisticsPage() {
       .then(res => setStats(res.data))
       .catch(err => {
         console.error(err)
-        alert(err.response?.data?.message || 'Failed to load statistics.')
+        void appDialog.alert(err.response?.data?.message || 'Failed to load statistics.')
       })
       .finally(() => setLoading(false))
   }, [])

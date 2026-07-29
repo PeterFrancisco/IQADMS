@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 const CATEGORIES = ['Orientation', 'Meeting', 'PACUCOA Visit', 'General']
 
@@ -48,7 +49,7 @@ export default function AnnouncementsPage() {
       setItems(res.data)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to load announcements.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to load announcements.')
     } finally {
       setLoading(false)
     }
@@ -96,20 +97,28 @@ export default function AnnouncementsPage() {
       load()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to save.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to save.')
     } finally {
       setSaving(false)
     }
   }
 
   async function remove(id, title) {
-    if (!window.confirm(`Remove announcement "${title}"?`)) return
+    if (
+      !(await appDialog.confirm({
+        title: 'Remove announcement',
+        message: `Remove announcement "${title}"?`,
+        confirmLabel: 'Remove',
+        danger: true
+      }))
+    )
+      return
     try {
       await api.delete(`/Announcements/${id}`)
       load()
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to delete.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to delete.')
     }
   }
 

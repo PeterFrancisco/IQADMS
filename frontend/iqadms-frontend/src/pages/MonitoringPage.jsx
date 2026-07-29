@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
-import { upshd } from '../theme/upshd'
+import { upshd } from '../theme/upshd'import { appDialog } from '../utils/appDialog'
+
 
 const ACTIVITY_ID = '93cb5e08-4c2c-40bf-9d79-59d0c2a1d689'
 
@@ -81,7 +82,7 @@ export default function MonitoringPage() {
               }}
               onMouseEnter={e => (e.currentTarget.style.background = upshd.maroonDark)}
               onMouseLeave={e => (e.currentTarget.style.background = upshd.maroon)}
-              onClick={() => alert('Create Activity form coming next')}
+              onClick={() => void appDialog.alert('Create Activity form coming next')}
             >
               + Create Activity
             </button>

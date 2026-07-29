@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+
 
 const STATUS_OPTIONS = ['', 'To Do', 'In Progress', 'Waiting', 'Completed', 'Cancelled', 'Planning', 'Done', 'Review']
 
@@ -64,15 +65,15 @@ export default function ReportsPage() {
       setReport(res.data)
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to generate report.')
+      await appDialog.alert(err.response?.data?.message || 'Failed to generate report.')
     } finally {
       setLoading(false)
     }
   }
 
-  function exportCsv() {
+  async function exportCsv() {
     if (!report?.rows?.length) {
-      alert('No rows to export. Run the report first.')
+      await appDialog.alert('No rows to export. Run the report first.')
       return
     }
 
