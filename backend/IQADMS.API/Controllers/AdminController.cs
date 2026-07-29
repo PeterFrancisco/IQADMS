@@ -406,7 +406,7 @@ public class AdminController : ControllerBase
         var greeting = EmailService.ResolveInviteRecipientGreeting(recipient) ?? "there";
         var link = _emailService.BuildTaskLink(Guid.Empty, null);
 
-        await _emailService.TrySendTaskAssignedEmailAsync(
+        var (sent, error) = await _emailService.TrySendTaskAssignedEmailAsync(
             recipient,
             greeting,
             actorName,
@@ -417,10 +417,14 @@ public class AdminController : ControllerBase
             link,
             regardsName: null);
 
+        if (!sent)
+            return BadRequest(new { message = error ?? "Task email was not sent.", taskEmailSent = false, taskEmailError = error });
+
         return Ok(new
         {
             message = $"Task assignment sample sent to {recipient}. Check inbox and Junk/Other in Outlook.",
-            recipient
+            recipient,
+            taskEmailSent = true
         });
     }
 

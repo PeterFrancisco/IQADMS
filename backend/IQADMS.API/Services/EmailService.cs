@@ -497,7 +497,7 @@ If you did not request a reset, contact your administrator.
         return $"{baseUrl}/my-tasks?{query}";
     }
 
-    public async Task TrySendTaskAssignedEmailAsync(
+    public async Task<(bool Sent, string? Error)> TrySendTaskAssignedEmailAsync(
         string assigneeEmail,
         string assigneeGreetingName,
         string actorName,
@@ -514,13 +514,14 @@ If you did not request a reset, contact your administrator.
                 "Task assigned email not sent to {Email}: {Reason}",
                 assigneeEmail,
                 configError);
-            return;
+            return (false, configError);
         }
 
         if (string.IsNullOrWhiteSpace(assigneeEmail))
         {
-            _logger.LogWarning("Task assigned email skipped: assignee has no email address.");
-            return;
+            const string msg = "Assignee has no email address on their IQADMS profile.";
+            _logger.LogWarning("Task assigned email skipped: {Reason}", msg);
+            return (false, msg);
         }
 
         var to = assigneeEmail.Trim();
@@ -574,14 +575,17 @@ IQADMS
                 htmlBody,
                 GetFromDisplayName());
             _logger.LogInformation("Task assigned email sent to {Email} for task {TaskTitle}", to, taskTitle);
+            return (true, null);
         }
         catch (Exception ex)
         {
+            var detail = DescribeSendFailure(ex);
             _logger.LogWarning(ex, "Task assigned email failed for {Email}", to);
+            return (false, detail);
         }
     }
 
-    public async Task TrySendTaskSubmittedEmailAsync(
+    public async Task<(bool Sent, string? Error)> TrySendTaskSubmittedEmailAsync(
         string adminEmail,
         string adminGreetingName,
         string assigneeName,
@@ -596,13 +600,14 @@ IQADMS
                 "Task submitted email not sent to {Email}: {Reason}",
                 adminEmail,
                 configError);
-            return;
+            return (false, configError);
         }
 
         if (string.IsNullOrWhiteSpace(adminEmail))
         {
-            _logger.LogWarning("Task submitted email skipped: admin has no email address.");
-            return;
+            const string msg = "Admin has no email address on their IQADMS profile.";
+            _logger.LogWarning("Task submitted email skipped: {Reason}", msg);
+            return (false, msg);
         }
 
         var to = adminEmail.Trim();
@@ -645,10 +650,13 @@ IQADMS
                 htmlBody,
                 GetFromDisplayName());
             _logger.LogInformation("Task submitted email sent to {Email} for task {TaskTitle}", to, taskTitle);
+            return (true, null);
         }
         catch (Exception ex)
         {
+            var detail = DescribeSendFailure(ex);
             _logger.LogWarning(ex, "Task submitted email failed for {Email}", to);
+            return (false, detail);
         }
     }
 

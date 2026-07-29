@@ -10,9 +10,13 @@ export default function AdminAddAccountPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(false)
   const [allowedUsers, setAllowedUsers] = useState([])
+  const [smtpStatus, setSmtpStatus] = useState(null)
 
   useEffect(() => {
     loadAllowedUsers()
+    api.get('/Admin/smtp-settings')
+      .then(res => setSmtpStatus(res.data))
+      .catch(() => setSmtpStatus(null))
   }, [])
 
   const loadAllowedUsers = async () => {
@@ -107,7 +111,9 @@ export default function AdminAddAccountPage() {
       await appDialog.alert(res.data?.message || 'Sample task notification sent.')
     } catch (err) {
       await appDialog.alert(
-        err.response?.data?.message || 'Task notification test failed.'
+        err.response?.data?.taskEmailError ||
+          err.response?.data?.message ||
+          'Task notification test failed.'
       )
     }
   }
@@ -163,6 +169,24 @@ export default function AdminAddAccountPage() {
           <p style={{ color: '#64748b' }}>
             Add an email to the allowed registration list. An invitation is sent to that address (Gmail, Outlook, etc.) with a link to register.
           </p>
+
+          {smtpStatus && (!smtpStatus.passwordConfigured || !smtpStatus.host) && (
+            <div
+              style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#991b1b',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                fontSize: '0.9rem'
+              }}
+            >
+              SMTP is not fully configured on the server — no task or invite emails will send until pqad{' '}
+              <code style={{ fontSize: '0.85em' }}>appsettings.json</code> has SmtpSettings (Host, Port, Username,
+              Password, From) and the API is restarted.
+            </div>
+          )}
 
           <form
             onSubmit={handleAdd}

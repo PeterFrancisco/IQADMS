@@ -19,17 +19,20 @@ public class TasksController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly NotificationService _notifications;
     private readonly EmailService _email;
+    private readonly ILogger<TasksController> _logger;
 
     public TasksController(
         ApplicationDbContext context,
         IWebHostEnvironment env,
         NotificationService notifications,
-        EmailService email)
+        EmailService email,
+        ILogger<TasksController> logger)
     {
         _context = context;
         _env = env;
         _notifications = notifications;
         _email = email;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -121,6 +124,8 @@ public class TasksController : ControllerBase
 
         await LogActivity(task.Id, userId, "created", $"Task \"{task.Title}\" created");
 
+        string? taskEmailError = null;
+
         if (task.AssignedToUserId.HasValue && task.AssignedToUserId != userId)
         {
             await _notifications.NotifyAsync(
@@ -133,10 +138,15 @@ public class TasksController : ControllerBase
                 task.ProjectId,
                 $"task-assigned-{task.Id}-{task.AssignedToUserId}");
 
-            await SendTaskAssignedEmailsAsync(task.Id, userId, task.AssignedToUserId.Value);
+            var (_, err) = await SendTaskAssignedEmailsAsync(task.Id, userId, task.AssignedToUserId.Value);
+            taskEmailError = err;
         }
 
-        return Ok(await MapTaskById(task.Id));
+        var mapped = await MapTaskById(task.Id);
+        if (taskEmailError != null)
+            Response.Headers["X-IQADMS-Task-Email-Error"] = taskEmailError;
+
+        return Ok(mapped);
     }
 
     [HttpPut("{id}")]
@@ -170,6 +180,7 @@ public class TasksController : ControllerBase
         }
 
         var changes = new List<string>();
+        string? taskEmailError = null;
 
         if (!string.IsNullOrWhiteSpace(request.Title) && request.Title.Trim() != task.Title)
         {
@@ -272,7 +283,8 @@ public class TasksController : ControllerBase
                         task.ProjectId,
                         $"task-assigned-{task.Id}-{request.AssignedToUserId}");
 
-                    await SendTaskAssignedEmailsAsync(task.Id, userId, request.AssignedToUserId.Value);
+                    var (_, err) = await SendTaskAssignedEmailsAsync(task.Id, userId, request.AssignedToUserId.Value);
+                    taskEmailError = err;
                 }
             }
             else if (task.AssignedToUserId != null)
@@ -306,6 +318,9 @@ public class TasksController : ControllerBase
 
         if (changes.Count > 0)
             await LogActivity(task.Id, userId, "updated", string.Join("; ", changes));
+
+        if (taskEmailError != null)
+            Response.Headers["X-IQADMS-Task-Email-Error"] = taskEmailError;
 
         return Ok(await MapTaskById(task.Id));
     }
@@ -768,14 +783,14 @@ public class TasksController : ControllerBase
         }
     }
 
-    private async Task SendTaskAssignedEmailsAsync(Guid taskId, Guid actorUserId, Guid assigneeUserId)
+    private async Task<(bool Sent, string? Error)> SendTaskAssignedEmailsAsync(Guid taskId, Guid actorUserId, Guid assigneeUserId)
     {
         var task = await _context.WorkspaceTasks
             .AsNoTracking()
             .Include(t => t.Project)
             .FirstOrDefaultAsync(t => t.Id == taskId && !t.IsDeleted);
         if (task == null)
-            return;
+            return (false, "Task not found.");
 
         var users = await _context.Users
             .AsNoTracking()
@@ -784,7 +799,7 @@ public class TasksController : ControllerBase
         var actor = users.FirstOrDefault(u => u.Id == actorUserId);
         var assignee = users.FirstOrDefault(u => u.Id == assigneeUserId);
         if (actor == null || assignee == null || !assignee.IsActive)
-            return;
+            return (false, "Assignee not found or inactive.");
 
         var actorName = _email.FormatEmailActorName(actor);
         var assigneeGreeting = EmailService.FormatPersonName(assignee.DisplayName, assignee.Username, assignee.Email);
@@ -793,7 +808,7 @@ public class TasksController : ControllerBase
 
         var link = _email.BuildTaskLink(task.Id, task.ProjectId);
         var regardsName = actor.IsAdmin ? null : actorName;
-        await _email.TrySendTaskAssignedEmailAsync(
+        var result = await _email.TrySendTaskAssignedEmailAsync(
             assignee.Email,
             assigneeGreeting,
             actorName,
@@ -803,6 +818,15 @@ public class TasksController : ControllerBase
             task.DueDate,
             link,
             regardsName);
+
+        if (!result.Sent)
+            _logger.LogWarning(
+                "Task assign email failed for task {TaskId} to {Email}: {Error}",
+                taskId,
+                assignee.Email,
+                result.Error);
+
+        return result;
     }
 
     private async Task SendTaskSubmittedEmailsAsync(Guid taskId, Guid submitterUserId)

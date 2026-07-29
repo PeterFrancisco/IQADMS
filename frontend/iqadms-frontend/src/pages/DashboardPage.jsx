@@ -747,6 +747,12 @@ export default function DashboardPage() {
         setAssignee: true,
         assignedToUserId: userId || null
       })
+      const emailErr = res.headers?.['x-iqadms-task-email-error']
+      if (emailErr) {
+        await appDialog.alert(
+          `Assignee updated, but email was not sent:\n\n${emailErr}\n\nCheck Add Account → SMTP test, and pqad appsettings SmtpSettings.`
+        )
+      }
       setTasks(prev => prev.map(t => (t.id === id ? res.data : t)))
     } catch (err) {
       console.error(err)
