@@ -9,6 +9,7 @@ import { setPresence, startPresenceHeartbeat } from '../utils/presenceApi'
 import { Menu } from 'lucide-react'
 import IqadmsLogo from './IqadmsLogo'
 import NotificationBellDropdown from './NotificationBellDropdown'
+import { normalizePresence } from '../config/presence'
 import { clearAuthSession } from '../utils/authSession'
 
 export default function DashboardLayout({ children }) {
