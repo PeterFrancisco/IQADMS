@@ -317,6 +317,34 @@ namespace IQADMS.API.Migrations
                     b.ToTable("DocumentRequests");
                 });
 
+            modelBuilder.Entity("IQADMS.API.Models.DocumentLibraryFolder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Path")
+                        .IsUnique();
+
+                    b.ToTable("DocumentLibraryFolders");
+                });
+
             modelBuilder.Entity("IQADMS.API.Models.PqadAnnouncement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -364,6 +392,57 @@ namespace IQADMS.API.Migrations
                     b.HasIndex("CreatedByUserId");
 
                     b.ToTable("PqadAnnouncements");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.PasswordResetRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResetToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime?>("TokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetRequests");
                 });
 
             modelBuilder.Entity("IQADMS.API.Models.Project", b =>
@@ -988,6 +1067,9 @@ namespace IQADMS.API.Migrations
                     b.Property<string>("AttachmentFilePath")
                         .HasColumnType("text");
 
+                    b.Property<string>("AdminReviewRemark")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1024,6 +1106,9 @@ namespace IQADMS.API.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1291,6 +1376,17 @@ namespace IQADMS.API.Migrations
                     b.Navigation("ReviewedByUser");
 
                     b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("IQADMS.API.Models.PasswordResetRequest", b =>
+                {
+                    b.HasOne("IQADMS.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("IQADMS.API.Models.UserFeedback", b =>
