@@ -560,7 +560,7 @@ public class AdminController : ControllerBase
         if (!string.IsNullOrWhiteSpace(user.Username))
             return user.Username.Trim();
 
-        return user.Email;
+        return null;
     }
 
     private async Task<(bool Sent, string? Error)> SendInviteForAllowedUserAsync(

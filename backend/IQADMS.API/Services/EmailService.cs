@@ -43,7 +43,7 @@ Reason:
 
 Please review this request in the admin panel.";
 
-        await SendAsync(from, adminEmail, "IQADMS Access Request", body);
+        await SendAsync(from, adminEmail, "IQADMS Access Request", body, htmlBody: null, GetFromDisplayName());
     }
 
     public async Task<(bool Sent, string? Error)> TrySendRegistrationInviteAsync(
@@ -70,10 +70,9 @@ Please review this request in the admin panel.";
             ? "Hello,"
             : $"Hello {System.Net.WebUtility.HtmlEncode(recipientDisplayName.Trim())},";
 
-        var invitedLine = string.IsNullOrWhiteSpace(invitedByDisplayName)
-            ? "You have been invited to join IQADMS for the Planning and Quality Assurance Department (PQAD), University of Perpetual Help System DALTA — Molino Campus."
-            : $"{invitedByDisplayName.Trim()} has invited you to join IQADMS (PQAD · UPSHD Molino).";
+        var invitedLine = BuildInvitedLine(invitedByDisplayName);
 
+        var fromName = GetFromDisplayName();
         var body = $"""
 {greetingPlain}
 
@@ -99,30 +98,18 @@ If you did not expect this invitation, you can safely ignore this email.
 — IQADMS · PQAD · UPSHD Molino
 """;
 
-        var htmlBody = $"""
-<p>{greetingHtml}</p>
-<p>{System.Net.WebUtility.HtmlEncode(invitedLine)}</p>
-<p><strong>Official IQADMS website:</strong><br />
-<a href="{siteUrl}">{System.Net.WebUtility.HtmlEncode(siteUrl)}</a></p>
-<p><strong>Create your account:</strong><br />
-<a href="{registerUrl}">{System.Net.WebUtility.HtmlEncode(registerUrl)}</a></p>
-<p>Use this email address when you register:<br />
-<code>{System.Net.WebUtility.HtmlEncode(to)}</code></p>
-<ol>
-  <li>Open the registration link above.</li>
-  <li>Enter the email address shown here.</li>
-  <li>Choose a username and a strong password, then complete your profile.</li>
-  <li>Sign in at the same website when you are done.</li>
-</ol>
-<p>If you did not expect this invitation, you can safely ignore this email.</p>
-<p>— IQADMS · PQAD · UPSHD Molino</p>
-""";
+        var htmlBody = BuildRegistrationInviteHtml(
+            greetingHtml,
+            invitedLine,
+            siteUrl,
+            registerUrl,
+            to);
 
         try
         {
             var smtp = _config.GetSection("SmtpSettings");
             var from = RequireFromAddress(smtp);
-            await SendAsync(from, to, "Register on IQADMS — PQAD Molino", body, htmlBody);
+            await SendAsync(from, to, "Register on IQADMS — PQAD Molino", body, htmlBody, fromName);
             _logger.LogInformation("Registration invite sent to {Email}", to);
             return (true, null);
         }
@@ -164,7 +151,7 @@ If you did not request a reset, contact your administrator.
         {
             var smtp = _config.GetSection("SmtpSettings");
             var from = RequireFromAddress(smtp);
-            await SendAsync(from, to, "IQADMS password reset", body, htmlBody);
+            await SendAsync(from, to, "IQADMS password reset", body, htmlBody, GetFromDisplayName());
             return (true, null);
         }
         catch (Exception ex)
@@ -197,7 +184,9 @@ If you did not request a reset, contact your administrator.
                 from,
                 to,
                 "IQADMS SMTP test",
-                "If you received this message, SMTP is configured correctly for IQADMS.");
+                "If you received this message, SMTP is configured correctly for IQADMS.",
+                htmlBody: null,
+                GetFromDisplayName());
             return (true, null);
         }
         catch (Exception ex)
@@ -271,7 +260,80 @@ If you did not request a reset, contact your administrator.
     private static string RequireFromAddress(IConfigurationSection smtp) =>
         smtp["From"]?.Trim() ?? throw new InvalidOperationException("SMTP From is not configured.");
 
-    private async Task SendAsync(string from, string to, string subject, string body, string? htmlBody = null)
+    private string BuildInvitedLine(string? invitedByDisplayName)
+    {
+        var orgLine =
+            "You have been invited to join IQADMS for the Planning and Quality Assurance Department (PQAD), University of Perpetual Help System DALTA — Molino Campus.";
+
+        if (string.IsNullOrWhiteSpace(invitedByDisplayName))
+            return orgLine;
+
+        var label = invitedByDisplayName.Trim();
+        if (label.Contains('@', StringComparison.Ordinal))
+            return orgLine;
+
+        return $"{label} (PQAD) has invited you to join IQADMS on the official UPSHD Molino website.";
+    }
+
+    private string GetFromDisplayName()
+    {
+        var name = _config["SmtpSettings:FromName"]?.Trim();
+        return string.IsNullOrWhiteSpace(name) ? "IQADMS · PQAD · UPSHD Molino" : name;
+    }
+
+    private static string BuildRegistrationInviteHtml(
+        string greetingHtml,
+        string invitedLine,
+        string siteUrl,
+        string registerUrl,
+        string recipientEmail)
+    {
+        var logoUrl = $"{siteUrl.TrimEnd('/')}/logo.svg";
+        var enc = System.Net.WebUtility.HtmlEncode;
+        return $"""
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,system-ui,sans-serif;color:#334155;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:520px;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+          <tr>
+            <td style="background:#7a0019;padding:20px 24px;text-align:center;">
+              <img src="{logoUrl}" alt="IQADMS" width="56" height="56" style="display:block;margin:0 auto 12px;" />
+              <div style="color:#ffffff;font-size:18px;font-weight:700;">IQADMS</div>
+              <div style="color:#fecaca;font-size:12px;margin-top:4px;">PQAD · UPSHD Molino Campus</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              <p style="margin:0 0 12px;">{greetingHtml}</p>
+              <p style="margin:0 0 16px;line-height:1.5;">{enc(invitedLine)}</p>
+              <p style="margin:0 0 8px;font-weight:600;">Create your account</p>
+              <p style="margin:0 0 20px;">
+                <a href="{registerUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Register on IQADMS</a>
+              </p>
+              <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Official website: <a href="{siteUrl}">{enc(siteUrl)}</a></p>
+              <p style="margin:0 0 16px;font-size:13px;">Use this email when you register: <strong>{enc(recipientEmail)}</strong></p>
+              <p style="margin:0;font-size:12px;color:#94a3b8;">If you did not expect this invitation, you can ignore this email.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+""";
+    }
+
+    private async Task SendAsync(
+        string from,
+        string to,
+        string subject,
+        string body,
+        string? htmlBody = null,
+        string? fromDisplayName = null)
     {
         var smtp = _config.GetSection("SmtpSettings");
         var host = smtp["Host"]!.Trim();
@@ -280,7 +342,10 @@ If you did not request a reset, contact your administrator.
         var password = NormalizeSmtpPassword(smtp["Password"]);
 
         var message = new MimeMessage();
-        message.From.Add(MailboxAddress.Parse(from));
+        if (!string.IsNullOrWhiteSpace(fromDisplayName))
+            message.From.Add(new MailboxAddress(fromDisplayName, from));
+        else
+            message.From.Add(MailboxAddress.Parse(from));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
 
@@ -334,6 +399,7 @@ If you did not request a reset, contact your administrator.
             security = smtp["Security"]?.Trim(),
             username = smtp["Username"]?.Trim(),
             from = smtp["From"]?.Trim(),
+            fromName = GetFromDisplayName(),
             adminEmail = smtp["AdminEmail"]?.Trim(),
             passwordConfigured = normalizedLen > 0,
             passwordLength = normalizedLen,
