@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage, validateStrongPassword } from '../utils/apiError'
 import { readAuthTokenFromResponse } from '../utils/authToken'
+import { persistAuthToken, setRememberMe } from '../utils/authSession'
 import {
   authPageStyle,
   authCardStyle,
@@ -64,7 +65,8 @@ export default function CompleteRegistrationPage() {
         return
       }
 
-      localStorage.setItem('token', token)
+      setRememberMe(true)
+      persistAuthToken(token)
       localStorage.setItem('username', username)
       localStorage.setItem('isAdmin', response.data.isAdmin)
 

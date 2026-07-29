@@ -70,7 +70,7 @@ public class AuthService
 
         await _allowedUserService.MarkAsRegisteredAsync(email);
 
-        var token = _jwtService.GenerateToken(user);
+        var token = _jwtService.GenerateToken(user, rememberMe: true);
 
         return new LoginResponse
         {
@@ -99,7 +99,29 @@ public class AuthService
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new Exception("Invalid username/email or password.");
 
-        var token = _jwtService.GenerateToken(user);
+        var token = _jwtService.GenerateToken(user, request.RememberMe);
+
+        return new LoginResponse
+        {
+            Token = token,
+            UserId = user.Id,
+            FullName = $"{user.FirstName} {user.LastName}",
+            Email = user.Email,
+            Position = user.Position,
+            IsAdmin = user.IsAdmin
+        };
+    }
+
+    public async Task<LoginResponse?> RefreshSessionAsync(string bearerToken, bool rememberMe)
+    {
+        if (!_jwtService.TryGetUserIdFromToken(bearerToken, allowExpired: true, out var userId))
+            return null;
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null || !user.IsActive)
+            return null;
+
+        var token = _jwtService.GenerateToken(user, rememberMe);
 
         return new LoginResponse
         {

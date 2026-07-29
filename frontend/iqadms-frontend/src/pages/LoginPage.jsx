@@ -4,11 +4,14 @@ import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
 import { readAuthTokenFromResponse } from '../utils/authToken'
 import { setPresence } from '../utils/presenceApi'
+import { setRememberMe, persistAuthToken } from '../utils/authSession'
+import { startSessionKeepAlive } from '../services/api'
 import IqadmsLogo from '../components/IqadmsLogo'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMeChecked] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [searchParams] = useSearchParams()
@@ -25,7 +28,8 @@ export default function LoginPage() {
     try {
       const response = await api.post('/Auth/login', {
         usernameOrEmail: username,
-        password
+        password,
+        rememberMe
       })
 
       const token = readAuthTokenFromResponse(response.data)
@@ -40,7 +44,8 @@ export default function LoginPage() {
         return
       }
 
-      localStorage.setItem('token', token)
+      setRememberMe(rememberMe)
+      persistAuthToken(token)
 
       let isAdmin = response.data.isAdmin === true
       try {
@@ -66,6 +71,8 @@ export default function LoginPage() {
       } catch {
         // non-blocking if presence API unavailable before migration
       }
+
+      startSessionKeepAlive()
 
       const safeNext =
         nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard'
@@ -129,6 +136,25 @@ export default function LoginPage() {
               style={inputStyle}
             />
           </div>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1rem',
+              fontSize: '0.9rem',
+              color: '#475569',
+              cursor: 'pointer'
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={e => setRememberMeChecked(e.target.checked)}
+            />
+            Keep me signed in (session cookie on this browser, like “Remember me”)
+          </label>
 
           {sessionExpired && !error && (
             <div

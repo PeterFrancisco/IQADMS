@@ -1,10 +1,10 @@
 import { Navigate } from 'react-router-dom'
+import { isSignedIn } from '../utils/authSession'
 
 export default function AdminRoute({ children }) {
-  const token = localStorage.getItem('token')
   const isAdmin = localStorage.getItem('isAdmin') === 'true'
 
-  if (!token) {
+  if (!isSignedIn()) {
     return <Navigate to="/login" replace />
   }
 

@@ -1,6 +1,7 @@
 using IQADMS.API.Data;
 using IQADMS.API.DTOs.Auth;
 using IQADMS.API.Services;
+using IQADMS.API.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,19 +19,22 @@ public class AuthController : ControllerBase
     private readonly EmailService _emailService;
     private readonly ApplicationDbContext _context;
     private readonly NotificationService _notifications;
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         AuthService authService,
         AllowedUserService allowedUserService,
         EmailService emailService,
         ApplicationDbContext context,
-        NotificationService notifications)
+        NotificationService notifications,
+        IConfiguration configuration)
     {
         _authService = authService;
         _allowedUserService = allowedUserService;
         _emailService = emailService;
         _context = context;
         _notifications = notifications;
+        _configuration = configuration;
     }
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
@@ -38,6 +42,7 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.RegisterAsync(request);
+            AuthSessionCookies.SetSessionCookies(HttpContext, result.Token, rememberMe: true, _configuration);
             return Ok(result);
         }
         catch (Exception ex)
@@ -52,6 +57,7 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.LoginAsync(request);
+            AuthSessionCookies.SetSessionCookies(HttpContext, result.Token, request.RememberMe, _configuration);
             return Ok(result);
         }
         catch (Exception ex)
@@ -173,5 +179,41 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    /// <summary>Issue a new JWT from a current or recently expired token (see Jwt:RefreshGraceMinutes).</summary>
+    [HttpPost("refresh")]
+    public async Task<IActionResult> RefreshSession([FromBody] RefreshSessionRequest? body)
+    {
+        var auth = Request.Headers.Authorization.ToString();
+        string bearer;
+        if (!string.IsNullOrWhiteSpace(auth)
+            && auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            bearer = auth["Bearer ".Length..].Trim();
+        }
+        else if (Request.Cookies.TryGetValue(AuthSessionCookies.SessionName, out var cookieToken)
+                 && !string.IsNullOrWhiteSpace(cookieToken))
+        {
+            bearer = cookieToken;
+        }
+        else
+        {
+            return Unauthorized(new { message = "Missing session token." });
+        }
+        var remember = body?.RememberMe ?? true;
+        var result = await _authService.RefreshSessionAsync(bearer, remember);
+        if (result == null)
+            return Unauthorized(new { message = "Session could not be renewed. Sign in again." });
+
+        AuthSessionCookies.SetSessionCookies(HttpContext, result.Token, remember, _configuration);
+        return Ok(result);
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        AuthSessionCookies.ClearSessionCookies(Response);
+        return Ok(new { message = "Signed out." });
     }
 }

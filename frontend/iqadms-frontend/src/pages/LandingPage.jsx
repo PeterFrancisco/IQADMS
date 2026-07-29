@@ -14,6 +14,7 @@ import {
   vision
 } from '../config/institutionAbout'
 import { upshd } from '../theme/upshd'
+import { isSignedIn } from '../utils/authSession'
 import '../theme/landing.css'
 
 const USES = [
@@ -26,7 +27,7 @@ const USES = [
 
 export default function LandingPage() {
   const navigate = useNavigate()
-  const isSignedIn = Boolean(localStorage.getItem('token'))
+  const signedIn = isSignedIn()
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -48,7 +49,7 @@ export default function LandingPage() {
               <a href="#resources">Resources</a>
             </div>
             <div className="landing-nav-actions">
-            {isSignedIn ? (
+            {signedIn ? (
               <button type="button" className="landing-btn landing-btn-primary" onClick={() => navigate('/dashboard')}>
                 Dashboard
               </button>
@@ -76,7 +77,7 @@ export default function LandingPage() {
             coordinating accreditation work, documents, tasks, and reporting in one workspace.
           </p>
           <div className="landing-hero-actions">
-            {isSignedIn ? (
+            {signedIn ? (
               <button type="button" className="landing-btn landing-btn-primary landing-btn-lg" onClick={() => navigate('/dashboard')}>
                 Open PQAD Dashboard
               </button>

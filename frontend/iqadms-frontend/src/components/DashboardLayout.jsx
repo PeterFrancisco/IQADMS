@@ -9,7 +9,7 @@ import { setPresence, startPresenceHeartbeat } from '../utils/presenceApi'
 import { Menu } from 'lucide-react'
 import IqadmsLogo from './IqadmsLogo'
 import NotificationBellDropdown from './NotificationBellDropdown'
-import { normalizePresence } from '../config/presence'
+import { clearAuthSession } from '../utils/authSession'
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(
@@ -317,10 +317,12 @@ function ProfileMenu() {
     } catch {
       // ignore
     }
-    localStorage.removeItem('token')
-    localStorage.removeItem('username')
-    localStorage.removeItem('isAdmin')
-    localStorage.removeItem('userId')
+    try {
+      await api.post('/Auth/logout')
+    } catch {
+      // ignore
+    }
+    clearAuthSession()
     navigate('/login')
   }
 

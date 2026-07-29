@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { isSignedIn } from '../utils/authSession'
 
 /** Routes that must never be replaced by the reload → home behavior. */
 const PUBLIC_PATHS = new Set([
@@ -31,8 +32,7 @@ export default function RefreshToLanding() {
     const path = window.location.pathname
     if (PUBLIC_PATHS.has(path)) return
 
-    const token = localStorage.getItem('token')
-    if (!token) return
+    if (!isSignedIn()) return
 
     navigate('/', { replace: true })
   }, [navigate])

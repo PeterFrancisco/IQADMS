@@ -1,4 +1,12 @@
 import axios from 'axios'
+import {
+  readAuthToken,
+  clearAuthSession,
+  getRememberMe,
+  persistAuthToken,
+  getTokenExpiryMs
+} from '../utils/authSession'
+import { readAuthTokenFromResponse } from '../utils/authToken'
 
 function resolveApiBaseUrl() {
   const fromEnv = import.meta.env.VITE_API_URL
@@ -9,7 +17,6 @@ function resolveApiBaseUrl() {
       && window.location.protocol === 'https:'
       && /^http:\/\//i.test(url)
     ) {
-      // Live site is HTTPS — never call HTTP API (mixed content + CORS)
       return '/api'
     }
     return url
@@ -21,19 +28,9 @@ function resolveApiBaseUrl() {
 }
 
 const api = axios.create({
-  baseURL: resolveApiBaseUrl()
+  baseURL: resolveApiBaseUrl(),
+  withCredentials: true
 })
-
-function readAuthToken() {
-  const raw = localStorage.getItem('token')
-  if (!raw) return null
-  const trimmed = raw.trim()
-  if (!trimmed) return null
-  if (trimmed.toLowerCase().startsWith('bearer ')) {
-    return trimmed.slice(7).trim()
-  }
-  return trimmed
-}
 
 const AUTH_PATHS = new Set([
   '/',
@@ -48,7 +45,9 @@ const PUBLIC_AUTH_API_PREFIXES = [
   '/auth/login',
   '/auth/register',
   '/auth/check-email',
-  '/auth/request-access'
+  '/auth/request-access',
+  '/auth/refresh',
+  '/auth/logout'
 ]
 
 function isPublicAuthRequest(url) {
@@ -56,7 +55,61 @@ function isPublicAuthRequest(url) {
   return PUBLIC_AUTH_API_PREFIXES.some(prefix => path.startsWith(prefix))
 }
 
-// Automatically attach JWT token (skip on login/register so stale tokens cannot break auth)
+let refreshInFlight = null
+
+async function refreshSessionToken() {
+  const token = readAuthToken()
+  if (!token) return null
+
+  if (refreshInFlight) return refreshInFlight
+
+  refreshInFlight = (async () => {
+    try {
+      const res = await axios.post(
+        `${resolveApiBaseUrl()}/Auth/refresh`,
+        { rememberMe: getRememberMe() },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+          timeout: 15000
+        }
+      )
+      const next = readAuthTokenFromResponse(res.data)
+      if (next) {
+        persistAuthToken(next)
+        return next
+      }
+      return null
+    } catch {
+      return null
+    } finally {
+      refreshInFlight = null
+    }
+  })()
+
+  return refreshInFlight
+}
+
+export function startSessionKeepAlive() {
+  if (typeof window === 'undefined') return () => {}
+
+  const tick = async () => {
+    const token = readAuthToken()
+    if (!token) return
+    const exp = getTokenExpiryMs(token)
+    if (!exp) return
+    const msLeft = exp - Date.now()
+    // Renew when less than 3 days left (or already expired but within server grace window)
+    if (msLeft < 3 * 24 * 60 * 60 * 1000) {
+      await refreshSessionToken()
+    }
+  }
+
+  tick()
+  const id = window.setInterval(tick, 30 * 60 * 1000)
+  return () => clearInterval(id)
+}
+
 api.interceptors.request.use(config => {
   if (isPublicAuthRequest(config.url)) {
     return config
@@ -73,14 +126,23 @@ api.interceptors.request.use(config => {
 
 api.interceptors.response.use(
   response => response,
-  error => {
+  async error => {
+    const original = error.config
+    if (error.response?.status === 401 && original && !original._authRetried) {
+      if (!isPublicAuthRequest(original.url)) {
+        original._authRetried = true
+        const next = await refreshSessionToken()
+        if (next) {
+          original.headers.Authorization = `Bearer ${next}`
+          return api.request(original)
+        }
+      }
+    }
+
     if (error.response?.status === 401) {
       const path = window.location.pathname.replace(/\/$/, '') || '/'
       if (!AUTH_PATHS.has(path)) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('isAdmin')
-        localStorage.removeItem('userId')
-        localStorage.removeItem('username')
+        clearAuthSession()
         const next = encodeURIComponent(window.location.pathname + window.location.search)
         window.location.assign(`/login?session=expired&next=${next}`)
       }
