@@ -13,6 +13,12 @@ public class DocumentListResponse
     public DateTime SubmittedAt { get; set; }
     public string? GoogleDriveLink { get; set; }
     public string? DownloadUrl { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public string? TrashedFromFolderPath { get; set; }
+
+    public DateTime? PurgeAfter { get; set; }
 }
 
 public class DocumentFolderResponse

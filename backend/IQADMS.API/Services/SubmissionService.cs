@@ -431,12 +431,21 @@ public class SubmissionService
     private async Task EnsureFolderRegisteredAsync(string path)
     {
         path = SanitizeFolderPath(path);
-        var exists = await _context.DocumentLibraryFolders.AnyAsync(f => f.Path == path && !f.IsDeleted);
-        if (!exists)
+        var existing = await _context.DocumentLibraryFolders.FirstOrDefaultAsync(f => f.Path == path);
+        if (existing != null)
         {
-            _context.DocumentLibraryFolders.Add(new DocumentLibraryFolder { Path = path });
-            await _context.SaveChangesAsync();
+            if (existing.IsDeleted)
+            {
+                existing.IsDeleted = false;
+                existing.DeletedAt = null;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+            return;
         }
+
+        _context.DocumentLibraryFolders.Add(new DocumentLibraryFolder { Path = path });
+        await _context.SaveChangesAsync();
     }
 
     private static string SanitizeFolderPath(string path)
@@ -451,5 +460,179 @@ public class SubmissionService
 
         var joined = string.Join("/", parts);
         return string.IsNullOrWhiteSpace(joined) ? "General" : joined;
+    }
+
+    public const int TrashRetentionDays = 30;
+
+    public DateTime PurgeAfterDate(DateTime deletedAt) =>
+        deletedAt.AddDays(TrashRetentionDays);
+
+    public async Task<DocumentTrashResponse> GetTrashAsync()
+    {
+        var items = await _context.Submissions
+            .Include(s => s.AccreditationActivity)
+            .Include(s => s.RequiredDocument)
+            .Include(s => s.Department)
+            .Include(s => s.UploadedByUser)
+            .Where(s => s.IsDeleted && s.DeletedAt != null)
+            .OrderByDescending(s => s.DeletedAt)
+            .Select(s => new DocumentListResponse
+            {
+                Id = s.Id,
+                FileName = s.FileName,
+                UploadedBy = s.UploadedByUser.DisplayName,
+                Department = s.Department.Name,
+                Activity = s.AccreditationActivity.Name,
+                Document = s.RequiredDocument.Title,
+                AutoFolderPath = s.TrashedFromFolderPath ?? s.AutoFolderPath ?? "",
+                Status = s.Status,
+                SubmittedAt = s.SubmittedAt,
+                GoogleDriveLink = string.IsNullOrEmpty(s.GoogleDriveLink) ? null : s.GoogleDriveLink,
+                DownloadUrl = s.StoredRelativePath != null ? $"/uploads/{s.StoredRelativePath}" : null,
+                DeletedAt = s.DeletedAt,
+                TrashedFromFolderPath = s.TrashedFromFolderPath,
+                PurgeAfter = s.DeletedAt!.Value.AddDays(TrashRetentionDays)
+            })
+            .ToListAsync();
+
+        return new DocumentTrashResponse
+        {
+            RetentionDays = TrashRetentionDays,
+            Items = items
+        };
+    }
+
+    public async Task TrashFileAsync(Guid submissionId)
+    {
+        var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == submissionId && !s.IsDeleted)
+            ?? throw new InvalidOperationException("File not found.");
+
+        submission.TrashedFromFolderPath = submission.AutoFolderPath;
+        submission.IsDeleted = true;
+        submission.DeletedAt = DateTime.UtcNow;
+        submission.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task TrashFolderAsync(string folderPath)
+    {
+        folderPath = SanitizeFolderPath(folderPath);
+
+        var submissions = await _context.Submissions
+            .Where(s => !s.IsDeleted &&
+                        (s.AutoFolderPath == folderPath || (s.AutoFolderPath != null && s.AutoFolderPath.StartsWith(folderPath + "/"))))
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        foreach (var s in submissions)
+        {
+            s.TrashedFromFolderPath = s.AutoFolderPath;
+            s.IsDeleted = true;
+            s.DeletedAt = now;
+            s.UpdatedAt = now;
+        }
+
+        var folders = await _context.DocumentLibraryFolders
+            .Where(f => !f.IsDeleted &&
+                        (f.Path == folderPath || f.Path.StartsWith(folderPath + "/")))
+            .ToListAsync();
+
+        foreach (var f in folders)
+        {
+            f.IsDeleted = true;
+            f.DeletedAt = now;
+            f.UpdatedAt = now;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RestoreFileAsync(Guid submissionId)
+    {
+        var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == submissionId && s.IsDeleted)
+            ?? throw new InvalidOperationException("Trashed file not found.");
+
+        var restorePath = SanitizeFolderPath(submission.TrashedFromFolderPath ?? submission.AutoFolderPath ?? "General");
+        submission.AutoFolderPath = restorePath;
+        submission.IsDeleted = false;
+        submission.DeletedAt = null;
+        submission.TrashedFromFolderPath = null;
+        submission.UpdatedAt = DateTime.UtcNow;
+
+        await EnsureFolderRegisteredAsync(restorePath);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RestoreFolderAsync(string folderPath)
+    {
+        folderPath = SanitizeFolderPath(folderPath);
+
+        var folderRows = await _context.DocumentLibraryFolders
+            .Where(f => f.IsDeleted && (f.Path == folderPath || f.Path.StartsWith(folderPath + "/")))
+            .ToListAsync();
+
+        foreach (var f in folderRows)
+        {
+            f.IsDeleted = false;
+            f.DeletedAt = null;
+            f.UpdatedAt = DateTime.UtcNow;
+        }
+
+        var submissions = await _context.Submissions
+            .Where(s => s.IsDeleted && s.TrashedFromFolderPath != null &&
+                        (s.TrashedFromFolderPath == folderPath || s.TrashedFromFolderPath.StartsWith(folderPath + "/")))
+            .ToListAsync();
+
+        foreach (var s in submissions)
+        {
+            s.AutoFolderPath = SanitizeFolderPath(s.TrashedFromFolderPath!);
+            s.IsDeleted = false;
+            s.DeletedAt = null;
+            s.TrashedFromFolderPath = null;
+            s.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await EnsureFolderRegisteredAsync(folderPath);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task PermanentDeleteFileAsync(Guid submissionId)
+    {
+        var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == submissionId && s.IsDeleted)
+            ?? throw new InvalidOperationException("Trashed file not found.");
+
+        DeletePhysicalFile(submission.StoredRelativePath);
+        _context.Submissions.Remove(submission);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<int> PurgeExpiredTrashAsync()
+    {
+        var cutoff = DateTime.UtcNow.AddDays(-TrashRetentionDays);
+        var expired = await _context.Submissions
+            .Where(s => s.IsDeleted && s.DeletedAt != null && s.DeletedAt < cutoff)
+            .ToListAsync();
+
+        foreach (var s in expired)
+        {
+            DeletePhysicalFile(s.StoredRelativePath);
+            _context.Submissions.Remove(s);
+        }
+
+        if (expired.Count > 0)
+            await _context.SaveChangesAsync();
+
+        return expired.Count;
+    }
+
+    private void DeletePhysicalFile(string? storedRelativePath)
+    {
+        if (string.IsNullOrWhiteSpace(storedRelativePath)) return;
+
+        var fullPath = Path.Combine(_env.ContentRootPath, "Uploads", storedRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        if (File.Exists(fullPath))
+        {
+            try { File.Delete(fullPath); } catch { /* best effort */ }
+        }
     }
 }

@@ -50,6 +50,7 @@ builder.Services.AddScoped<AllowedUserService>();
 builder.Services.AddScoped<DepartmentService>();
 builder.Services.AddScoped<SubmissionMonitoringService>();
 builder.Services.AddScoped<SubmissionService>();
+builder.Services.AddHostedService<DocumentTrashCleanupService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<NotificationService>();
 

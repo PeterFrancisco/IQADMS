@@ -261,6 +261,71 @@
   border: 1px solid #fecaca;
 }
 
+.docs-trash-banner {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.docs-sidebar-trash {
+  margin: 0.5rem 0.75rem 0.35rem;
+  width: calc(100% - 1.5rem);
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.docs-sidebar-trash.active {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #9e1b32;
+}
+
+.docs-file-row-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.docs-btn-sm {
+  border: none;
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.docs-btn-sm.danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.docs-btn-sm.primary {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.docs-folder-menu button.danger {
+  color: #b91c1c;
+}
+
 .docs-search {
   width: 100%;
   max-width: 360px;

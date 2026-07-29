@@ -133,6 +133,106 @@ public class SubmissionsController : ControllerBase
         return File(ms.ToArray(), "application/zip", safeName);
     }
 
+    [HttpGet("trash")]
+    public async Task<IActionResult> GetTrash()
+    {
+        if (!await IsAdminAsync())
+            return Forbid();
+
+        return Ok(await _service.GetTrashAsync());
+    }
+
+    [HttpDelete("library/files/{id:guid}")]
+    public async Task<IActionResult> TrashFile(Guid id)
+    {
+        if (!await IsAdminAsync())
+            return Forbid();
+
+        try
+        {
+            await _service.TrashFileAsync(id);
+            return Ok(new { message = "File moved to trash." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("folders")]
+    public async Task<IActionResult> TrashFolder([FromQuery] string path)
+    {
+        if (!await IsAdminAsync())
+            return Forbid();
+
+        if (string.IsNullOrWhiteSpace(path))
+            return BadRequest(new { message = "Folder path is required." });
+
+        try
+        {
+            await _service.TrashFolderAsync(path);
+            return Ok(new { message = "Folder and its files moved to trash." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("trash/{id:guid}/restore")]
+    public async Task<IActionResult> RestoreFile(Guid id)
+    {
+        if (!await IsAdminAsync())
+            return Forbid();
+
+        try
+        {
+            await _service.RestoreFileAsync(id);
+            return Ok(new { message = "File restored." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("trash/folders/restore")]
+    public async Task<IActionResult> RestoreFolder([FromQuery] string path)
+    {
+        if (!await IsAdminAsync())
+            return Forbid();
+
+        if (string.IsNullOrWhiteSpace(path))
+            return BadRequest(new { message = "Folder path is required." });
+
+        try
+        {
+            await _service.RestoreFolderAsync(path);
+            return Ok(new { message = "Folder restored." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("trash/{id:guid}")]
+    public async Task<IActionResult> PermanentDeleteFile(Guid id)
+    {
+        if (!await IsAdminAsync())
+            return Forbid();
+
+        try
+        {
+            await _service.PermanentDeleteFileAsync(id);
+            return Ok(new { message = "File permanently deleted." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create(CreateSubmissionRequest request)
     {

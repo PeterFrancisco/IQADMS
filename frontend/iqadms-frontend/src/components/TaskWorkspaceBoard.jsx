@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import UserAvatar from './UserAvatar'
 import { appDialog } from '../utils/appDialog'
@@ -135,8 +135,13 @@ export default function TaskWorkspaceBoard({
 
   if (loading) return <p>Loading workspace…</p>
 
-  const colCount = columns.length + 1
-  const menuColumn = headerMenu ? columns.find(c => c.id === headerMenu) : null
+  const visibleColumns = useMemo(
+    () => (isAdmin ? columns : columns.filter(c => columnBinding(c) !== 'owner')),
+    [columns, isAdmin]
+  )
+
+  const colCount = visibleColumns.length + 1
+  const menuColumn = headerMenu ? visibleColumns.find(c => c.id === headerMenu) : null
 
   return (
     <div className="workspace-board-shell">
@@ -145,9 +150,9 @@ export default function TaskWorkspaceBoard({
           <thead>
             <tr>
               <th className="workspace-board-th workspace-board-th-actions">
-                {!isAdmin && <span className="workspace-th-actions-label">Actions</span>}
+                <span className="workspace-th-actions-label">Actions</span>
               </th>
-              {columns.map(col => (
+              {visibleColumns.map(col => (
                 <th
                   key={col.id}
                   className={`workspace-board-th ${col.wrapText ? 'wrap-text' : ''}`}
@@ -261,8 +266,18 @@ export default function TaskWorkspaceBoard({
                         Submit
                       </button>
                     )}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="workspace-action-btn workspace-action-btn-ghost"
+                        title="Open task details"
+                        onClick={() => onOpenTask(task)}
+                      >
+                        Open
+                      </button>
+                    )}
                   </td>
-                  {columns.map(col => (
+                  {visibleColumns.map(col => (
                     <td
                       key={col.id}
                       className={col.wrapText ? 'wrap-text' : 'nowrap-cell'}
@@ -708,9 +723,9 @@ function TaskTitleCell({ task, onOpenTask, onTitleChange, readOnly, isAdmin }) {
   }
 
   return (
-    <div className="workspace-task-title">
+    <div className="workspace-task-title workspace-task-title--admin">
       <input
-        className="workspace-cell-input workspace-task-input"
+        className="workspace-cell-input workspace-task-input workspace-task-input--admin"
         value={local}
         onChange={e => setLocal(e.target.value)}
         onBlur={() => {

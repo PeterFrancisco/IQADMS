@@ -448,6 +448,32 @@
 .workspace-board-actions-cell {
   min-width: 88px;
   white-space: nowrap;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.workspace-task-title--admin {
+  align-items: center;
+}
+
+.workspace-task-input--admin {
+  background: transparent;
+  border-color: transparent;
+  font-weight: 600;
+  color: var(--upshd-maroon, #7a0019);
+  padding-left: 0;
+}
+
+.workspace-task-input--admin:focus {
+  background: #fff;
+  border-color: #e2e8f0;
+  padding-left: 0.6rem;
+}
+
+.workspace-board-table--modern .workspace-owner-trigger {
+  background: #fff;
 }
 
 .workspace-action-btn {
@@ -468,6 +494,18 @@
 
 .workspace-action-btn-primary:hover {
   filter: brightness(1.06);
+}
+
+.workspace-action-btn-ghost {
+  background: #fff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.workspace-action-btn-ghost:hover {
+  border-color: #cbd5e1;
+  color: var(--upshd-maroon, #7a0019);
 }
 
 .workspace-icon-btn {

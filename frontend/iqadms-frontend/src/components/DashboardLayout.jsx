@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }) {
 
         <NavItem label="Home" to="/" icon="home" onNavigate={closeMobile} />
         <NavItem label="Dashboard" to="/dashboard" icon="dashboard" onNavigate={closeMobile} />
-        <NavItem label="My Tasks" to="/my-tasks" icon="tasks" onNavigate={closeMobile} />
+        <NavItem label={isAdmin ? 'Tasks' : 'My Tasks'} to="/my-tasks" icon="tasks" onNavigate={closeMobile} />
         {isAdmin && (
           <>
             <NavItem label="Projects" to="/projects" icon="projects" onNavigate={closeMobile} />

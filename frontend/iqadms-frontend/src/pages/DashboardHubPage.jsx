@@ -74,6 +74,7 @@ const TILES = [
 ]
 
 export default function DashboardHubPage() {
+  const isAdmin = typeof window !== 'undefined' && localStorage.getItem('isAdmin') === 'true'
   const [upcoming, setUpcoming] = useState([])
 
   useEffect(() => {
@@ -134,7 +135,9 @@ export default function DashboardHubPage() {
               <div className="dashboard-tile-icon">
                 <AppIcon name={tile.icon} size={26} strokeWidth={1.65} />
               </div>
-              <div className="dashboard-tile-title">{tile.title}</div>
+              <div className="dashboard-tile-title">
+                {tile.to === '/my-tasks' && isAdmin ? 'Tasks' : tile.title}
+              </div>
               <div className="dashboard-tile-desc">{tile.desc}</div>
             </Link>
           ))}

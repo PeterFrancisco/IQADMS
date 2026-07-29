@@ -559,9 +559,11 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div>
         <header className="tasks-page-header">
-        <h1 style={{ marginBottom: '.25rem', color: '#7a0019' }}>My Tasks</h1>
+        <h1 style={{ marginBottom: '.25rem', color: '#7a0019' }}>{isAdmin ? 'Tasks' : 'My Tasks'}</h1>
         <p className="tasks-page-sub">
-          Flexible workspace: rename columns from the header menu (⋮), scroll horizontally, sort, and add columns to the right.
+          {isAdmin
+            ? 'Assign and track PQAD work: rename columns from the header menu (⋮), scroll horizontally, sort, and add columns.'
+            : 'Your assigned work: click a task title for details, update status, and submit deliverables when ready.'}
           {filterProject && (
             <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
               Filter: project · {filterProject.title}

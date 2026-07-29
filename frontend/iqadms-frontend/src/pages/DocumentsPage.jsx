@@ -28,8 +28,12 @@ export default function DocumentsPage() {
   const [createFolderName, setCreateFolderName] = useState('')
   const [createFolderParent, setCreateFolderParent] = useState(null)
   const [folderMenu, setFolderMenu] = useState(null)
+  const [fileMenu, setFileMenu] = useState(null)
   const [menuAnchor, setMenuAnchor] = useState(null)
+  const [viewMode, setViewMode] = useState('library')
+  const [trashInfo, setTrashInfo] = useState({ retentionDays: 30, items: [] })
   const menuRef = useRef(null)
+  const fileMenuRef = useRef(null)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -39,7 +43,9 @@ export default function DocumentsPage() {
   useEffect(() => {
     const close = e => {
       if (menuRef.current?.contains(e.target)) return
+      if (fileMenuRef.current?.contains(e.target)) return
       setFolderMenu(null)
+      setFileMenu(null)
     }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
@@ -48,13 +54,15 @@ export default function DocumentsPage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [folderRes, statsRes] = await Promise.all([
+      const [folderRes, statsRes, trashRes] = await Promise.all([
         api.get('/Submissions/folders'),
-        api.get('/Submissions/storage-stats')
+        api.get('/Submissions/storage-stats'),
+        api.get('/Submissions/trash')
       ])
       setFolders(folderRes.data)
       setStorageStats(statsRes.data)
-      if (folderRes.data.length > 0 && !folderRes.data.some(f => f.folderPath === selectedFolder)) {
+      setTrashInfo(trashRes.data)
+      if (viewMode === 'library' && folderRes.data.length > 0 && !folderRes.data.some(f => f.folderPath === selectedFolder)) {
         setSelectedFolder(folderRes.data[0].folderPath)
       }
     } catch (err) {
@@ -175,7 +183,96 @@ export default function DocumentsPage() {
     const rect = el.getBoundingClientRect()
     setMenuAnchor({ top: rect.bottom + 4, left: Math.max(8, rect.right - 180) })
     setFolderMenu(path)
+    setFileMenu(null)
   }
+
+  function openFileMenu(docId, el) {
+    const rect = el.getBoundingClientRect()
+    setMenuAnchor({ top: rect.bottom + 4, left: Math.max(8, rect.right - 160) })
+    setFileMenu(docId)
+    setFolderMenu(null)
+  }
+
+  async function moveFileToTrash(id) {
+    setFileMenu(null)
+    const ok = await dialog.confirm({
+      title: 'Move file to trash',
+      message: 'This file will be moved to trash and permanently deleted after the retention period.',
+      confirmLabel: 'Move to trash',
+      danger: true
+    })
+    if (!ok) return
+    try {
+      await api.delete(`/Submissions/library/files/${id}`)
+      setMessage('File moved to trash.')
+      await loadData()
+    } catch (err) {
+      await dialog.alert({ title: 'Delete failed', message: err.response?.data?.message || 'Could not move file to trash.' })
+    }
+  }
+
+  async function moveFolderToTrash(path) {
+    setFolderMenu(null)
+    const ok = await dialog.confirm({
+      title: 'Move folder to trash',
+      message: `Move folder "${path}" and all files inside it (including subfolders) to trash? Items auto-delete after ${trashInfo.retentionDays || 30} days.`,
+      confirmLabel: 'Move to trash',
+      danger: true
+    })
+    if (!ok) return
+    try {
+      await api.delete('/Submissions/folders', { params: { path } })
+      setMessage('Folder moved to trash.')
+      if (selectedFolder === path || selectedFolder?.startsWith(`${path}/`)) {
+        setSelectedFolder('General')
+      }
+      await loadData()
+    } catch (err) {
+      await dialog.alert({ title: 'Delete failed', message: err.response?.data?.message || 'Could not move folder to trash.' })
+    }
+  }
+
+  async function restoreTrashFile(id) {
+    try {
+      await api.post(`/Submissions/trash/${id}/restore`)
+      setMessage('File restored.')
+      await loadData()
+    } catch (err) {
+      await dialog.alert({ title: 'Restore failed', message: err.response?.data?.message || 'Could not restore file.' })
+    }
+  }
+
+  async function permanentDeleteTrashFile(id) {
+    const ok = await dialog.confirm({
+      title: 'Delete permanently',
+      message: 'This cannot be undone. The file will be removed from the server.',
+      confirmLabel: 'Delete forever',
+      danger: true
+    })
+    if (!ok) return
+    try {
+      await api.delete(`/Submissions/trash/${id}`)
+      setMessage('File permanently deleted.')
+      await loadData()
+    } catch (err) {
+      await dialog.alert({ title: 'Delete failed', message: err.response?.data?.message || 'Could not delete file.' })
+    }
+  }
+
+  async function restoreTrashFolder(path) {
+    try {
+      await api.post('/Submissions/trash/folders/restore', null, { params: { path } })
+      setMessage('Folder restored.')
+      await loadData()
+      setViewMode('library')
+      setSelectedFolder(path)
+    } catch (err) {
+      await dialog.alert({ title: 'Restore failed', message: err.response?.data?.message || 'Could not restore folder.' })
+    }
+  }
+
+  const trashCount = trashInfo.items?.length || 0
+  const retentionDays = trashInfo.retentionDays || 30
 
   function matchesSearch(doc) {
     const q = search.toLowerCase().trim()
@@ -195,8 +292,19 @@ export default function DocumentsPage() {
     }))
     .filter(f => f.files.length > 0 || !search.trim())
 
-  const activeFolder = folderList.find(f => f.folderPath === selectedFolder) || folderList[0]
-  const activeFiles = activeFolder?.files || []
+  const activeFolder = viewMode === 'library' ? folderList.find(f => f.folderPath === selectedFolder) || folderList[0] : null
+  const activeFiles = viewMode === 'library' ? activeFolder?.files || [] : []
+  const trashItems = (trashInfo.items || []).filter(doc => {
+    const q = search.toLowerCase().trim()
+    if (!q) return true
+    return (
+      doc.fileName?.toLowerCase().includes(q) ||
+      doc.trashedFromFolderPath?.toLowerCase().includes(q) ||
+      doc.uploadedBy?.toLowerCase().includes(q)
+    )
+  })
+
+  const trashFolderPaths = [...new Set(trashItems.map(i => i.trashedFromFolderPath).filter(Boolean))]
 
   function fileLink(doc) {
     if (doc.downloadUrl) return `${getApiOrigin()}${doc.downloadUrl}`
@@ -241,7 +349,18 @@ export default function DocumentsPage() {
                   + New folder
                 </button>
               </div>
-              {selectedFolder && (
+              <button
+                type="button"
+                className={`docs-sidebar-trash ${viewMode === 'trash' ? 'active' : ''}`}
+                onClick={() => {
+                  setViewMode('trash')
+                  setFolderMenu(null)
+                }}
+              >
+                <span>Trash</span>
+                <span>{trashCount}</span>
+              </button>
+              {viewMode === 'library' && selectedFolder && (
                 <div style={{ padding: '0.5rem 0.75rem 0', fontSize: '0.8rem', color: '#64748b' }}>
                   Selected: <strong style={{ color: '#334155' }}>{selectedFolder}</strong>
                   {' · '}
@@ -255,16 +374,20 @@ export default function DocumentsPage() {
                 </div>
               )}
               <div className="docs-folder-list">
-                {folderList.length === 0 ? (
-                  <p className="docs-empty">No folders yet. Create one to get started.</p>
-                ) : (
-                  folderList.map(f => (
+                {viewMode === 'library' ? (
+                  folderList.length === 0 ? (
+                    <p className="docs-empty">No folders yet. Create one to get started.</p>
+                  ) : (
+                    folderList.map(f => (
                     <div
                       key={f.folderPath}
                       className={`docs-folder-row ${selectedFolder === f.folderPath ? 'active' : ''}`}
                       style={{ paddingLeft: `${0.35 + folderDepth(f.folderPath) * 0.65}rem` }}
                     >
-                      <button type="button" className="docs-folder-btn" onClick={() => setSelectedFolder(f.folderPath)}>
+                      <button type="button" className="docs-folder-btn" onClick={() => {
+                        setViewMode('library')
+                        setSelectedFolder(f.folderPath)
+                      }}>
                         <AppIcon name="folder" size={18} />
                         <span className="docs-folder-label" title={f.folderPath}>
                           {f.folderPath.includes('/') ? f.folderPath.split('/').pop() : f.folderPath}
@@ -281,11 +404,24 @@ export default function DocumentsPage() {
                       </button>
                     </div>
                   ))
+                  )
+                ) : (
+                  <p className="docs-empty" style={{ padding: '0.75rem' }}>
+                    Trashed folders can be restored from the list on the right when files grouped by original folder.
+                  </p>
                 )}
               </div>
             </aside>
 
             <div className="docs-main">
+              {viewMode === 'trash' && (
+                <div className="docs-trash-banner">
+                  <strong>Trash retention:</strong> Items stay here for {retentionDays} days, then are{' '}
+                  <strong>permanently deleted automatically</strong>. Restore files or folders before that date.
+                </div>
+              )}
+
+              {viewMode === 'library' && (
               <div
                 className={`docs-dropzone ${dragOver ? 'drag-over' : ''}`}
                 onDragOver={e => {
@@ -319,9 +455,52 @@ export default function DocumentsPage() {
                   onChange={e => uploadFiles(e.target.files, selectedFolder || 'General')}
                 />
               </div>
+              )}
 
               <div className="docs-file-grid">
-                {activeFiles.length === 0 ? (
+                {viewMode === 'trash' ? (
+                  trashItems.length === 0 ? (
+                    <div className="docs-empty">Trash is empty.</div>
+                  ) : (
+                    <>
+                      {trashFolderPaths.map(path => (
+                        <div key={path} className="docs-file-row" style={{ background: '#fafbfc' }}>
+                          <AppIcon name="folder" size={20} />
+                          <span className="docs-file-name" style={{ color: '#334155' }}>
+                            Folder: {path}
+                          </span>
+                          <div className="docs-file-row-actions">
+                            <button type="button" className="docs-btn-sm primary" onClick={() => restoreTrashFolder(path)}>
+                              Restore folder
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {trashItems.map(doc => (
+                        <div key={doc.id} className="docs-file-row">
+                          <AppIcon name="file" size={20} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="docs-file-name" style={{ color: '#334155' }}>
+                              {doc.fileName}
+                            </div>
+                            <span className="docs-file-meta">
+                              From {doc.trashedFromFolderPath || doc.autoFolderPath} · auto-delete{' '}
+                              {doc.purgeAfter ? new Date(doc.purgeAfter).toLocaleDateString() : '—'}
+                            </span>
+                          </div>
+                          <div className="docs-file-row-actions">
+                            <button type="button" className="docs-btn-sm primary" onClick={() => restoreTrashFile(doc.id)}>
+                              Restore
+                            </button>
+                            <button type="button" className="docs-btn-sm danger" onClick={() => permanentDeleteTrashFile(doc.id)}>
+                              Delete forever
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )
+                ) : activeFiles.length === 0 ? (
                   <div className="docs-empty">No files in this folder yet.</div>
                 ) : (
                   activeFiles.map(doc => {
@@ -341,6 +520,14 @@ export default function DocumentsPage() {
                         <span className="docs-file-meta">
                           {doc.uploadedBy} · {new Date(doc.submittedAt).toLocaleDateString()}
                         </span>
+                        <button
+                          type="button"
+                          className="docs-folder-menu-btn"
+                          aria-label="File options"
+                          onClick={e => openFileMenu(doc.id, e.currentTarget)}
+                        >
+                          ⋮
+                        </button>
                       </div>
                     )
                   })
@@ -412,6 +599,20 @@ export default function DocumentsPage() {
               </button>
               <button type="button" onClick={() => renameFolderPath(folderMenu)}>
                 Rename
+              </button>
+              <button type="button" className="danger" onClick={() => moveFolderToTrash(folderMenu)}>
+                Move to trash
+              </button>
+            </div>,
+            document.body
+          )}
+
+        {fileMenu &&
+          menuAnchor &&
+          createPortal(
+            <div ref={fileMenuRef} className="docs-folder-menu" style={{ top: menuAnchor.top, left: menuAnchor.left }}>
+              <button type="button" className="danger" onClick={() => moveFileToTrash(fileMenu)}>
+                Move to trash
               </button>
             </div>,
             document.body

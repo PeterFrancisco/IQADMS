@@ -36,4 +36,10 @@ public class Submission : BaseEntity
     public string? StoredRelativePath { get; set; }
 
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>When moved to trash (soft delete).</summary>
+    public DateTime? DeletedAt { get; set; }
+
+    /// <summary>Original library folder path before trash (for restore).</summary>
+    public string? TrashedFromFolderPath { get; set; }
 }
