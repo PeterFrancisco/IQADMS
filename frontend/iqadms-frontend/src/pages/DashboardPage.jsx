@@ -7,13 +7,14 @@ import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
 import { getApiOrigin } from '../utils/apiOrigin'
 
-const STATUS_OPTIONS = ['To Do', 'In Progress', 'Submitted', 'Completed', 'Cancelled']
+const STATUS_OPTIONS = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
 const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical']
 const STATUS_COLORS = {
   'To Do': '#7a0019',
   Planning: '#7a0019',
   'In Progress': '#f59e0b',
   Submitted: '#2563eb',
+  Returned: '#c2410c',
   Waiting: '#9333ea',
   Review: '#9333ea',
   Completed: '#16a34a',
@@ -27,6 +28,17 @@ function statusColor(status) {
 
 function isCompletedStatus(status) {
   return status === 'Completed' || status === 'Done'
+}
+
+function taskAssigneeId(task) {
+  return task?.assignedToUserId ?? task?.AssignedToUserId ?? ''
+}
+
+function isTaskAssignee(task, userId) {
+  if (!task || !userId) return false
+  const a = String(taskAssigneeId(task)).trim().toLowerCase()
+  const b = String(userId).trim().toLowerCase()
+  return a.length > 0 && a === b
 }
 
 export default function DashboardPage() {
@@ -320,6 +332,9 @@ export default function DashboardPage() {
     try {
       const res = await api.put(`/Tasks/${id}`, { status })
       setTasks(prev => prev.map(t => (t.id === id ? res.data : t)))
+      if (selectedTask?.id === id) {
+        setSelectedTask(res.data)
+      }
     } catch (err) {
       console.error(err)
       alert(err.response?.data?.message || 'Failed to update status.')
@@ -336,12 +351,17 @@ export default function DashboardPage() {
     setTaskComments([])
     setTaskActivity([])
     try {
-      const [cRes, aRes] = await Promise.all([
-        api.get(`/Tasks/${task.id}/comments`),
-        api.get(`/Tasks/${task.id}/activity`)
-      ])
-      setTaskComments(cRes.data)
-      setTaskActivity(aRes.data)
+      const requests = [api.get(`/Tasks/${task.id}/activity`)]
+      if (isAdmin) {
+        requests.unshift(api.get(`/Tasks/${task.id}/comments`))
+      }
+      const results = await Promise.all(requests)
+      if (isAdmin) {
+        setTaskComments(results[0].data)
+        setTaskActivity(results[1].data)
+      } else {
+        setTaskActivity(results[0].data)
+      }
     } catch (err) {
       console.error(err)
     }
@@ -361,9 +381,10 @@ export default function DashboardPage() {
     if (!selectedTask || !adminReturnRemark.trim()) return
     try {
       setTaskActionLoading(true)
-      await api.post(`/Tasks/${selectedTask.id}/return`, { remark: adminReturnRemark.trim() })
-      closeTaskDetail()
+      const res = await api.post(`/Tasks/${selectedTask.id}/return`, { remark: adminReturnRemark.trim() })
+      setSelectedTask(res.data)
       loadData()
+      closeTaskDetail()
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to return task.')
     } finally {
@@ -375,11 +396,12 @@ export default function DashboardPage() {
     if (!selectedTask) return
     try {
       setTaskActionLoading(true)
-      await api.post(`/Tasks/${selectedTask.id}/complete`, {
+      const res = await api.post(`/Tasks/${selectedTask.id}/complete`, {
         remark: adminCompleteRemark.trim() || null
       })
-      closeTaskDetail()
+      setSelectedTask(res.data)
       loadData()
+      closeTaskDetail()
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to complete task.')
     } finally {
@@ -501,6 +523,12 @@ export default function DashboardPage() {
           )}
         </p>
 
+        {!isAdmin && (
+          <p style={{ color: '#475569', marginBottom: '1rem', fontSize: '0.95rem', maxWidth: 720 }}>
+            Open a task with <strong>Open</strong> on the task row. Move <strong>Status</strong> to In Progress, upload to the admin&apos;s Google Drive folder, then submit your finished-work link from the task panel.
+          </p>
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
           {isAdmin && (
             <MiniStat label="Total Tasks" value={tasks.length} color="#9e1b32" />
@@ -508,6 +536,9 @@ export default function DashboardPage() {
           <MiniStat label="To Do" value={tasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length} color="#7a0019" />
           <MiniStat label="In Progress" value={tasks.filter(t => t.status === 'In Progress').length} color="#f59e0b" />
           <MiniStat label="Submitted" value={tasks.filter(t => t.status === 'Submitted').length} color="#2563eb" />
+          {!isAdmin && (
+            <MiniStat label="Returned" value={tasks.filter(t => t.status === 'Returned').length} color="#c2410c" />
+          )}
           {isAdmin && (
             <MiniStat label="Completed" value={tasks.filter(t => isCompletedStatus(t.status)).length} color="#16a34a" />
           )}
@@ -625,16 +656,67 @@ export default function DashboardPage() {
                 </>
               )}
 
-              {selectedTask.adminReviewRemark && (
+              {selectedTask.adminReviewRemark && (isAdmin || isTaskAssignee(selectedTask, currentUserId)) && (
                 <>
-                  <label style={labelStyle}>Admin remark</label>
-                  <p style={{ margin: '0 0 1rem', color: '#b45309', whiteSpace: 'pre-wrap' }}>
+                  <label style={labelStyle}>Feedback from admin</label>
+                  <div
+                    style={{
+                      margin: '0 0 1rem',
+                      padding: '0.85rem 1rem',
+                      borderRadius: 8,
+                      background: selectedTask.status === 'Returned' ? '#fff7ed' : selectedTask.status === 'Completed' ? '#f0fdf4' : '#f8fafc',
+                      border: `1px solid ${selectedTask.status === 'Returned' ? '#fdba74' : selectedTask.status === 'Completed' ? '#86efac' : '#e2e8f0'}`,
+                      color: '#334155',
+                      whiteSpace: 'pre-wrap',
+                      fontSize: '0.92rem'
+                    }}
+                  >
                     {selectedTask.adminReviewRemark}
-                  </p>
+                  </div>
                 </>
               )}
 
-              {(selectedTask.assignedToUserId === currentUserId || isAdmin) &&
+              {!isAdmin && isTaskAssignee(selectedTask, currentUserId) && (
+                <div
+                  style={{
+                    background: '#eff6ff',
+                    border: '1px solid #93c5fd',
+                    borderRadius: 10,
+                    padding: '1rem',
+                    marginBottom: '1rem',
+                    fontSize: '0.92rem',
+                    color: '#1e3a5f'
+                  }}
+                >
+                  <strong style={{ display: 'block', marginBottom: 6 }}>Your steps</strong>
+                  {(selectedTask.status === 'To Do' || selectedTask.status === 'Planning') && (
+                    <p style={{ margin: 0 }}>
+                      Change <strong>Status</strong> to <strong>In Progress</strong> on the board, upload files to the Google Drive folder below, then return here to submit your link.
+                    </p>
+                  )}
+                  {selectedTask.status === 'In Progress' && (
+                    <p style={{ margin: 0 }}>
+                      Paste the link to your finished work on Google Drive below, then click <strong>Submit for admin review</strong>.
+                    </p>
+                  )}
+                  {selectedTask.status === 'Submitted' && (
+                    <p style={{ margin: 0 }}>
+                      <strong>Submitted</strong> — waiting for admin review. This is not completed yet. You will get a notification when it is approved or returned.
+                    </p>
+                  )}
+                  {selectedTask.status === 'Returned' && (
+                    <p style={{ margin: 0 }}>
+                      Read <strong>Feedback from admin</strong> above. Set status to <strong>In Progress</strong>, fix your work, then submit again.
+                    </p>
+                  )}
+                  {isCompletedStatus(selectedTask.status) && (
+                    <p style={{ margin: 0 }}>This task is completed.</p>
+                  )}
+                </div>
+              )}
+
+              {isTaskAssignee(selectedTask, currentUserId) &&
+                !isAdmin &&
                 !isCompletedStatus(selectedTask.status) &&
                 selectedTask.status !== 'Submitted' && (
                   <>
@@ -652,8 +734,7 @@ export default function DashboardPage() {
                   </>
                 )}
 
-              {selectedTask.assignedToUserId === currentUserId &&
-                selectedTask.status === 'In Progress' && (
+              {isTaskAssignee(selectedTask, currentUserId) && selectedTask.status === 'In Progress' && (
                   <>
                     <label style={labelStyle}>Your finished work (Google Drive link)</label>
                     <input
@@ -666,7 +747,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={submitDeliverable}
                       disabled={submittingDeliverable || !deliverableLink.trim()}
-                      style={primaryBtn}
+                      style={{ ...primaryBtn, width: '100%', maxWidth: 320, padding: '0.75rem 1.25rem', fontSize: '1rem' }}
                     >
                       {submittingDeliverable ? 'Submitting...' : 'Submit for admin review'}
                     </button>
@@ -675,14 +756,17 @@ export default function DashboardPage() {
 
               {isAdmin && selectedTask.status === 'Submitted' && (
                 <>
-                  <label style={labelStyle}>Approval remark (optional)</label>
+                  <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem' }}>
+                    This task is <strong>submitted for review</strong> — not completed. Send the assignee a personal message; they are notified in-app and by email when you return or approve.
+                  </p>
+                  <label style={labelStyle}>Message when approving (optional)</label>
                   <textarea
-                    style={{ ...inputStyle, width: '100%', minHeight: 64, marginBottom: '0.75rem', boxSizing: 'border-box' }}
-                    placeholder="Optional note when approving…"
+                    style={{ ...inputStyle, width: '100%', minHeight: 80, marginBottom: '0.75rem', boxSizing: 'border-box' }}
+                    placeholder={'e.g. Hi, good job finishing your task! I will mark this as complete.'}
                     value={adminCompleteRemark}
                     onChange={e => setAdminCompleteRemark(e.target.value)}
                   />
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
                     <button
                       type="button"
                       onClick={completeTask}
@@ -692,10 +776,10 @@ export default function DashboardPage() {
                       Approve & mark completed
                     </button>
                   </div>
-                  <label style={labelStyle}>Return for revision</label>
+                  <label style={labelStyle}>Message when returning as incomplete (required)</label>
                   <textarea
-                    style={{ ...inputStyle, width: '100%', minHeight: 64, marginBottom: '0.75rem', boxSizing: 'border-box' }}
-                    placeholder="Explain what needs to be fixed…"
+                    style={{ ...inputStyle, width: '100%', minHeight: 80, marginBottom: '0.75rem', boxSizing: 'border-box' }}
+                    placeholder={'e.g. Hi, your task is lacking these details… I am returning it so you can revise.'}
                     value={adminReturnRemark}
                     onChange={e => setAdminReturnRemark(e.target.value)}
                   />
@@ -703,14 +787,16 @@ export default function DashboardPage() {
                     type="button"
                     onClick={returnTaskToMember}
                     disabled={taskActionLoading || !adminReturnRemark.trim()}
-                    style={{ ...primaryBtn, background: '#b45309', marginBottom: '1rem' }}
+                    style={{ ...primaryBtn, background: '#c2410c', marginBottom: '1rem' }}
                   >
-                    Return to assignee
+                    Return to assignee (incomplete)
                   </button>
                 </>
               )}
 
-              <label style={{ ...labelStyle, marginTop: '1.25rem' }}>Comments</label>
+              {isAdmin && (
+                <>
+              <label style={{ ...labelStyle, marginTop: '1.25rem' }}>Internal notes (admin only, not sent to member)</label>
               <div style={{ maxHeight: 160, overflow: 'auto', marginBottom: '0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.75rem' }}>
                 {taskComments.length === 0 ? (
                   <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>No comments yet.</p>
@@ -735,6 +821,8 @@ export default function DashboardPage() {
               <button type="button" onClick={postComment} disabled={postingComment || !newComment.trim()} style={{ ...primaryBtn, marginBottom: '1rem' }}>
                 {postingComment ? 'Posting…' : 'Post comment'}
               </button>
+                </>
+              )}
 
               {taskActivity.length > 0 && (
                 <>

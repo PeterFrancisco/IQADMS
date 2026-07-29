@@ -346,10 +346,13 @@ public class TasksController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Body))
             return BadRequest(new { message = "Comment cannot be empty." });
 
+        var userId = GetUserId();
+        if (!await IsAdminAsync(userId))
+            return Forbid();
+
         var task = await _context.WorkspaceTasks.FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
         if (task == null) return NotFound();
 
-        var userId = GetUserId();
         var comment = new TaskComment
         {
             TaskId = id,
@@ -514,7 +517,7 @@ public class TasksController : ControllerBase
             return BadRequest(new { message = "Remark is required when returning a task." });
 
         task.AdminReviewRemark = request.Remark.Trim();
-        task.Status = "In Progress";
+        task.Status = "Returned";
         task.SubmittedAt = null;
         task.CompletedAt = null;
         task.UpdatedAt = DateTime.UtcNow;
@@ -523,16 +526,18 @@ public class TasksController : ControllerBase
 
         if (task.AssignedToUserId.HasValue)
         {
+            var assignee = await _context.Users.FindAsync(task.AssignedToUserId.Value);
+            var notice = FormatReviewNotice(assignee, task.Title, request.Remark.Trim(), returned: true);
             await _notifications.NotifyAsync(
                 task.AssignedToUserId.Value,
                 "task",
-                "Task returned for revision",
-                request.Remark.Trim(),
+                "Task returned — incomplete",
+                notice,
                 $"/my-tasks?task={task.Id}",
                 task.Id);
         }
 
-        return Ok(new { message = "Task returned to assignee." });
+        return Ok(await MapTaskById(id));
     }
 
     [HttpPost("{id}/complete")]
@@ -548,27 +553,31 @@ public class TasksController : ControllerBase
         if (task.Status != "Submitted")
             return BadRequest(new { message = "Only submitted tasks can be marked completed." });
 
-        if (!string.IsNullOrWhiteSpace(request?.Remark))
-            task.AdminReviewRemark = request!.Remark.Trim();
+        var approvalNote = string.IsNullOrWhiteSpace(request?.Remark)
+            ? "Good work! This task has been approved and marked complete."
+            : request!.Remark.Trim();
+        task.AdminReviewRemark = approvalNote;
 
         task.Status = "Completed";
         task.CompletedAt = DateTime.UtcNow;
         task.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
-        await LogActivity(id, userId, "completed", "Approved and marked completed");
+        await LogActivity(id, userId, "completed", approvalNote);
 
         if (task.AssignedToUserId.HasValue)
         {
+            var assignee = await _context.Users.FindAsync(task.AssignedToUserId.Value);
+            var notice = FormatReviewNotice(assignee, task.Title, approvalNote, returned: false);
             await _notifications.NotifyAsync(
                 task.AssignedToUserId.Value,
                 "task",
-                "Task approved",
-                $"\"{task.Title}\" was marked completed.",
+                "Task approved — completed",
+                notice,
                 $"/my-tasks?task={task.Id}",
                 task.Id);
         }
 
-        return Ok(new { message = "Task marked completed." });
+        return Ok(await MapTaskById(id));
     }
 
     [HttpGet("user/{username}/history")]
@@ -692,23 +701,41 @@ public class TasksController : ControllerBase
         if (oldStatus == newStatus)
             return Ok(await MapTaskById(task.Id));
 
-        if (newStatus == "In Progress" && oldStatus is "To Do" or "Planning")
+        if (newStatus == "In Progress" && oldStatus is "To Do" or "Planning" or "Returned")
         {
             task.Status = newStatus;
             task.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             await LogActivity(task.Id, userId, "updated", $"status: {oldStatus} → {newStatus}");
-            await _notifications.NotifyAllAdminsAsync(
-                "task",
-                "Task in progress",
-                $"\"{task.Title}\" moved to In Progress.",
-                $"/my-tasks?task={task.Id}",
-                task.Id,
-                $"task-inprogress-{task.Id}-{DateTime.UtcNow:yyyyMMddHHmm}");
+            if (oldStatus is "To Do" or "Planning")
+            {
+                await _notifications.NotifyAllAdminsAsync(
+                    "task",
+                    "Task in progress",
+                    $"\"{task.Title}\" moved to In Progress.",
+                    $"/my-tasks?task={task.Id}",
+                    task.Id,
+                    $"task-inprogress-{task.Id}-{DateTime.UtcNow:yyyyMMddHHmm}");
+            }
             return Ok(await MapTaskById(task.Id));
         }
 
-        return BadRequest(new { message = "Members can only move tasks from To Do to In Progress. Submit via deliverable link." });
+        return BadRequest(new { message = "Members can move tasks from To Do or Returned to In Progress, then submit via the deliverable link." });
+    }
+
+    private static string FormatReviewNotice(User? assignee, string taskTitle, string adminMessage, bool returned)
+    {
+        var name = assignee?.DisplayName?.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            name = assignee?.Username?.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            name = "there";
+
+        var intro = returned
+            ? $"Hi {name}, your task \"{taskTitle}\" is incomplete or needs more work. It has been returned to you — not completed."
+            : $"Hi {name}, good job finishing \"{taskTitle}\"!";
+
+        return $"{intro}\n\n{adminMessage.Trim()}";
     }
 
     private async Task NotifyOnAdminStatusChange(WorkspaceTask task, string oldStatus, string newStatus)

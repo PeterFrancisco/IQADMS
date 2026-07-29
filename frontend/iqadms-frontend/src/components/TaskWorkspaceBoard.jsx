@@ -3,12 +3,13 @@ import { createPortal } from 'react-dom'
 import UserAvatar from './UserAvatar'
 import '../theme/workspace-board.css'
 
-const STATUS_OPTIONS_ADMIN = ['To Do', 'In Progress', 'Submitted', 'Completed', 'Cancelled']
+const STATUS_OPTIONS_ADMIN = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
 const STATUS_COLORS = {
   'To Do': '#7a0019',
   Planning: '#7a0019',
   'In Progress': '#f59e0b',
   Submitted: '#2563eb',
+  Returned: '#c2410c',
   Waiting: '#9333ea',
   Review: '#9333ea',
   Completed: '#16a34a',
@@ -26,14 +27,26 @@ function isCompletedStatus(status) {
 
 function statusOptionsFor(task, isAdmin, currentUserId) {
   const base = isAdmin ? STATUS_OPTIONS_ADMIN : ['To Do', 'In Progress']
+  if (!isAdmin && task?.status === 'Returned') {
+    return ['Returned', 'In Progress']
+  }
   const list = task?.status && !base.includes(task.status) ? [task.status, ...base] : base
-  if (!isAdmin && task?.assignedToUserId !== currentUserId) return [task?.status || 'To Do']
+  if (!isAdmin && !isTaskAssignee(task, currentUserId)) return [task?.status || 'To Do']
   return list
 }
 
 function canChangeStatus(task, isAdmin, currentUserId) {
   if (isAdmin) return true
-  return task?.assignedToUserId === currentUserId && !isCompletedStatus(task?.status) && task?.status !== 'Submitted'
+  if (!isTaskAssignee(task, currentUserId)) return false
+  if (isCompletedStatus(task?.status) || task?.status === 'Submitted') return false
+  return true
+}
+
+function isTaskAssignee(task, userId) {
+  if (!task || !userId) return false
+  const a = String(task?.assignedToUserId ?? task?.AssignedToUserId ?? '').trim().toLowerCase()
+  const b = String(userId).trim().toLowerCase()
+  return a.length > 0 && a === b
 }
 
 function columnBinding(col) {
@@ -231,6 +244,28 @@ export default function TaskWorkspaceBoard({
                         ×
                       </button>
                     )}
+                    {!isAdmin && isTaskAssignee(task, currentUserId) && task.status === 'In Progress' && (
+                      <button
+                        type="button"
+                        className="workspace-task-open"
+                        title="Submit finished work"
+                        onClick={() => onOpenTask(task)}
+                        style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', whiteSpace: 'nowrap' }}
+                      >
+                        Submit
+                      </button>
+                    )}
+                    {!isAdmin && isTaskAssignee(task, currentUserId) && task.status !== 'In Progress' && (
+                      <button
+                        type="button"
+                        className="workspace-task-open"
+                        title="Open task details"
+                        onClick={() => onOpenTask(task)}
+                        style={{ fontSize: '0.75rem', fontWeight: 600 }}
+                      >
+                        Open
+                      </button>
+                    )}
                   </td>
                   {columns.map(col => (
                     <td
@@ -352,6 +387,7 @@ function BoardCell({
         onOpenTask={onOpenTask}
         onTitleChange={onTitleChange}
         readOnly={!isAdmin}
+        isAdmin={isAdmin}
       />
     )
   }
@@ -622,7 +658,7 @@ function OwnerCell({ task, members, onAssign }) {
   )
 }
 
-function TaskTitleCell({ task, onOpenTask, onTitleChange, readOnly }) {
+function TaskTitleCell({ task, onOpenTask, onTitleChange, readOnly, isAdmin }) {
   const [local, setLocal] = useState(task.title)
 
   useEffect(() => setLocal(task.title), [task.title])
@@ -638,10 +674,10 @@ function TaskTitleCell({ task, onOpenTask, onTitleChange, readOnly }) {
           if (!readOnly && local.trim() && local !== task.title) onTitleChange(task.id, local.trim())
         }}
       />
-      <button type="button" className="workspace-task-open" onClick={() => onOpenTask(task)} title="Open details">
-        ↗
+      <button type="button" className="workspace-task-open" onClick={() => onOpenTask(task)} title="Open task details">
+        {readOnly ? 'Open' : '↗'}
       </button>
-      {task.commentCount > 0 && (
+      {isAdmin && task.commentCount > 0 && (
         <span className="workspace-task-meta">{task.commentCount} comments</span>
       )}
     </div>
