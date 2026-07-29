@@ -353,6 +353,7 @@ export default function DashboardPage() {
   }
 
   const updateStatus = async (id, status) => {
+    const task = tasks.find(t => t.id === id)
     try {
       const res = await api.put(`/Tasks/${id}`, { status })
       setTasks(prev => prev.map(t => (t.id === id ? res.data : t)))
@@ -361,7 +362,21 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error(err)
-      await appDialog.alert(err.response?.data?.message || 'Failed to update status.')
+      const apiMsg = err.response?.data?.message
+      if (!isAdmin && task?.status === 'In Progress' && status === 'To Do') {
+        await appDialog.alert({
+          title: 'Cannot move back to To Do',
+          message:
+            'Once a task is In Progress, you cannot set it back to To Do.\n\nYou can: stay In Progress and submit finished work, or wait for admin review.\n\nYou cannot: revert to To Do or set Submitted/Completed/Cancelled yourself.'
+        })
+        return
+      }
+      await appDialog.alert({
+        title: 'Status not updated',
+        message:
+          apiMsg ||
+          'You can move tasks from To Do (or Returned) to In Progress, then submit your deliverable from the task panel. Other status changes are done by admins.'
+      })
     }
   }
 
@@ -562,7 +577,7 @@ export default function DashboardPage() {
 
         {!isAdmin && (
           <p style={{ color: '#475569', marginBottom: '1rem', fontSize: '0.95rem', maxWidth: 720 }}>
-            Open a task with <strong>Open</strong> on the task row. Download reference files from the work package, edit them on your device, upload to the admin&apos;s Google Drive folder, then submit your finished-work link.
+            Open a task by clicking its <strong>title</strong>. Use <strong>Status</strong> to move from To Do → In Progress (you cannot move back to To Do). When In Progress, use <strong>Submit</strong> to send your Google Drive link.
           </p>
         )}
 
@@ -745,12 +760,12 @@ export default function DashboardPage() {
                   <strong style={{ display: 'block', marginBottom: 6 }}>Your steps</strong>
                   {(selectedTask.status === 'To Do' || selectedTask.status === 'Planning') && (
                     <p style={{ margin: 0 }}>
-                      Change <strong>Status</strong> to <strong>In Progress</strong> on the board, upload files to the Google Drive folder below, then return here to submit your link.
+                      Change <strong>Status</strong> to <strong>In Progress</strong> when you start. You cannot move back to To Do after that. Download files from the work package, upload to Google Drive, then use <strong>Submit</strong>.
                     </p>
                   )}
                   {selectedTask.status === 'In Progress' && (
                     <p style={{ margin: 0 }}>
-                      Paste the link to your finished work on Google Drive below, then click <strong>Submit for admin review</strong>.
+                      Status stays <strong>In Progress</strong> until you submit. Use <strong>Submit</strong> on the board or paste your Google Drive link below — you cannot revert to To Do.
                     </p>
                   )}
                   {selectedTask.status === 'Submitted' && (
