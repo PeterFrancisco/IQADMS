@@ -384,6 +384,13 @@ If you did not request a reset, contact your administrator.
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
 
+        var replyTo = smtp["ReplyTo"]?.Trim() ?? smtp["AdminEmail"]?.Trim();
+        if (!string.IsNullOrWhiteSpace(replyTo) &&
+            !string.Equals(replyTo, to, StringComparison.OrdinalIgnoreCase))
+        {
+            message.ReplyTo.Add(MailboxAddress.Parse(replyTo));
+        }
+
         if (!string.IsNullOrWhiteSpace(htmlBody))
         {
             var builder = new BodyBuilder

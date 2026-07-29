@@ -113,3 +113,22 @@ No extra git step. Same pqad stack; public URL must reach **pqad:5173** (nginx w
 5. **Backend?** — restart `dotnet`  
 6. **nginx?** — only if conf changed  
 7. **Test** — curl API + login page  
+
+---
+
+## 6. Email: Gmail works, Outlook does not
+
+IQADMS sends through **your configured SMTP** (often `smtp.gmail.com` + a Gmail app password). If mail arrives at **Gmail**, the app and pqad SMTP are working.
+
+**Microsoft Outlook / Microsoft 365** (many `@school.edu` mailboxes) filters external senders more aggressively:
+
+| Check | Action |
+|--------|--------|
+| **User mailbox** | Junk Email, **Other** tab (Focused inbox) |
+| **Work/school tenant** | IT **Quarantine** / Defender — release the IQADMS `From` address |
+| **Safe senders** | Outlook on the web → Settings → Mail → Junk email → Safe senders |
+| **Long-term** | Send from an **@yourdomain.edu** mailbox (M365 or Google Workspace SMTP) with proper SPF/DKIM |
+
+Optional in pqad `appsettings.json`: `"ReplyTo": "pqad@yourdomain.edu"` under `SmtpSettings`.
+
+**In-app notifications** still work when Outlook blocks email; use those until IT whitelists the sender.
