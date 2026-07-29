@@ -31,14 +31,13 @@ public class AnalyticsController : ControllerBase
         if (m is < 1 or > 12)
             return BadRequest(new { message = "Month must be 1–12." });
 
+        if (!await IsAdminAsync())
+            return Forbid();
+
         var start = new DateTime(y, m, 1, 0, 0, 0, DateTimeKind.Utc);
         var end = start.AddMonths(1);
-        var isAdmin = await IsAdminAsync();
-        var userId = GetUserId();
 
         var taskBase = _context.WorkspaceTasks.AsNoTracking().Where(t => !t.IsDeleted);
-        if (!isAdmin)
-            taskBase = taskBase.Where(t => t.AssignedToUserId == userId);
 
         var today = DateOnly.FromDateTime(now);
 
@@ -69,65 +68,62 @@ public class AnalyticsController : ControllerBase
             .OrderBy(p => p.Date)
             .ToList();
 
-        DocumentMonitoringSnapshot? docMonitoring = null;
+        DocumentMonitoringSnapshot? docMonitoring;
         var documentsUploaded = new List<DocumentUploadRow>();
         var documentsByDay = new List<DailyCountPoint>();
 
-        if (isAdmin)
+        var libraryQuery = _context.Submissions.AsNoTracking()
+            .Where(s => !s.IsDeleted && s.DeletedAt == null && s.StoredRelativePath != null);
+
+        var uploadedInPeriod = await libraryQuery
+            .Include(s => s.UploadedByUser)
+            .Where(s => s.CreatedAt >= start && s.CreatedAt < end)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+
+        documentsUploaded = uploadedInPeriod.Select(s => new DocumentUploadRow
         {
-            var libraryQuery = _context.Submissions.AsNoTracking()
-                .Where(s => !s.IsDeleted && s.DeletedAt == null && s.StoredRelativePath != null);
+            Id = s.Id,
+            FileName = s.FileName,
+            FolderPath = string.IsNullOrWhiteSpace(s.AutoFolderPath) ? null : s.AutoFolderPath,
+            UploadedByName = s.UploadedByUser?.DisplayName ?? s.UploadedByUser?.Username,
+            UploadedAt = s.CreatedAt
+        }).ToList();
 
-            var uploadedInPeriod = await libraryQuery
-                .Include(s => s.UploadedByUser)
-                .Where(s => s.CreatedAt >= start && s.CreatedAt < end)
-                .OrderByDescending(s => s.CreatedAt)
-                .ToListAsync();
+        documentsByDay = uploadedInPeriod
+            .GroupBy(s => s.CreatedAt.Date)
+            .Select(g => new DailyCountPoint { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() })
+            .OrderBy(p => p.Date)
+            .ToList();
 
-            documentsUploaded = uploadedInPeriod.Select(s => new DocumentUploadRow
+        var totalLibrary = await libraryQuery.CountAsync();
+        var trashed = await _context.Submissions.AsNoTracking()
+            .CountAsync(s => !s.IsDeleted && s.DeletedAt != null && s.StoredRelativePath != null);
+
+        long bytes = 0;
+        var uploadRoot = Path.Combine(_env.ContentRootPath, "Uploads");
+        var withPaths = await libraryQuery
+            .Where(s => s.StoredRelativePath != null)
+            .Select(s => s.StoredRelativePath!)
+            .ToListAsync();
+
+        foreach (var rel in withPaths)
+        {
+            var full = Path.Combine(uploadRoot, rel.Replace('/', Path.DirectorySeparatorChar));
+            if (System.IO.File.Exists(full))
             {
-                Id = s.Id,
-                FileName = s.FileName,
-                FolderPath = string.IsNullOrWhiteSpace(s.AutoFolderPath) ? null : s.AutoFolderPath,
-                UploadedByName = s.UploadedByUser?.DisplayName ?? s.UploadedByUser?.Username,
-                UploadedAt = s.CreatedAt
-            }).ToList();
-
-            documentsByDay = uploadedInPeriod
-                .GroupBy(s => s.CreatedAt.Date)
-                .Select(g => new DailyCountPoint { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() })
-                .OrderBy(p => p.Date)
-                .ToList();
-
-            var totalLibrary = await libraryQuery.CountAsync();
-            var trashed = await _context.Submissions.AsNoTracking()
-                .CountAsync(s => !s.IsDeleted && s.DeletedAt != null && s.StoredRelativePath != null);
-
-            long bytes = 0;
-            var uploadRoot = Path.Combine(_env.ContentRootPath, "Uploads");
-            var withPaths = await libraryQuery
-                .Where(s => s.StoredRelativePath != null)
-                .Select(s => s.StoredRelativePath!)
-                .ToListAsync();
-
-            foreach (var rel in withPaths)
-            {
-                var full = Path.Combine(uploadRoot, rel.Replace('/', Path.DirectorySeparatorChar));
-                if (System.IO.File.Exists(full))
-                {
-                    try { bytes += new FileInfo(full).Length; }
-                    catch { /* ignore */ }
-                }
+                try { bytes += new FileInfo(full).Length; }
+                catch { /* ignore */ }
             }
-
-            docMonitoring = new DocumentMonitoringSnapshot
-            {
-                TotalLibraryFiles = totalLibrary,
-                UploadedThisPeriod = documentsUploaded.Count,
-                StorageBytesUsed = bytes,
-                TrashedFiles = trashed
-            };
         }
+
+        docMonitoring = new DocumentMonitoringSnapshot
+        {
+            TotalLibraryFiles = totalLibrary,
+            UploadedThisPeriod = documentsUploaded.Count,
+            StorageBytesUsed = bytes,
+            TrashedFiles = trashed
+        };
 
         var activityItems = new List<AnalyticsActivityItem>();
 
@@ -135,7 +131,6 @@ public class AnalyticsController : ControllerBase
             .Include(a => a.Task).ThenInclude(t => t!.Project)
             .Include(a => a.ActorUser)
             .Where(a => a.CreatedAt >= start && a.CreatedAt < end && a.Task != null && !a.Task.IsDeleted)
-            .Where(a => isAdmin || a.Task!.AssignedToUserId == userId || a.ActorUserId == userId)
             .OrderByDescending(a => a.CreatedAt)
             .Take(80)
             .ToListAsync();
@@ -154,20 +149,17 @@ public class AnalyticsController : ControllerBase
             });
         }
 
-        if (isAdmin)
+        foreach (var doc in documentsUploaded.Take(40))
         {
-            foreach (var doc in documentsUploaded.Take(40))
+            activityItems.Add(new AnalyticsActivityItem
             {
-                activityItems.Add(new AnalyticsActivityItem
-                {
-                    Id = doc.Id,
-                    Category = "document",
-                    Title = doc.FileName,
-                    Detail = doc.FolderPath != null ? $"Uploaded to {doc.FolderPath}" : "Document uploaded",
-                    ActorName = doc.UploadedByName,
-                    OccurredAt = doc.UploadedAt
-                });
-            }
+                Id = doc.Id,
+                Category = "document",
+                Title = doc.FileName,
+                Detail = doc.FolderPath != null ? $"Uploaded to {doc.FolderPath}" : "Document uploaded",
+                ActorName = doc.UploadedByName,
+                OccurredAt = doc.UploadedAt
+            });
         }
 
         activityItems = activityItems

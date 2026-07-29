@@ -39,7 +39,8 @@ const TILES = [
     to: '/analytics',
     icon: 'analytics',
     title: 'Analytics',
-    desc: 'Monthly reports, task & document monitoring, CSV export'
+    desc: 'Monthly reports, task & document monitoring, CSV export',
+    adminOnly: true
   },
   {
     to: '/calendar',
@@ -118,7 +119,7 @@ export default function DashboardHubPage() {
         )}
 
         <div className="dashboard-grid">
-          {TILES.map(tile => (
+          {TILES.filter(tile => !tile.adminOnly || isAdmin).map(tile => (
             <Link key={tile.to} to={tile.to} className="dashboard-tile">
               <div className="dashboard-tile-icon">
                 <AppIcon name={tile.icon} size={26} strokeWidth={1.65} />

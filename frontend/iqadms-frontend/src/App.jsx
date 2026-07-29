@@ -101,9 +101,9 @@ export default function App() {
       <Route
         path="/analytics"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <AnalyticsPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
 

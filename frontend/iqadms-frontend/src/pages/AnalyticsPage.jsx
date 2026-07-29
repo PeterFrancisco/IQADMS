@@ -149,10 +149,7 @@ export default function AnalyticsPage() {
           <div>
             <h1 className="analytics-page__title">Analytics</h1>
             <p className="analytics-page__sub">
-              Monthly reports and live monitoring for tasks and documents — no department tables.
-              {isAdmin
-                ? ' Admins see library uploads and storage across the system.'
-                : ' Your view is limited to tasks assigned to you.'}
+              Monthly reports and live monitoring for tasks and documents — system-wide view for PQAD administrators.
             </p>
           </div>
           <button

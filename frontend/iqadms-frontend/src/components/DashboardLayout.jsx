@@ -63,7 +63,9 @@ export default function DashboardLayout({ children }) {
         )}
         <NavItem label="Calendar" to="/calendar" icon="calendar" onNavigate={closeMobile} />
         <NavItem label="Announcements" to="/announcements" icon="announcements" onNavigate={closeMobile} />
-        <NavItem label="Analytics" to="/analytics" icon="analytics" onNavigate={closeMobile} />
+        {isAdmin && (
+          <NavItem label="Analytics" to="/analytics" icon="analytics" onNavigate={closeMobile} />
+        )}
 
         <div className="sidebar-divider" />
 
