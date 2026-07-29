@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle, primaryButtonStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle, primaryButtonStyle } from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
 export default function AdminAddAccountPage() {
@@ -87,6 +88,27 @@ export default function AdminAddAccountPage() {
         err.response?.data?.inviteEmailError ||
         'Sample invite failed.'
       await appDialog.alert(msg)
+    }
+  }
+
+  const handleTestTaskAssignedEmail = async () => {
+    const to = await appDialog.prompt({
+      title: 'Test task notification',
+      message:
+        'Enter the Outlook (or other) address that should receive a task assignment email. Subject: IQADMS — New task assigned.',
+      defaultValue: ''
+    })
+    if (!to?.trim()) return
+
+    try {
+      const res = await api.post('/Admin/test-task-assigned-email', null, {
+        params: { to: to.trim() }
+      })
+      await appDialog.alert(res.data?.message || 'Sample task notification sent.')
+    } catch (err) {
+      await appDialog.alert(
+        err.response?.data?.message || 'Task notification test failed.'
+      )
     }
   }
 
@@ -223,6 +245,27 @@ export default function AdminAddAccountPage() {
           >
             Send sample registration invite (to admin email)
           </button>
+
+          <button
+            type="button"
+            onClick={handleTestTaskAssignedEmail}
+            style={{
+              marginTop: '0.5rem',
+              background: '#fdf2f4',
+              border: '1px solid #fecaca',
+              borderRadius: '8px',
+              padding: '0.5rem 1rem',
+              color: '#7a0019',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            Send sample task notification (choose email)
+          </button>
+
+          <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#64748b' }}>
+            Task emails are sent when you assign someone else on a task — not when you use the registration invite buttons above.
+          </p>
         </div>
 
         {/* Allowed users table */}

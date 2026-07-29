@@ -786,12 +786,13 @@ public class TasksController : ControllerBase
         if (actor == null || assignee == null || !assignee.IsActive)
             return;
 
-        var actorName = EmailService.FormatPersonName(actor.DisplayName, actor.Username, actor.Email);
+        var actorName = _email.FormatEmailActorName(actor);
         var assigneeGreeting = EmailService.FormatPersonName(assignee.DisplayName, assignee.Username, assignee.Email);
-        if (string.IsNullOrWhiteSpace(assigneeGreeting))
+        if (string.IsNullOrWhiteSpace(assigneeGreeting) || assigneeGreeting == assignee.Username)
             assigneeGreeting = EmailService.DeriveGreetingNameFromEmail(assignee.Email) ?? "there";
 
         var link = _email.BuildTaskLink(task.Id, task.ProjectId);
+        var regardsName = actor.IsAdmin ? null : actorName;
         await _email.TrySendTaskAssignedEmailAsync(
             assignee.Email,
             assigneeGreeting,
@@ -800,7 +801,8 @@ public class TasksController : ControllerBase
             task.Description,
             task.Project?.Title,
             task.DueDate,
-            link);
+            link,
+            regardsName);
     }
 
     private async Task SendTaskSubmittedEmailsAsync(Guid taskId, Guid submitterUserId)

@@ -401,11 +401,9 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "Pass ?to=your-outlook-address or set SmtpSettings:AdminEmail." });
 
         var me = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == GetCurrentUserId());
-        var actorName = me == null
-            ? "IQADMS Admin"
-            : EmailService.FormatPersonName(me.DisplayName, me.Username, me.Email);
+        var actorName = me != null ? _emailService.FormatEmailActorName(me) : "IQADMS · PQAD";
 
-        var greeting = EmailService.DeriveGreetingNameFromEmail(recipient) ?? "there";
+        var greeting = EmailService.ResolveInviteRecipientGreeting(recipient) ?? "there";
         var link = _emailService.BuildTaskLink(Guid.Empty, null);
 
         await _emailService.TrySendTaskAssignedEmailAsync(
@@ -413,10 +411,11 @@ public class AdminController : ControllerBase
             greeting,
             actorName,
             "Sample task (SMTP test)",
-            "If you received this in Outlook, task assignment emails are working.",
+            "If you received this, task assignment emails are working. Subject line: IQADMS — New task assigned.",
             "PQAD test project",
             DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7)),
-            link);
+            link,
+            regardsName: null);
 
         return Ok(new
         {
@@ -586,17 +585,7 @@ public class AdminController : ControllerBase
 
     private async Task<string?> ResolveRecipientNameForInviteAsync(string email, string? explicitName = null)
     {
-        if (!string.IsNullOrWhiteSpace(explicitName))
-            return explicitName.Trim();
-
-        var normalized = email.Trim().ToLowerInvariant();
-        var user = await _context.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => !u.IsDeleted && u.Email.ToLower() == normalized);
-        if (!string.IsNullOrWhiteSpace(user?.DisplayName))
-            return user.DisplayName.Trim();
-
-        return EmailService.DeriveGreetingNameFromEmail(email);
+        return EmailService.ResolveInviteRecipientGreeting(email, explicitName);
     }
 
     private async Task<(bool Sent, string? Error)> SendInviteForAllowedUserAsync(

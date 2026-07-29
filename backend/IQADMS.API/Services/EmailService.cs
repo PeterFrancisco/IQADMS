@@ -62,7 +62,7 @@ Please review this request in the admin panel.";
 
         var registerUrl = GetRegisterUrl();
         var siteUrl = GetPublicSiteUrl();
-        var greetingName = ResolveGreetingName(recipientDisplayName, to);
+        var greetingName = ResolveInviteRecipientGreeting(to, recipientDisplayName);
         var greetingPlain = FormatGreetingPlain(greetingName);
         var greetingHtml = FormatGreetingHtml(greetingName);
 
@@ -313,7 +313,7 @@ If you did not request a reset, contact your administrator.
     private string GetFromDisplayName()
     {
         var name = _config["SmtpSettings:FromName"]?.Trim();
-        return string.IsNullOrWhiteSpace(name) ? "IQADMS" : name;
+        return string.IsNullOrWhiteSpace(name) ? "IQADMS · PQAD" : name;
     }
 
     private static string BuildRegistrationInviteHtml(
@@ -462,6 +462,31 @@ If you did not request a reset, contact your administrator.
         return email.Trim();
     }
 
+    /// <summary>Sender line in task emails — never expose personal admin usernames (e.g. Jp).</summary>
+    public string FormatEmailActorName(User actor)
+    {
+        if (actor.IsAdmin)
+            return GetFromDisplayName();
+
+        if (!string.IsNullOrWhiteSpace(actor.DisplayName))
+            return actor.DisplayName.Trim();
+
+        var fromEmail = DeriveGreetingNameFromEmail(actor.Email);
+        if (!string.IsNullOrWhiteSpace(fromEmail))
+            return fromEmail;
+
+        return FormatPersonName(actor.DisplayName, actor.Username, actor.Email);
+    }
+
+    /// <summary>Greeting for registration invites — derived from recipient email, not admin profile.</summary>
+    public static string? ResolveInviteRecipientGreeting(string email, string? explicitName = null)
+    {
+        if (!string.IsNullOrWhiteSpace(explicitName))
+            return explicitName.Trim();
+
+        return DeriveGreetingNameFromEmail(email);
+    }
+
     public string BuildTaskLink(Guid taskId, Guid? projectId)
     {
         var baseUrl = GetPublicSiteUrl().TrimEnd('/');
@@ -479,7 +504,8 @@ If you did not request a reset, contact your administrator.
         string? taskDescription,
         string? projectTitle,
         DateOnly? dueDate,
-        string taskLink)
+        string taskLink,
+        string? regardsName = null)
     {
         if (!IsSmtpConfigured(out var configError))
         {
@@ -504,6 +530,8 @@ If you did not request a reset, contact your administrator.
             ? "(No additional details.)"
             : taskDescription.Trim();
 
+        var signOff = regardsName ?? actorName;
+
         var body = $"""
 Hello {assigneeGreetingName},
 
@@ -519,7 +547,7 @@ Details:
 Open task: {taskLink}
 
 Regards,
-{actorName}
+{signOff}
 IQADMS
 """;
 
@@ -531,7 +559,7 @@ IQADMS
             $"<strong>Due date:</strong> {System.Net.WebUtility.HtmlEncode(dueLine)}</p>" +
             $"<p><strong>Details:</strong><br />{System.Net.WebUtility.HtmlEncode(details).Replace("\n", "<br />")}</p>" +
             $"""<p><a href="{taskLink}" style="display:inline-block;background:#7a0019;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">Open task</a></p>""",
-            actorName);
+            regardsName ?? actorName);
 
         try
         {
