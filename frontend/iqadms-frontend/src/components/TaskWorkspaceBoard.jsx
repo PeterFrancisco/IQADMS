@@ -133,12 +133,12 @@ export default function TaskWorkspaceBoard({
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
-  if (loading) return <p>Loading workspace…</p>
-
   const visibleColumns = useMemo(
     () => (isAdmin ? columns : columns.filter(c => columnBinding(c) !== 'owner')),
     [columns, isAdmin]
   )
+
+  if (loading) return <p>Loading workspace…</p>
 
   const colCount = visibleColumns.length + 1
   const menuColumn = headerMenu ? visibleColumns.find(c => c.id === headerMenu) : null
