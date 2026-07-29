@@ -55,10 +55,13 @@ export default function DashboardLayout({ children }) {
         <NavItem label="Home" to="/" icon="home" onNavigate={closeMobile} />
         <NavItem label="Dashboard" to="/dashboard" icon="dashboard" onNavigate={closeMobile} />
         <NavItem label="My Tasks" to="/my-tasks" icon="tasks" onNavigate={closeMobile} />
-        <NavItem label="Projects" to="/projects" icon="projects" onNavigate={closeMobile} />
-        <NavItem label="Documents" to="/documents" icon="documents" onNavigate={closeMobile} />
-        <NavItem label="Requests" to="/requests" icon="requests" onNavigate={closeMobile} />
-        <NavItem label="Monitoring" to="/monitoring" icon="monitoring" onNavigate={closeMobile} />
+        {isAdmin && (
+          <>
+            <NavItem label="Projects" to="/projects" icon="projects" onNavigate={closeMobile} />
+            <NavItem label="Documents" to="/documents" icon="documents" onNavigate={closeMobile} />
+            <NavItem label="Monitoring" to="/monitoring" icon="monitoring" onNavigate={closeMobile} />
+          </>
+        )}
         <NavItem label="Calendar" to="/calendar" icon="calendar" onNavigate={closeMobile} />
         <NavItem label="Announcements" to="/announcements" icon="announcements" onNavigate={closeMobile} />
         <NavItem label="Reports" to="/reports" icon="reports" onNavigate={closeMobile} />
@@ -67,11 +70,6 @@ export default function DashboardLayout({ children }) {
 
         <NavItem label="Notifications" to="/notifications" icon="notifications" badge={unreadNotifications} onNavigate={closeMobile} />
         <TeamMembersDropdown label="PQAD Team" icon="team" onNavigate={closeMobile} />
-
-        <div className="sidebar-divider" />
-
-        <NavItem label="Activities" to="/activities" icon="activities" onNavigate={closeMobile} />
-        <NavItem label="Departments" to="/departments" icon="departments" onNavigate={closeMobile} />
 
         {isAdmin && (
           <>

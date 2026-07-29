@@ -49,6 +49,18 @@ export default function AdminManageUsersPage() {
     }
   }
 
+  async function toggleAdmin(user) {
+    const next = !user.isAdmin
+    const label = next ? 'grant admin access to' : 'remove admin access from'
+    if (!confirm(`${label} "${user.username}"?`)) return
+    try {
+      await api.put(`/Admin/users/${user.id}/admin`, { isAdmin: next })
+      loadAll()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update role.')
+    }
+  }
+
   async function removeUser(id, username) {
     if (!confirm(`Remove user "${username}"? They will lose access.`)) return
 
@@ -175,12 +187,17 @@ export default function AdminManageUsersPage() {
                         {user.username === currentUsername ? (
                           <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>You</span>
                         ) : (
-                          <button
-                            onClick={() => removeUser(user.id, user.username)}
-                            style={dangerBtn}
-                          >
-                            Remove
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button type="button" onClick={() => toggleAdmin(user)} style={secondaryBtn}>
+                              {user.isAdmin ? 'Revoke admin' : 'Make admin'}
+                            </button>
+                            <button
+                              onClick={() => removeUser(user.id, user.username)}
+                              style={dangerBtn}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

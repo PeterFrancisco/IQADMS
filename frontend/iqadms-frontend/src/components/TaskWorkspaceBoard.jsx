@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom'
 import UserAvatar from './UserAvatar'
 import '../theme/workspace-board.css'
 
-const STATUS_OPTIONS = ['To Do', 'In Progress', 'Waiting', 'Completed', 'Cancelled']
+const STATUS_OPTIONS_ADMIN = ['To Do', 'In Progress', 'Submitted', 'Completed', 'Cancelled']
 const STATUS_COLORS = {
   'To Do': '#7a0019',
   Planning: '#7a0019',
   'In Progress': '#f59e0b',
+  Submitted: '#2563eb',
   Waiting: '#9333ea',
   Review: '#9333ea',
   Completed: '#16a34a',
@@ -19,11 +20,20 @@ function statusColor(status) {
   return STATUS_COLORS[status] || '#64748b'
 }
 
-function statusOptionsFor(task) {
-  if (task?.status && !STATUS_OPTIONS.includes(task.status)) {
-    return [task.status, ...STATUS_OPTIONS]
-  }
-  return STATUS_OPTIONS
+function isCompletedStatus(status) {
+  return status === 'Completed' || status === 'Done'
+}
+
+function statusOptionsFor(task, isAdmin, currentUserId) {
+  const base = isAdmin ? STATUS_OPTIONS_ADMIN : ['To Do', 'In Progress']
+  const list = task?.status && !base.includes(task.status) ? [task.status, ...base] : base
+  if (!isAdmin && task?.assignedToUserId !== currentUserId) return [task?.status || 'To Do']
+  return list
+}
+
+function canChangeStatus(task, isAdmin, currentUserId) {
+  if (isAdmin) return true
+  return task?.assignedToUserId === currentUserId && !isCompletedStatus(task?.status) && task?.status !== 'Submitted'
 }
 
 function columnBinding(col) {
@@ -54,7 +64,10 @@ export default function TaskWorkspaceBoard({
   onDueDate,
   onTitleChange,
   getCellValue,
-  saveCellValue
+  saveCellValue,
+  isAdmin = false,
+  currentUserId = '',
+  onDeleteTask
 }) {
   const [headerMenu, setHeaderMenu] = useState(null)
   const [menuAnchor, setMenuAnchor] = useState(null)
@@ -128,7 +141,7 @@ export default function TaskWorkspaceBoard({
                         onChange={e => setRenameDraft(e.target.value)}
                         onBlur={() => {
                           if (renameDraft.trim() && renameDraft !== col.name) {
-                            onRenameColumn(col.id, renameDraft.trim())
+                            onRenameColumn?.(col.id, renameDraft.trim())
                           }
                           setRenamingId(null)
                         }}
@@ -142,6 +155,7 @@ export default function TaskWorkspaceBoard({
                         type="button"
                         className="workspace-col-title"
                         onDoubleClick={() => {
+                          if (!isAdmin) return
                           setRenamingId(col.id)
                           setRenameDraft(col.name)
                         }}
@@ -155,6 +169,7 @@ export default function TaskWorkspaceBoard({
                         )}
                       </button>
                     )}
+                    {isAdmin && (
                     <button
                       type="button"
                       className="workspace-col-menu-btn"
@@ -165,39 +180,58 @@ export default function TaskWorkspaceBoard({
                     >
                       ⋮
                     </button>
+                    )}
                   </div>
                 </th>
               ))}
               <th className="workspace-board-th workspace-board-th-actions">
-                <button type="button" className="workspace-plus-btn" title="Add column at end" onClick={() => onAddColumnRight(null)}>
-                  +
-                </button>
+                {isAdmin && (
+                  <button type="button" className="workspace-plus-btn" title="Add column at end" onClick={() => onAddColumnRight(null)}>
+                    +
+                  </button>
+                )}
               </th>
             </tr>
           </thead>
           <tbody>
             <tr className="workspace-add-row">
-              <td>
-                <button type="button" className="workspace-plus-btn" title="Create task" onClick={onCreateTask}>
-                  +
-                </button>
-              </td>
-              <td colSpan={colCount - 1}>
-                <button type="button" className="workspace-add-row-label" onClick={onCreateTask}>
-                  Add task
-                </button>
-              </td>
+              {isAdmin && (
+                <>
+                  <td>
+                    <button type="button" className="workspace-plus-btn" title="Create task" onClick={onCreateTask}>
+                      +
+                    </button>
+                  </td>
+                  <td colSpan={colCount - 1}>
+                    <button type="button" className="workspace-add-row-label" onClick={onCreateTask}>
+                      Add task
+                    </button>
+                  </td>
+                </>
+              )}
             </tr>
             {tasks.length === 0 ? (
               <tr>
                 <td colSpan={colCount} className="workspace-empty">
-                  No tasks yet. Click + to create one.
+                  {isAdmin ? 'No tasks yet. Click + to create one.' : 'No tasks assigned to you yet.'}
                 </td>
               </tr>
             ) : (
               tasks.map(task => (
                 <tr key={task.id}>
-                  <td />
+                  <td>
+                    {isAdmin && onDeleteTask && (
+                      <button
+                        type="button"
+                        className="workspace-plus-btn"
+                        title="Delete task"
+                        onClick={() => onDeleteTask(task)}
+                        style={{ color: '#dc2626', fontWeight: 700 }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </td>
                   {columns.map(col => (
                     <td
                       key={col.id}
@@ -215,6 +249,8 @@ export default function TaskWorkspaceBoard({
                         onStatus={onStatus}
                         onDueDate={onDueDate}
                         onTitleChange={onTitleChange}
+                        isAdmin={isAdmin}
+                        currentUserId={currentUserId}
                       />
                     </td>
                   ))}
@@ -303,29 +339,41 @@ function BoardCell({
   onAssign,
   onStatus,
   onDueDate,
-  onTitleChange
+  onTitleChange,
+  isAdmin,
+  currentUserId
 }) {
   const binding = column.binding || ''
 
   if (binding === 'task') {
     return (
-      <TaskTitleCell task={task} onOpenTask={onOpenTask} onTitleChange={onTitleChange} />
+      <TaskTitleCell
+        task={task}
+        onOpenTask={onOpenTask}
+        onTitleChange={onTitleChange}
+        readOnly={!isAdmin}
+      />
     )
   }
 
   if (binding === 'owner') {
+    if (!isAdmin) {
+      return <span>{task.assignedToName || '—'}</span>
+    }
     return <OwnerCell task={task} members={members} onAssign={onAssign} />
   }
 
   if (binding === 'status') {
+    const disabled = !canChangeStatus(task, isAdmin, currentUserId)
     return (
       <select
         className="workspace-cell-input workspace-status-select"
         style={{ background: statusColor(task.status), color: '#fff', fontWeight: 600 }}
         value={task.status}
+        disabled={disabled}
         onChange={e => onStatus(task.id, e.target.value)}
       >
-        {statusOptionsFor(task).map(s => (
+        {statusOptionsFor(task, isAdmin, currentUserId).map(s => (
           <option key={s} value={s}>{s}</option>
         ))}
       </select>
@@ -333,6 +381,9 @@ function BoardCell({
   }
 
   if (binding === 'due_date') {
+    if (!isAdmin) {
+      return <span>{task.dueDate || '—'}</span>
+    }
     return (
       <input
         type="date"
@@ -349,6 +400,7 @@ function BoardCell({
       taskId={task.id}
       value={getCellValue(task.id, column.id)}
       onSave={saveCellValue}
+      readOnly={!isAdmin}
     />
   )
 }
@@ -570,7 +622,7 @@ function OwnerCell({ task, members, onAssign }) {
   )
 }
 
-function TaskTitleCell({ task, onOpenTask, onTitleChange }) {
+function TaskTitleCell({ task, onOpenTask, onTitleChange, readOnly }) {
   const [local, setLocal] = useState(task.title)
 
   useEffect(() => setLocal(task.title), [task.title])
@@ -580,9 +632,10 @@ function TaskTitleCell({ task, onOpenTask, onTitleChange }) {
       <input
         className="workspace-cell-input workspace-task-input"
         value={local}
+        readOnly={readOnly}
         onChange={e => setLocal(e.target.value)}
         onBlur={() => {
-          if (local.trim() && local !== task.title) onTitleChange(task.id, local.trim())
+          if (!readOnly && local.trim() && local !== task.title) onTitleChange(task.id, local.trim())
         }}
       />
       <button type="button" className="workspace-task-open" onClick={() => onOpenTask(task)} title="Open details">
@@ -595,12 +648,18 @@ function TaskTitleCell({ task, onOpenTask, onTitleChange }) {
   )
 }
 
-function CustomCell({ column, taskId, value, onSave }) {
+function CustomCell({ column, taskId, value, onSave, readOnly }) {
   const [local, setLocal] = useState(value || '')
 
   useEffect(() => setLocal(value || ''), [value])
 
-  const commit = () => onSave(taskId, column.id, local)
+  const commit = () => {
+    if (!readOnly) onSave(taskId, column.id, local)
+  }
+
+  if (readOnly) {
+    return <span>{local || '—'}</span>
+  }
 
   if (column.columnType === 'link') {
     return (

@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import DashboardLayout from '../components/DashboardLayout'
 import { pageTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState('accounts')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(() => searchParams.get('tab') === 'password-resets' ? 'password-resets' : 'accounts')
   const [requests, setRequests] = useState([])
   const [feedback, setFeedback] = useState([])
+  const [passwordResets, setPasswordResets] = useState([])
   const [loading, setLoading] = useState(true)
 
   const loadRequests = async () => {
@@ -27,7 +30,39 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (tab === 'feedback') loadFeedback()
+    if (tab === 'password-resets') loadPasswordResets()
   }, [tab])
+
+  const loadPasswordResets = async () => {
+    try {
+      const res = await api.get('/Admin/password-reset-requests')
+      setPasswordResets(res.data)
+    } catch (err) {
+      console.error(err)
+      alert('Failed to load password reset requests.')
+    }
+  }
+
+  const approvePasswordReset = async id => {
+    if (!window.confirm('Approve and email a reset link to this user?')) return
+    try {
+      const res = await api.post(`/Admin/password-reset-requests/${id}/approve`)
+      alert(res.data?.message || 'Approved.')
+      loadPasswordResets()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to approve.')
+    }
+  }
+
+  const rejectPasswordReset = async id => {
+    if (!window.confirm('Reject this password reset request?')) return
+    try {
+      await api.post(`/Admin/password-reset-requests/${id}/reject`)
+      loadPasswordResets()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to reject.')
+    }
+  }
 
   const loadFeedback = async () => {
     try {
@@ -73,11 +108,43 @@ export default function SettingsPage() {
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
             <TabBtn active={tab === 'accounts'} onClick={() => setTab('accounts')}>Account requests</TabBtn>
+            <TabBtn active={tab === 'password-resets'} onClick={() => setTab('password-resets')}>Password resets</TabBtn>
             <TabBtn active={tab === 'feedback'} onClick={() => setTab('feedback')}>Bug & feedback</TabBtn>
           </div>
         </div>
 
-        {tab === 'feedback' ? (
+        {tab === 'password-resets' ? (
+          <div style={panelStyle}>
+            <h2 style={{ margin: '0 0 1rem' }}>Pending password resets</h2>
+            {passwordResets.length === 0 ? (
+              <p style={{ color: '#94a3b8' }}>No pending requests.</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={tableHeadRowStyle}>
+                    <th style={thSimple}>User</th>
+                    <th style={thSimple}>Email</th>
+                    <th style={thSimple}>Requested</th>
+                    <th style={thSimple}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {passwordResets.map(r => (
+                    <tr key={r.id}>
+                      <td style={tdSimple}>{r.displayName || r.username}</td>
+                      <td style={tdSimple}>{r.email}</td>
+                      <td style={tdSimple}>{new Date(r.requestedAt).toLocaleString()}</td>
+                      <td style={tdSimple}>
+                        <button type="button" onClick={() => approvePasswordReset(r.id)} style={approveBtn}>Approve & email</button>
+                        <button type="button" onClick={() => rejectPasswordReset(r.id)} style={rejectBtn}>Reject</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : tab === 'feedback' ? (
           <div style={panelStyle}>
             <h2 style={{ margin: '0 0 1rem' }}>Recent reports</h2>
             {feedback.length === 0 ? (
@@ -272,3 +339,8 @@ const tdStyle = {
   borderBottom: '1px solid #e5e7eb',
   verticalAlign: 'top'
 }
+
+const thSimple = { textAlign: 'left', padding: '0.75rem', borderBottom: '1px solid #d1d5db' }
+const tdSimple = { padding: '0.75rem', borderBottom: '1px solid #e5e7eb' }
+const approveBtn = { marginRight: '0.5rem', padding: '0.4rem 0.75rem', borderRadius: 8, border: 'none', background: '#16a34a', color: '#fff', cursor: 'pointer', fontWeight: 600 }
+const rejectBtn = { padding: '0.4rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600 }

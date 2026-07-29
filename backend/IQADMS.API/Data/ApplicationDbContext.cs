@@ -46,6 +46,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<BoardColumn> BoardColumns => Set<BoardColumn>();
 
     public DbSet<TaskColumnValue> TaskColumnValues => Set<TaskColumnValue>();
+
+    public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
+
+    public DbSet<DocumentLibraryFolder> DocumentLibraryFolders => Set<DocumentLibraryFolder>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -460,6 +464,32 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<TaskColumnValue>()
             .HasIndex(v => new { v.TaskId, v.ColumnId })
+            .IsUnique();
+
+        modelBuilder.Entity<PasswordResetRequest>()
+            .Property(r => r.Email)
+            .HasMaxLength(256);
+
+        modelBuilder.Entity<PasswordResetRequest>()
+            .Property(r => r.Status)
+            .HasMaxLength(32);
+
+        modelBuilder.Entity<PasswordResetRequest>()
+            .Property(r => r.ResetToken)
+            .HasMaxLength(128);
+
+        modelBuilder.Entity<PasswordResetRequest>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<DocumentLibraryFolder>()
+            .Property(f => f.Path)
+            .HasMaxLength(300);
+
+        modelBuilder.Entity<DocumentLibraryFolder>()
+            .HasIndex(f => f.Path)
             .IsUnique();
 
     }

@@ -1,7 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import MonitoringPage from './pages/MonitoringPage'
-import ActivitiesPage from './pages/ActivitiesPage'
-import DepartmentsPage from './pages/DepartmentsPage'
 import DashboardPage from './pages/DashboardPage'
 import DashboardHubPage from './pages/DashboardHubPage'
 import LoginPage from './pages/LoginPage'
@@ -23,12 +21,13 @@ import StatisticsPage from './pages/StatisticsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import CalendarPage from './pages/CalendarPage'
 import ReportsPage from './pages/ReportsPage'
-import RequestsPage from './pages/RequestsPage'
 import FeedbackPage from './pages/FeedbackPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
 import AdminRoute from './components/AdminRoute'
 import LandingPage from './pages/LandingPage'
 import RefreshToLanding from './components/RefreshToLanding'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 export default function App() {
   return (
@@ -39,6 +38,8 @@ export default function App() {
 
       {/* Public route */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/request-account" element={<RequestAccountPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/complete-registration" element={<CompleteRegistrationPage />} />
@@ -66,9 +67,9 @@ export default function App() {
       <Route
         path="/projects"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <ProjectsPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
 
@@ -135,14 +136,9 @@ export default function App() {
         }
       />
 
-      <Route
-        path="/requests"
-        element={
-          <ProtectedRoute>
-            <RequestsPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/requests" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/activities" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/departments" element={<Navigate to="/dashboard" replace />} />
 
       <Route
         path="/report/bug"
@@ -165,27 +161,9 @@ export default function App() {
       <Route
         path="/monitoring"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <MonitoringPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/activities"
-        element={
-          <ProtectedRoute>
-            <ActivitiesPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/departments"
-        element={
-          <ProtectedRoute>
-            <DepartmentsPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
 
@@ -219,9 +197,9 @@ export default function App() {
       <Route
         path="/documents"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <DocumentsPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
 

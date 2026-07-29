@@ -34,9 +34,17 @@ public class BoardColumnsController : ControllerBase
         return Ok(await QueryColumnsAsync());
     }
 
+    private async Task<bool> IsAdminAsync()
+    {
+        var userId = GetUserId();
+        return await _context.Users.AnyAsync(u => u.Id == userId && u.IsAdmin && u.IsActive);
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateColumn(CreateBoardColumnRequest request)
     {
+        if (!await IsAdminAsync())
+            return Forbid();
         if (string.IsNullOrWhiteSpace(request.Name))
             return BadRequest(new { message = "Column name is required." });
 
@@ -92,6 +100,9 @@ public class BoardColumnsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateColumn(Guid id, UpdateBoardColumnRequest request)
     {
+        if (!await IsAdminAsync())
+            return Forbid();
+
         var column = await _context.BoardColumns.FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
         if (column == null)
             return NotFound();
@@ -115,6 +126,9 @@ public class BoardColumnsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteColumn(Guid id)
     {
+        if (!await IsAdminAsync())
+            return Forbid();
+
         var column = await _context.BoardColumns.FindAsync(id);
         if (column == null || column.IsDeleted)
             return NotFound();
@@ -148,6 +162,9 @@ public class BoardColumnsController : ControllerBase
     [HttpPut("cell-values")]
     public async Task<IActionResult> UpsertCellValue(UpsertCellValueRequest request)
     {
+        if (!await IsAdminAsync())
+            return Forbid();
+
         var taskExists = await _context.WorkspaceTasks
             .AnyAsync(t => t.Id == request.TaskId && !t.IsDeleted);
         if (!taskExists)

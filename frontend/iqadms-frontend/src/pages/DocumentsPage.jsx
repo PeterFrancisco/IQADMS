@@ -17,15 +17,17 @@ const STATUS_COLORS = {
 
 export default function DocumentsPage() {
   const [folders, setFolders] = useState([])
-  const [departments, setDepartments] = useState([])
+  const [storageStats, setStorageStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [selectedFolder, setSelectedFolder] = useState(null)
+  const [selectedFolder, setSelectedFolder] = useState('General')
   const [viewMode, setViewMode] = useState('folders')
-  const [uploadDept, setUploadDept] = useState('')
+  const [uploadFolder, setUploadFolder] = useState('General')
   const [uploadFile, setUploadFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadMessage, setUploadMessage] = useState('')
+  const [newFolderName, setNewFolderName] = useState('')
+  const [renameFolderName, setRenameFolderName] = useState('')
 
   useEffect(() => {
     loadData()
@@ -34,13 +36,13 @@ export default function DocumentsPage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [folderRes, deptRes] = await Promise.all([
+      const [folderRes, statsRes] = await Promise.all([
         api.get('/Submissions/folders'),
-        api.get('/Departments')
+        api.get('/Submissions/storage-stats')
       ])
       setFolders(folderRes.data)
-      setDepartments(deptRes.data)
-      if (folderRes.data.length > 0 && !selectedFolder) {
+      setStorageStats(statsRes.data)
+      if (folderRes.data.length > 0 && !folderRes.data.some(f => f.folderPath === selectedFolder)) {
         setSelectedFolder(folderRes.data[0].folderPath)
       }
     } catch (err) {
@@ -53,14 +55,14 @@ export default function DocumentsPage() {
 
   async function handleUpload(e) {
     e.preventDefault()
-    if (!uploadFile || !uploadDept) return
+    if (!uploadFile || !uploadFolder.trim()) return
 
     setUploading(true)
     setUploadMessage('')
     try {
       const form = new FormData()
       form.append('file', uploadFile)
-      form.append('departmentId', uploadDept)
+      form.append('folderPath', uploadFolder.trim())
 
       const res = await api.post('/Submissions/upload', form, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -78,6 +80,57 @@ export default function DocumentsPage() {
       setUploadMessage(err.response?.data?.message || 'Upload failed.')
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function createFolder(e) {
+    e.preventDefault()
+    if (!newFolderName.trim()) return
+    try {
+      await api.post('/Submissions/folders', {
+        name: newFolderName.trim(),
+        parentPath: selectedFolder || null
+      })
+      setNewFolderName('')
+      await loadData()
+      setUploadMessage('Folder created.')
+    } catch (err) {
+      setUploadMessage(err.response?.data?.message || 'Could not create folder.')
+    }
+  }
+
+  async function renameFolder(e) {
+    e.preventDefault()
+    if (!selectedFolder || !renameFolderName.trim()) return
+    try {
+      await api.put('/Submissions/folders/rename', {
+        oldPath: selectedFolder,
+        newPath: renameFolderName.trim()
+      })
+      setSelectedFolder(renameFolderName.trim())
+      setRenameFolderName('')
+      await loadData()
+      setUploadMessage('Folder renamed.')
+    } catch (err) {
+      setUploadMessage(err.response?.data?.message || 'Could not rename folder.')
+    }
+  }
+
+  async function exportFolder() {
+    if (!selectedFolder) return
+    try {
+      const res = await api.get('/Submissions/folders/export', {
+        params: { path: selectedFolder },
+        responseType: 'blob'
+      })
+      const blob = new Blob([res.data], { type: 'application/zip' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `${selectedFolder.replace(/\//g, '_')}.zip`
+      link.click()
+      URL.revokeObjectURL(link.href)
+    } catch (err) {
+      setUploadMessage(err.response?.data?.message || 'Export failed.')
     }
   }
 
@@ -117,7 +170,12 @@ export default function DocumentsPage() {
       <div>
         <h1 style={pageTitleStyle}>Documents</h1>
         <p style={{ color: '#666', marginBottom: '1rem' }}>
-          Files are auto-sorted into folders from the filename (e.g. &quot;Operational Plan 2026&quot; → Operational Plans 2026).
+          Admin document library: choose or create folders, upload files (max {storageStats ? Math.round(storageStats.maxUploadBytes / (1024 * 1024)) : 100} MB each), and export folders as ZIP.
+          {storageStats && (
+            <span style={{ display: 'block', marginTop: 6, fontSize: '0.9rem' }}>
+              Storage: {(storageStats.usedBytes / (1024 ** 3)).toFixed(2)} GB / {(storageStats.maxBytes / (1024 ** 3)).toFixed(0)} GB
+            </span>
+          )}
         </p>
 
         <div style={{
@@ -130,17 +188,18 @@ export default function DocumentsPage() {
           <h2 style={{ margin: '0 0 1rem', fontSize: '1.1rem', color: upshd.maroon }}>Upload document</h2>
           <form onSubmit={handleUpload} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.9rem' }}>
-              Department
+              Folder
               <select
-                required
-                value={uploadDept}
-                onChange={e => setUploadDept(e.target.value)}
+                value={uploadFolder}
+                onChange={e => setUploadFolder(e.target.value)}
                 style={{ padding: '0.6rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 220 }}
               >
-                <option value="">Select department…</option>
-                {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+                {folders.map(f => (
+                  <option key={f.folderPath} value={f.folderPath}>{f.folderPath}</option>
                 ))}
+                {!folders.some(f => f.folderPath === 'General') && (
+                  <option value="General">General</option>
+                )}
               </select>
             </label>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.9rem' }}>
@@ -168,6 +227,39 @@ export default function DocumentsPage() {
               {uploading ? 'Uploading…' : 'Upload'}
             </button>
           </form>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem', alignItems: 'flex-end' }}>
+            <form onSubmit={createFolder} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <label style={{ fontSize: '0.9rem' }}>
+                New subfolder in {selectedFolder || 'General'}
+                <input
+                  value={newFolderName}
+                  onChange={e => setNewFolderName(e.target.value)}
+                  placeholder="Folder name"
+                  style={{ display: 'block', marginTop: 4, padding: '0.5rem 0.65rem', borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 180 }}
+                />
+              </label>
+              <button type="submit" style={{ padding: '0.55rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                Create folder
+              </button>
+            </form>
+            <form onSubmit={renameFolder} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <label style={{ fontSize: '0.9rem' }}>
+                Rename selected folder
+                <input
+                  value={renameFolderName}
+                  onChange={e => setRenameFolderName(e.target.value)}
+                  placeholder={selectedFolder || 'New name'}
+                  style={{ display: 'block', marginTop: 4, padding: '0.5rem 0.65rem', borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 180 }}
+                />
+              </label>
+              <button type="submit" style={{ padding: '0.55rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                Rename
+              </button>
+            </form>
+            <button type="button" onClick={exportFolder} style={{ padding: '0.55rem 1rem', borderRadius: 8, border: 'none', background: '#1e293b', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+              Export folder (ZIP)
+            </button>
+          </div>
           {uploadMessage && (
             <p style={{ marginTop: '0.75rem', color: uploadMessage.includes('failed') ? '#dc2626' : '#16a34a' }}>
               {uploadMessage}

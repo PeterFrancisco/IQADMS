@@ -27,6 +27,8 @@ public class TaskResponse
     public string? UploadGoogleDriveLink { get; set; }
     public string? DeliverableGoogleDriveLink { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public string? AdminReviewRemark { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public List<TaskAttachmentDto> Attachments { get; set; } = new();

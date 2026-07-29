@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using IQADMS.API.DTOs.Admin;
 using IQADMS.API.Services;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace IQADMS.API.Controllers;
 
@@ -410,6 +411,118 @@ public class AdminController : ControllerBase
             inviteEmailSent = true,
             links
         });
+    }
+
+    // PUT: api/Admin/users/{id}/admin
+    [HttpPut("users/{id}/admin")]
+    public async Task<IActionResult> SetUserAdmin(Guid id, SetUserAdminRequest request)
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
+        if (user == null)
+            return NotFound();
+
+        user.IsAdmin = request.IsAdmin;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        var allowed = await _context.AllowedUsers
+            .FirstOrDefaultAsync(a => a.Email.ToLower() == user.Email.ToLower());
+        if (allowed != null)
+        {
+            allowed.IsAdmin = request.IsAdmin;
+            allowed.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = request.IsAdmin ? "Administrator access granted." : "Administrator access removed.",
+            userId = user.Id,
+            isAdmin = user.IsAdmin
+        });
+    }
+
+    [HttpGet("password-reset-requests")]
+    public async Task<IActionResult> GetPasswordResetRequests()
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var items = await _context.PasswordResetRequests
+            .Where(r => !r.IsDeleted && r.Status == "Pending")
+            .Include(r => r.User)
+            .OrderByDescending(r => r.RequestedAt)
+            .Select(r => new
+            {
+                r.Id,
+                r.Email,
+                r.RequestedAt,
+                Username = r.User.Username,
+                DisplayName = r.User.DisplayName
+            })
+            .ToListAsync();
+
+        return Ok(items);
+    }
+
+    [HttpPost("password-reset-requests/{id}/approve")]
+    public async Task<IActionResult> ApprovePasswordReset(Guid id)
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var req = await _context.PasswordResetRequests
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
+
+        if (req == null)
+            return NotFound();
+
+        if (req.Status != "Pending")
+            return BadRequest(new { message = "This request was already processed." });
+
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .TrimEnd('=');
+
+        req.Status = "Approved";
+        req.ResetToken = token;
+        req.TokenExpiresAt = DateTime.UtcNow.AddHours(24);
+        req.ReviewedAt = DateTime.UtcNow;
+        req.ReviewedByUserId = GetCurrentUserId();
+        req.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        var resetUrl = _emailService.BuildResetPasswordUrl(token);
+        var (sent, error) = await _emailService.TrySendPasswordResetEmailAsync(req.Email, resetUrl);
+
+        if (!sent)
+            return BadRequest(new { message = error ?? "Could not send reset email.", resetUrl });
+
+        return Ok(new { message = $"Password reset link emailed to {req.Email}." });
+    }
+
+    [HttpPost("password-reset-requests/{id}/reject")]
+    public async Task<IActionResult> RejectPasswordReset(Guid id)
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var req = await _context.PasswordResetRequests.FindAsync(id);
+        if (req == null || req.IsDeleted)
+            return NotFound();
+
+        req.Status = "Rejected";
+        req.ReviewedAt = DateTime.UtcNow;
+        req.ReviewedByUserId = GetCurrentUserId();
+        req.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Password reset request rejected." });
     }
 
     // --- Helper methods (paste at bottom of class) ---

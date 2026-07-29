@@ -7,12 +7,13 @@ import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
 import { getApiOrigin } from '../utils/apiOrigin'
 
-const STATUS_OPTIONS = ['To Do', 'In Progress', 'Waiting', 'Completed', 'Cancelled']
+const STATUS_OPTIONS = ['To Do', 'In Progress', 'Submitted', 'Completed', 'Cancelled']
 const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical']
 const STATUS_COLORS = {
   'To Do': '#7a0019',
   Planning: '#7a0019',
   'In Progress': '#f59e0b',
+  Submitted: '#2563eb',
   Waiting: '#9333ea',
   Review: '#9333ea',
   Completed: '#16a34a',
@@ -69,6 +70,12 @@ export default function DashboardPage() {
   const [newColumnForm, setNewColumnForm] = useState({ name: '', columnType: 'text', optionsText: '', binding: '' })
 
   const currentUserId = localStorage.getItem('userId')
+  const isAdmin = localStorage.getItem('isAdmin') === 'true'
+
+  const [adminReturnRemark, setAdminReturnRemark] = useState('')
+  const [adminCompleteRemark, setAdminCompleteRemark] = useState('')
+  const [taskActionLoading, setTaskActionLoading] = useState(false)
+  const [memberAttachment, setMemberAttachment] = useState(null)
 
   const openedTaskLinkRef = useRef(null)
 
@@ -113,8 +120,8 @@ export default function DashboardPage() {
         api.get('/Profile/members'),
         api.get('/BoardColumns'),
         api.get('/BoardColumns/cell-values'),
-        api.get('/Projects'),
-        api.get('/Departments')
+        isAdmin ? api.get('/Projects') : Promise.resolve({ data: [] }),
+        isAdmin ? api.get('/Departments') : Promise.resolve({ data: [] })
       ])
       setTasks(tasksRes.data)
       setMembers(membersRes.data)
@@ -315,13 +322,16 @@ export default function DashboardPage() {
       setTasks(prev => prev.map(t => (t.id === id ? res.data : t)))
     } catch (err) {
       console.error(err)
-      alert('Failed to update status.')
+      alert(err.response?.data?.message || 'Failed to update status.')
     }
   }
 
   const openTaskDetail = async (task) => {
     setSelectedTask(task)
     setDeliverableLink(task.deliverableGoogleDriveLink || '')
+    setAdminReturnRemark('')
+    setAdminCompleteRemark('')
+    setMemberAttachment(null)
     setNewComment('')
     setTaskComments([])
     setTaskActivity([])
@@ -337,6 +347,61 @@ export default function DashboardPage() {
     }
   }
 
+  const deleteTask = async task => {
+    if (!isAdmin || !window.confirm(`Delete task "${task.title}"? This cannot be undone.`)) return
+    try {
+      await api.delete(`/Tasks/${task.id}`)
+      loadData()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete task.')
+    }
+  }
+
+  const returnTaskToMember = async () => {
+    if (!selectedTask || !adminReturnRemark.trim()) return
+    try {
+      setTaskActionLoading(true)
+      await api.post(`/Tasks/${selectedTask.id}/return`, { remark: adminReturnRemark.trim() })
+      closeTaskDetail()
+      loadData()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to return task.')
+    } finally {
+      setTaskActionLoading(false)
+    }
+  }
+
+  const completeTask = async () => {
+    if (!selectedTask) return
+    try {
+      setTaskActionLoading(true)
+      await api.post(`/Tasks/${selectedTask.id}/complete`, {
+        remark: adminCompleteRemark.trim() || null
+      })
+      closeTaskDetail()
+      loadData()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to complete task.')
+    } finally {
+      setTaskActionLoading(false)
+    }
+  }
+
+  const uploadMemberAttachment = async () => {
+    if (!selectedTask || !memberAttachment) return
+    try {
+      const formData = new FormData()
+      formData.append('file', memberAttachment)
+      await api.post(`/Tasks/${selectedTask.id}/attachment`, formData)
+      setMemberAttachment(null)
+      const refreshed = (await api.get(`/Tasks/${selectedTask.id}`)).data
+      setSelectedTask(refreshed)
+      loadData()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to upload attachment.')
+    }
+  }
+
   const closeTaskDetail = () => {
     setSelectedTask(null)
     setDeliverableLink('')
@@ -347,9 +412,11 @@ export default function DashboardPage() {
 
     try {
       setSubmittingDeliverable(true)
-      await api.put(`/Tasks/${selectedTask.id}/deliverable`, {
+      const res = await api.put(`/Tasks/${selectedTask.id}/deliverable`, {
         deliverableGoogleDriveLink: deliverableLink.trim()
       })
+      setSelectedTask(res.data)
+      setTasks(prev => prev.map(t => (t.id === selectedTask.id ? res.data : t)))
       closeTaskDetail()
       loadData()
     } catch (err) {
@@ -435,11 +502,15 @@ export default function DashboardPage() {
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          <MiniStat label="Total Tasks" value={tasks.length} color="#9e1b32" />
+          {isAdmin && (
+            <MiniStat label="Total Tasks" value={tasks.length} color="#9e1b32" />
+          )}
           <MiniStat label="To Do" value={tasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length} color="#7a0019" />
           <MiniStat label="In Progress" value={tasks.filter(t => t.status === 'In Progress').length} color="#f59e0b" />
-          <MiniStat label="Waiting" value={tasks.filter(t => t.status === 'Waiting' || t.status === 'Review').length} color="#9333ea" />
-          <MiniStat label="Completed" value={tasks.filter(t => isCompletedStatus(t.status)).length} color="#16a34a" />
+          <MiniStat label="Submitted" value={tasks.filter(t => t.status === 'Submitted').length} color="#2563eb" />
+          {isAdmin && (
+            <MiniStat label="Completed" value={tasks.filter(t => isCompletedStatus(t.status)).length} color="#16a34a" />
+          )}
         </div>
 
         <TaskWorkspaceBoard
@@ -449,18 +520,21 @@ export default function DashboardPage() {
           loading={loading}
           sortConfig={sortConfig}
           onSort={(columnId, direction) => setSortConfig({ columnId, direction })}
-          onRenameColumn={renameColumn}
-          onToggleWrap={toggleWrapColumn}
-          onDeleteColumn={deleteColumn}
-          onAddColumnRight={openAddColumn}
-          onCreateTask={() => setShowCreateModal(true)}
+          onRenameColumn={isAdmin ? renameColumn : undefined}
+          onToggleWrap={isAdmin ? toggleWrapColumn : undefined}
+          onDeleteColumn={isAdmin ? deleteColumn : undefined}
+          onAddColumnRight={isAdmin ? openAddColumn : undefined}
+          onCreateTask={isAdmin ? () => setShowCreateModal(true) : undefined}
           onOpenTask={openTaskDetail}
-          onAssign={assignMember}
+          onAssign={isAdmin ? assignMember : undefined}
           onStatus={updateStatus}
-          onDueDate={updateDueDate}
-          onTitleChange={updateTitle}
+          onDueDate={isAdmin ? updateDueDate : undefined}
+          onTitleChange={isAdmin ? updateTitle : undefined}
           getCellValue={getCellValue}
-          saveCellValue={saveCellValue}
+          saveCellValue={isAdmin ? saveCellValue : undefined}
+          isAdmin={isAdmin}
+          currentUserId={currentUserId}
+          onDeleteTask={isAdmin ? deleteTask : undefined}
         />
 
         <ConfirmDialog
@@ -535,7 +609,7 @@ export default function DashboardPage() {
                 </>
               )}
 
-              {selectedTask.deliverableGoogleDriveLink && isCompletedStatus(selectedTask.status) && (
+              {selectedTask.deliverableGoogleDriveLink && (
                 <>
                   <label style={labelStyle}>Submitted work</label>
                   <p style={{ margin: '0 0 1rem' }}>
@@ -543,7 +617,7 @@ export default function DashboardPage() {
                       href={selectedTask.deliverableGoogleDriveLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: '#16a34a', wordBreak: 'break-all' }}
+                      style={{ color: '#2563eb', wordBreak: 'break-all' }}
                     >
                       View finished work on Google Drive
                     </a>
@@ -551,9 +625,35 @@ export default function DashboardPage() {
                 </>
               )}
 
-              {(selectedTask.assignedToUserId === currentUserId ||
-                selectedTask.createdByUserId === currentUserId) &&
-                !isCompletedStatus(selectedTask.status) && (
+              {selectedTask.adminReviewRemark && (
+                <>
+                  <label style={labelStyle}>Admin remark</label>
+                  <p style={{ margin: '0 0 1rem', color: '#b45309', whiteSpace: 'pre-wrap' }}>
+                    {selectedTask.adminReviewRemark}
+                  </p>
+                </>
+              )}
+
+              {(selectedTask.assignedToUserId === currentUserId || isAdmin) &&
+                !isCompletedStatus(selectedTask.status) &&
+                selectedTask.status !== 'Submitted' && (
+                  <>
+                    <label style={labelStyle}>Upload supporting document</label>
+                    <input
+                      type="file"
+                      style={{ marginBottom: '0.5rem', display: 'block' }}
+                      onChange={e => setMemberAttachment(e.target.files?.[0] || null)}
+                    />
+                    {memberAttachment && (
+                      <button type="button" onClick={uploadMemberAttachment} style={{ ...primaryBtn, marginBottom: '1rem' }}>
+                        Upload file
+                      </button>
+                    )}
+                  </>
+                )}
+
+              {selectedTask.assignedToUserId === currentUserId &&
+                selectedTask.status === 'In Progress' && (
                   <>
                     <label style={labelStyle}>Your finished work (Google Drive link)</label>
                     <input
@@ -568,10 +668,47 @@ export default function DashboardPage() {
                       disabled={submittingDeliverable || !deliverableLink.trim()}
                       style={primaryBtn}
                     >
-                      {submittingDeliverable ? 'Submitting...' : 'Submit & Mark Completed'}
+                      {submittingDeliverable ? 'Submitting...' : 'Submit for admin review'}
                     </button>
                   </>
                 )}
+
+              {isAdmin && selectedTask.status === 'Submitted' && (
+                <>
+                  <label style={labelStyle}>Approval remark (optional)</label>
+                  <textarea
+                    style={{ ...inputStyle, width: '100%', minHeight: 64, marginBottom: '0.75rem', boxSizing: 'border-box' }}
+                    placeholder="Optional note when approving…"
+                    value={adminCompleteRemark}
+                    onChange={e => setAdminCompleteRemark(e.target.value)}
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <button
+                      type="button"
+                      onClick={completeTask}
+                      disabled={taskActionLoading}
+                      style={{ ...primaryBtn, background: '#16a34a' }}
+                    >
+                      Approve & mark completed
+                    </button>
+                  </div>
+                  <label style={labelStyle}>Return for revision</label>
+                  <textarea
+                    style={{ ...inputStyle, width: '100%', minHeight: 64, marginBottom: '0.75rem', boxSizing: 'border-box' }}
+                    placeholder="Explain what needs to be fixed…"
+                    value={adminReturnRemark}
+                    onChange={e => setAdminReturnRemark(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={returnTaskToMember}
+                    disabled={taskActionLoading || !adminReturnRemark.trim()}
+                    style={{ ...primaryBtn, background: '#b45309', marginBottom: '1rem' }}
+                  >
+                    Return to assignee
+                  </button>
+                </>
+              )}
 
               <label style={{ ...labelStyle, marginTop: '1.25rem' }}>Comments</label>
               <div style={{ maxHeight: 160, overflow: 'auto', marginBottom: '0.75rem', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.75rem' }}>

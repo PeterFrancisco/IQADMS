@@ -29,6 +29,8 @@ public class WorkspaceTask : BaseEntity
     public string? DeliverableGoogleDriveLink { get; set; }
 
     public DateTime? CompletedAt { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public string? AdminReviewRemark { get; set; }
 
     public ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
     public ICollection<TaskActivityLog> ActivityLogs { get; set; } = new List<TaskActivityLog>();

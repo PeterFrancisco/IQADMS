@@ -134,6 +134,52 @@ If you did not expect this invitation, you can safely ignore this email.
         }
     }
 
+    public async Task<(bool Sent, string? Error)> TrySendPasswordResetEmailAsync(string recipientEmail, string resetUrl)
+    {
+        if (!IsSmtpConfigured(out var configError))
+            return (false, configError);
+
+        var to = recipientEmail.Trim();
+        if (string.IsNullOrWhiteSpace(to) || !to.Contains('@'))
+            return (false, "Invalid recipient email.");
+
+        var body = $"""
+An IQADMS administrator approved your password reset request.
+
+Open this link to choose a new password (valid for 24 hours):
+  {resetUrl}
+
+If you did not request a reset, contact your administrator.
+
+— IQADMS · PQAD · UPSHD Molino
+""";
+
+        var htmlBody = $"""
+<p>An IQADMS administrator approved your password reset request.</p>
+<p><a href="{resetUrl}">Set a new password</a></p>
+<p>This link expires in 24 hours. If you did not request a reset, contact your administrator.</p>
+""";
+
+        try
+        {
+            var smtp = _config.GetSection("SmtpSettings");
+            var from = RequireFromAddress(smtp);
+            await SendAsync(from, to, "IQADMS password reset", body, htmlBody);
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            var detail = DescribeSendFailure(ex);
+            _logger.LogError(ex, "Failed to send password reset email to {Email}", to);
+            return (false, detail);
+        }
+    }
+
+    private string GetResetPasswordUrl(string token) =>
+        $"{GetPublicSiteUrl()}/reset-password?token={Uri.EscapeDataString(token)}";
+
+    public string BuildResetPasswordUrl(string token) => GetResetPasswordUrl(token);
+
     public async Task<(bool Sent, string? Error)> TrySendTestEmailAsync(string? toEmail = null)
     {
         if (!IsSmtpConfigured(out var configError))

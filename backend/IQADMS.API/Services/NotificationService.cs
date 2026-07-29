@@ -111,6 +111,25 @@ public class NotificationService
         }
     }
 
+    public async Task NotifyAllAdminsAsync(
+        string category,
+        string title,
+        string? body,
+        string? linkPath,
+        Guid? relatedTaskId = null,
+        string? dedupKey = null)
+    {
+        var adminIds = await _context.Users
+            .Where(u => u.IsAdmin && u.IsActive)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        foreach (var adminId in adminIds)
+        {
+            await NotifyAsync(adminId, category, title, body, linkPath, relatedTaskId, dedupKey: dedupKey);
+        }
+    }
+
     public async Task NotifyAdminsOfAccountRequestAsync(Guid accountRequestId, string fullName, string email)
     {
         var adminIds = await _context.Users

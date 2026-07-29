@@ -182,12 +182,25 @@ export default function LoginPage() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            fontSize: '0.9rem'
+            fontSize: '0.9rem',
+            flexWrap: 'wrap',
+            gap: '0.5rem'
           }}
         >
-          <span style={{ color: '#64748b' }}>
-            Authorized PQAD users only
-          </span>
+          <button
+            type="button"
+            onClick={() => navigate('/forgot-password')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#7a0019',
+              fontWeight: '600',
+              cursor: 'pointer',
+              padding: 0
+            }}
+          >
+            Forgot password?
+          </button>
 
           <button
             type="button"

@@ -112,6 +112,36 @@ public class AuthService
         };
     }
 
+    public async Task ResetPasswordWithTokenAsync(ResetPasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Token))
+            throw new Exception("Reset token is required.");
+
+        if (!IsStrongPassword(request.Password))
+            throw new Exception(
+                "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character.");
+
+        if (request.Password != request.ConfirmPassword)
+            throw new Exception("Password and confirmation password do not match.");
+
+        var reset = await _context.PasswordResetRequests
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r =>
+                r.ResetToken == request.Token
+                && r.Status == "Approved"
+                && !r.IsDeleted
+                && r.TokenExpiresAt > DateTime.UtcNow);
+
+        if (reset == null)
+            throw new Exception("This reset link is invalid or has expired. Ask an administrator for a new one.");
+
+        reset.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        reset.User.UpdatedAt = DateTime.UtcNow;
+        reset.Status = "Completed";
+        reset.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+    }
+
     private bool IsStrongPassword(string password)
     {
         if (password.Length < 8)

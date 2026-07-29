@@ -29,6 +29,9 @@ public class TasksController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetTasks([FromQuery] Guid? projectId, [FromQuery] Guid? relatedDepartmentId)
     {
+        var userId = GetUserId();
+        var isAdmin = await IsAdminAsync(userId);
+
         var query = _context.WorkspaceTasks
             .Where(t => !t.IsDeleted)
             .Include(t => t.AssignedToUser)
@@ -38,6 +41,9 @@ public class TasksController : ControllerBase
             .Include(t => t.Attachments)
             .Include(t => t.Comments)
             .AsQueryable();
+
+        if (!isAdmin)
+            query = query.Where(t => t.AssignedToUserId == userId);
 
         if (projectId.HasValue)
             query = query.Where(t => t.ProjectId == projectId);
@@ -57,12 +63,22 @@ public class TasksController : ControllerBase
     {
         var task = await LoadTaskGraph(id);
         if (task == null) return NotFound();
+
+        var userId = GetUserId();
+        var isAdmin = await IsAdminAsync(userId);
+        if (!isAdmin && task.AssignedToUserId != userId)
+            return Forbid();
+
         return Ok(MapTask(task));
     }
 
     [HttpPost]
     public async Task<IActionResult> CreateTask(CreateTaskRequest request)
     {
+        var userId = GetUserId();
+        if (!await IsAdminAsync(userId))
+            return Forbid();
+
         if (string.IsNullOrWhiteSpace(request.Title))
             return BadRequest(new { message = "Task title is required." });
 
@@ -75,7 +91,8 @@ public class TasksController : ControllerBase
             return BadRequest(new { message = "Department not found." });
 
         var status = NormalizeStatus(string.IsNullOrWhiteSpace(request.Status) ? "To Do" : request.Status);
-        var userId = GetUserId();
+        if (status is "Completed" or "Submitted")
+            status = "To Do";
 
         var task = new WorkspaceTask
         {
@@ -122,6 +139,26 @@ public class TasksController : ControllerBase
             return NotFound();
 
         var userId = GetUserId();
+        var isAdmin = await IsAdminAsync(userId);
+        var isAssignee = task.AssignedToUserId == userId;
+
+        if (!isAdmin && !isAssignee)
+            return Forbid();
+
+        if (!isAdmin)
+        {
+            if (request.Title != null || request.Description != null || request.Priority != null
+                || request.SetDueDate || request.SetProject || request.SetRelatedDepartment
+                || request.SetAssignee || request.UploadGoogleDriveLink != null
+                || request.DeliverableGoogleDriveLink != null)
+                return Forbid();
+
+            if (string.IsNullOrWhiteSpace(request.Status))
+                return BadRequest(new { message = "Status is required." });
+
+            return await ApplyMemberStatusChange(task, userId, NormalizeStatus(request.Status));
+        }
+
         var changes = new List<string>();
 
         if (!string.IsNullOrWhiteSpace(request.Title) && request.Title.Trim() != task.Title)
@@ -142,11 +179,21 @@ public class TasksController : ControllerBase
             if (newStatus != task.Status)
             {
                 changes.Add($"status: {task.Status} → {newStatus}");
+                var oldStatus = task.Status;
                 task.Status = newStatus;
                 if (IsCompletedStatus(newStatus))
                     task.CompletedAt = DateTime.UtcNow;
-                else if (task.CompletedAt.HasValue)
+                else
+                {
                     task.CompletedAt = null;
+                    if (newStatus != "Submitted")
+                        task.SubmittedAt = null;
+                }
+
+                if (newStatus == "Submitted")
+                    task.SubmittedAt = DateTime.UtcNow;
+
+                await NotifyOnAdminStatusChange(task, oldStatus, newStatus);
             }
         }
 
@@ -240,15 +287,7 @@ public class TasksController : ControllerBase
             task.UploadGoogleDriveLink = request.UploadGoogleDriveLink;
 
         if (request.DeliverableGoogleDriveLink != null)
-        {
             task.DeliverableGoogleDriveLink = request.DeliverableGoogleDriveLink;
-            if (!IsCompletedStatus(task.Status))
-            {
-                task.Status = "Completed";
-                task.CompletedAt = DateTime.UtcNow;
-                changes.Add("marked completed via deliverable");
-            }
-        }
 
         task.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
@@ -262,6 +301,10 @@ public class TasksController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTask(Guid id)
     {
+        var userId = GetUserId();
+        if (!await IsAdminAsync(userId))
+            return Forbid();
+
         var task = await _context.WorkspaceTasks.FindAsync(id);
 
         if (task == null || task.IsDeleted)
@@ -381,7 +424,7 @@ public class TasksController : ControllerBase
         if (task == null || task.IsDeleted) return NotFound();
 
         var userId = GetUserId();
-        if (task.CreatedByUserId != userId && task.AssignedToUserId != userId)
+        if (task.AssignedToUserId != userId && !await IsAdminAsync(userId))
             return Forbid();
 
         if (file == null || file.Length == 0)
@@ -421,17 +464,111 @@ public class TasksController : ControllerBase
         if (task == null || task.IsDeleted) return NotFound();
 
         var userId = GetUserId();
-        if (task.AssignedToUserId != userId && task.CreatedByUserId != userId)
+        if (task.AssignedToUserId != userId && !await IsAdminAsync(userId))
             return Forbid();
 
-        task.DeliverableGoogleDriveLink = request.DeliverableGoogleDriveLink;
+        if (string.IsNullOrWhiteSpace(request.DeliverableGoogleDriveLink))
+            return BadRequest(new { message = "Google Drive link is required to submit." });
+
+        if (task.Status != "In Progress")
+            return BadRequest(new { message = "Task must be In Progress before submitting a deliverable." });
+
+        var previous = task.Status;
+        task.DeliverableGoogleDriveLink = request.DeliverableGoogleDriveLink.Trim();
+        task.Status = "Submitted";
+        task.SubmittedAt = DateTime.UtcNow;
+        task.CompletedAt = null;
+        task.AdminReviewRemark = null;
+        task.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        await LogActivity(id, userId, "submitted", "Deliverable submitted for review");
+
+        if (previous == "In Progress")
+        {
+            await _notifications.NotifyAllAdminsAsync(
+                "task",
+                "Task submitted for review",
+                $"\"{task.Title}\" was submitted by the assignee.",
+                $"/my-tasks?task={task.Id}",
+                task.Id,
+                $"task-submitted-{task.Id}-{task.SubmittedAt:O}");
+        }
+
+        return Ok(await MapTaskById(id));
+    }
+
+    [HttpPost("{id}/return")]
+    public async Task<IActionResult> ReturnTask(Guid id, [FromBody] TaskAdminRemarkRequest request)
+    {
+        var userId = GetUserId();
+        if (!await IsAdminAsync(userId))
+            return Forbid();
+
+        var task = await _context.WorkspaceTasks.FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
+        if (task == null) return NotFound();
+
+        if (task.Status != "Submitted")
+            return BadRequest(new { message = "Only submitted tasks can be returned for revision." });
+
+        if (string.IsNullOrWhiteSpace(request.Remark))
+            return BadRequest(new { message = "Remark is required when returning a task." });
+
+        task.AdminReviewRemark = request.Remark.Trim();
+        task.Status = "In Progress";
+        task.SubmittedAt = null;
+        task.CompletedAt = null;
+        task.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        await LogActivity(id, userId, "returned", request.Remark.Trim());
+
+        if (task.AssignedToUserId.HasValue)
+        {
+            await _notifications.NotifyAsync(
+                task.AssignedToUserId.Value,
+                "task",
+                "Task returned for revision",
+                request.Remark.Trim(),
+                $"/my-tasks?task={task.Id}",
+                task.Id);
+        }
+
+        return Ok(new { message = "Task returned to assignee." });
+    }
+
+    [HttpPost("{id}/complete")]
+    public async Task<IActionResult> CompleteTask(Guid id, [FromBody] TaskAdminRemarkRequest? request)
+    {
+        var userId = GetUserId();
+        if (!await IsAdminAsync(userId))
+            return Forbid();
+
+        var task = await _context.WorkspaceTasks.FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
+        if (task == null) return NotFound();
+
+        if (task.Status != "Submitted")
+            return BadRequest(new { message = "Only submitted tasks can be marked completed." });
+
+        if (!string.IsNullOrWhiteSpace(request?.Remark))
+            task.AdminReviewRemark = request!.Remark.Trim();
+
         task.Status = "Completed";
         task.CompletedAt = DateTime.UtcNow;
         task.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
-        await LogActivity(id, userId, "completed", "Deliverable submitted");
+        await LogActivity(id, userId, "completed", "Approved and marked completed");
 
-        return Ok(new { message = "Task marked as completed." });
+        if (task.AssignedToUserId.HasValue)
+        {
+            await _notifications.NotifyAsync(
+                task.AssignedToUserId.Value,
+                "task",
+                "Task approved",
+                $"\"{task.Title}\" was marked completed.",
+                $"/my-tasks?task={task.Id}",
+                task.Id);
+        }
+
+        return Ok(new { message = "Task marked completed." });
     }
 
     [HttpGet("user/{username}/history")]
@@ -506,6 +643,8 @@ public class TasksController : ControllerBase
             UploadGoogleDriveLink = t.UploadGoogleDriveLink,
             DeliverableGoogleDriveLink = t.DeliverableGoogleDriveLink,
             CompletedAt = t.CompletedAt,
+            SubmittedAt = t.SubmittedAt,
+            AdminReviewRemark = t.AdminReviewRemark,
             CreatedAt = t.CreatedAt,
             CommentCount = t.Comments?.Count ?? 0,
             Attachments = (t.Attachments ?? new List<TaskAttachment>()).Select(a => new TaskAttachmentDto
@@ -543,6 +682,47 @@ public class TasksController : ControllerBase
 
     private static bool IsCompletedStatus(string status) =>
         status is "Completed" or "Done";
+
+    private async Task<bool> IsAdminAsync(Guid userId) =>
+        await _context.Users.AnyAsync(u => u.Id == userId && u.IsAdmin && u.IsActive);
+
+    private async Task<IActionResult> ApplyMemberStatusChange(WorkspaceTask task, Guid userId, string newStatus)
+    {
+        var oldStatus = task.Status;
+        if (oldStatus == newStatus)
+            return Ok(await MapTaskById(task.Id));
+
+        if (newStatus == "In Progress" && oldStatus is "To Do" or "Planning")
+        {
+            task.Status = newStatus;
+            task.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            await LogActivity(task.Id, userId, "updated", $"status: {oldStatus} → {newStatus}");
+            await _notifications.NotifyAllAdminsAsync(
+                "task",
+                "Task in progress",
+                $"\"{task.Title}\" moved to In Progress.",
+                $"/my-tasks?task={task.Id}",
+                task.Id,
+                $"task-inprogress-{task.Id}-{DateTime.UtcNow:yyyyMMddHHmm}");
+            return Ok(await MapTaskById(task.Id));
+        }
+
+        return BadRequest(new { message = "Members can only move tasks from To Do to In Progress. Submit via deliverable link." });
+    }
+
+    private async Task NotifyOnAdminStatusChange(WorkspaceTask task, string oldStatus, string newStatus)
+    {
+        if (oldStatus is "To Do" or "Planning" && newStatus == "In Progress")
+        {
+            await _notifications.NotifyAllAdminsAsync(
+                "task",
+                "Task in progress",
+                $"\"{task.Title}\" is now In Progress.",
+                $"/my-tasks?task={task.Id}",
+                task.Id);
+        }
+    }
 
     private Guid GetUserId()
     {

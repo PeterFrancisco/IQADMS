@@ -2,6 +2,7 @@ using IQADMS.API.Data;
 using IQADMS.API.DTOs.Submissions;
 using IQADMS.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace IQADMS.API.Services;
 
@@ -250,5 +251,205 @@ public class SubmissionService
                 DownloadUrl = s.StoredRelativePath != null ? $"/uploads/{s.StoredRelativePath}" : null
             })
             .ToListAsync();
+    }
+
+    public const long MaxFileBytes = 100 * 1024 * 1024;
+    public const long MaxStorageBytes = 32L * 1024 * 1024 * 1024;
+    public const int MaxFileCount = 20_000;
+
+    public async Task<object> GetStorageStatsAsync()
+    {
+        var (bytes, count) = await MeasureStorageAsync();
+        var dbCount = await _context.Submissions.CountAsync(s => !s.IsDeleted && s.StoredRelativePath != null);
+
+        return new
+        {
+            usedBytes = bytes,
+            maxBytes = MaxStorageBytes,
+            fileCount = Math.Max(count, dbCount),
+            maxFileCount = MaxFileCount,
+            maxUploadBytes = MaxFileBytes
+        };
+    }
+
+    private async Task<(long Bytes, int Count)> MeasureStorageAsync()
+    {
+        var uploadsRoot = Path.Combine(_env.ContentRootPath, "Uploads");
+        long bytes = 0;
+        var count = 0;
+
+        if (Directory.Exists(uploadsRoot))
+        {
+            foreach (var file in Directory.EnumerateFiles(uploadsRoot, "*", SearchOption.AllDirectories))
+            {
+                count++;
+                try
+                {
+                    bytes += new FileInfo(file).Length;
+                }
+                catch
+                {
+                    // skip
+                }
+            }
+        }
+
+        await Task.CompletedTask;
+        return (bytes, count);
+    }
+
+    public async Task<DocumentListResponse> UploadToFolderAsync(IFormFile file, string folderPath, Guid uploadedByUserId)
+    {
+        if (file == null || file.Length == 0)
+            throw new InvalidOperationException("No file uploaded.");
+
+        if (file.Length > MaxFileBytes)
+            throw new InvalidOperationException($"File exceeds the {MaxFileBytes / (1024 * 1024)} MB upload limit.");
+
+        var (used, _) = await MeasureStorageAsync();
+        if (used + file.Length > MaxStorageBytes)
+            throw new InvalidOperationException("Storage limit reached (32 GB). Delete files or contact support.");
+
+        var dbFiles = await _context.Submissions.CountAsync(s => !s.IsDeleted && s.StoredRelativePath != null);
+        if (dbFiles >= MaxFileCount)
+            throw new InvalidOperationException("Maximum file count reached.");
+
+        folderPath = SanitizeFolderPath(folderPath);
+        await EnsureFolderRegisteredAsync(folderPath);
+
+        var department = await _context.Departments.Where(d => !d.IsDeleted).OrderBy(d => d.Name).FirstOrDefaultAsync()
+            ?? throw new InvalidOperationException("No department configured. Add at least one department in the database.");
+
+        var activity = await _context.AccreditationActivities.Where(a => !a.IsDeleted)
+            .OrderByDescending(a => a.Year)
+            .FirstOrDefaultAsync()
+            ?? throw new InvalidOperationException("No accreditation activity found.");
+
+        var requiredDoc = await _context.RequiredDocuments
+            .Where(d => d.AccreditationActivityId == activity.Id)
+            .OrderBy(d => d.Title)
+            .FirstOrDefaultAsync()
+            ?? throw new InvalidOperationException("No required document template found.");
+
+        var safeName = $"{Guid.NewGuid():N}_{Path.GetFileName(file.FileName)}";
+        var folderPhysical = Path.Combine(_env.ContentRootPath, "Uploads", "documents", folderPath.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(folderPhysical);
+
+        var fullPath = Path.Combine(folderPhysical, safeName);
+        await using (var stream = new FileStream(fullPath, FileMode.Create))
+            await file.CopyToAsync(stream);
+
+        var relativePath = Path.Combine("documents", folderPath.Replace('/', Path.DirectorySeparatorChar), safeName)
+            .Replace('\\', '/');
+
+        return await SaveSubmissionAsync(
+            activity.Id,
+            requiredDoc.Id,
+            department.Id,
+            uploadedByUserId,
+            file.FileName,
+            googleDriveLink: string.Empty,
+            folderPath,
+            relativePath);
+    }
+
+    public async Task CreateFolderAsync(string name, string? parentPath)
+    {
+        var path = string.IsNullOrWhiteSpace(parentPath)
+            ? SanitizeFolderPath(name)
+            : SanitizeFolderPath($"{parentPath.Trim().Trim('/')}/{name.Trim()}");
+
+        await EnsureFolderRegisteredAsync(path);
+
+        var physical = Path.Combine(_env.ContentRootPath, "Uploads", "documents", path.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(physical);
+    }
+
+    public async Task RenameFolderAsync(string oldPath, string newPath)
+    {
+        oldPath = SanitizeFolderPath(oldPath);
+        newPath = SanitizeFolderPath(newPath);
+
+        var oldPhysical = Path.Combine(_env.ContentRootPath, "Uploads", "documents", oldPath.Replace('/', Path.DirectorySeparatorChar));
+        var newPhysical = Path.Combine(_env.ContentRootPath, "Uploads", "documents", newPath.Replace('/', Path.DirectorySeparatorChar));
+
+        if (Directory.Exists(oldPhysical))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(newPhysical)!);
+            if (Directory.Exists(newPhysical))
+                throw new InvalidOperationException("A folder with that name already exists.");
+            Directory.Move(oldPhysical, newPhysical);
+        }
+
+        var submissions = await _context.Submissions
+            .Where(s => !s.IsDeleted && s.AutoFolderPath == oldPath)
+            .ToListAsync();
+
+        foreach (var s in submissions)
+        {
+            s.AutoFolderPath = newPath;
+            if (s.StoredRelativePath != null && s.StoredRelativePath.Contains(oldPath))
+                s.StoredRelativePath = s.StoredRelativePath.Replace(oldPath, newPath);
+            s.UpdatedAt = DateTime.UtcNow;
+        }
+
+        var folderRow = await _context.DocumentLibraryFolders
+            .FirstOrDefaultAsync(f => f.Path == oldPath && !f.IsDeleted);
+        if (folderRow != null)
+            folderRow.Path = newPath;
+
+        await EnsureFolderRegisteredAsync(newPath);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<DocumentFolderResponse>> GetLibraryFoldersAsync()
+    {
+        await EnsureFolderRegisteredAsync("General");
+
+        var registered = await _context.DocumentLibraryFolders
+            .Where(f => !f.IsDeleted)
+            .Select(f => f.Path)
+            .ToListAsync();
+
+        var fromFiles = await _context.Submissions
+            .Where(s => !s.IsDeleted)
+            .Select(s => s.AutoFolderPath ?? "General")
+            .Distinct()
+            .ToListAsync();
+
+        var allPaths = registered.Union(fromFiles).Distinct().OrderBy(p => p).ToList();
+        var docs = await GetAllAsync();
+
+        return allPaths.Select(path => new DocumentFolderResponse
+        {
+            FolderPath = path,
+            FileCount = docs.Count(d => d.AutoFolderPath == path),
+            Files = docs.Where(d => d.AutoFolderPath == path).ToList()
+        }).ToList();
+    }
+
+    private async Task EnsureFolderRegisteredAsync(string path)
+    {
+        path = SanitizeFolderPath(path);
+        var exists = await _context.DocumentLibraryFolders.AnyAsync(f => f.Path == path && !f.IsDeleted);
+        if (!exists)
+        {
+            _context.DocumentLibraryFolders.Add(new DocumentLibraryFolder { Path = path });
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    private static string SanitizeFolderPath(string path)
+    {
+        path = path.Replace('\\', '/').Trim().Trim('/');
+        if (string.IsNullOrWhiteSpace(path))
+            return "General";
+
+        var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(p => string.Join("_", p.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries)))
+            .Where(p => !string.IsNullOrWhiteSpace(p));
+
+        var joined = string.Join("/", parts);
+        return string.IsNullOrWhiteSpace(joined) ? "General" : joined;
     }
 }
