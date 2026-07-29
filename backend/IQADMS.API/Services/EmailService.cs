@@ -481,11 +481,22 @@ If you did not request a reset, contact your administrator.
         DateOnly? dueDate,
         string taskLink)
     {
-        if (!IsSmtpConfigured(out _))
+        if (!IsSmtpConfigured(out var configError))
+        {
+            _logger.LogWarning(
+                "Task assigned email not sent to {Email}: {Reason}",
+                assigneeEmail,
+                configError);
             return;
+        }
 
         if (string.IsNullOrWhiteSpace(assigneeEmail))
+        {
+            _logger.LogWarning("Task assigned email skipped: assignee has no email address.");
             return;
+        }
+
+        var to = assigneeEmail.Trim();
 
         var dueLine = dueDate.HasValue ? dueDate.Value.ToString("yyyy-MM-dd") : "Not set";
         var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "—" : projectTitle.Trim();
@@ -528,15 +539,16 @@ IQADMS
             var from = RequireFromAddress(smtp);
             await SendAsync(
                 from,
-                assigneeEmail.Trim(),
+                to,
                 "IQADMS — New task assigned",
                 body,
                 htmlBody,
                 GetFromDisplayName());
+            _logger.LogInformation("Task assigned email sent to {Email} for task {TaskTitle}", to, taskTitle);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Task assigned email failed for {Email}", assigneeEmail);
+            _logger.LogWarning(ex, "Task assigned email failed for {Email}", to);
         }
     }
 
@@ -549,11 +561,22 @@ IQADMS
         string? projectTitle,
         string taskLink)
     {
-        if (!IsSmtpConfigured(out _))
+        if (!IsSmtpConfigured(out var configError))
+        {
+            _logger.LogWarning(
+                "Task submitted email not sent to {Email}: {Reason}",
+                adminEmail,
+                configError);
             return;
+        }
 
         if (string.IsNullOrWhiteSpace(adminEmail))
+        {
+            _logger.LogWarning("Task submitted email skipped: admin has no email address.");
             return;
+        }
+
+        var to = adminEmail.Trim();
 
         var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "—" : projectTitle.Trim();
 
@@ -587,15 +610,16 @@ IQADMS
             var from = RequireFromAddress(smtp);
             await SendAsync(
                 from,
-                adminEmail.Trim(),
+                to,
                 "IQADMS — Task submitted for review",
                 body,
                 htmlBody,
                 GetFromDisplayName());
+            _logger.LogInformation("Task submitted email sent to {Email} for task {TaskTitle}", to, taskTitle);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Task submitted email failed for {Email}", adminEmail);
+            _logger.LogWarning(ex, "Task submitted email failed for {Email}", to);
         }
     }
 

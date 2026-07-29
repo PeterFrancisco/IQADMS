@@ -388,6 +388,43 @@ public class AdminController : ControllerBase
         return Ok(new { message = "Test email sent.", inviteEmailSent = true });
     }
 
+    // POST: api/Admin/test-task-assigned-email?to=you@outlook.com
+    [HttpPost("test-task-assigned-email")]
+    public async Task<IActionResult> TestTaskAssignedEmail([FromQuery] string? to = null)
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        var smtp = _config.GetSection("SmtpSettings");
+        var recipient = (to ?? smtp["AdminEmail"])?.Trim();
+        if (string.IsNullOrWhiteSpace(recipient))
+            return BadRequest(new { message = "Pass ?to=your-outlook-address or set SmtpSettings:AdminEmail." });
+
+        var me = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == GetCurrentUserId());
+        var actorName = me == null
+            ? "IQADMS Admin"
+            : EmailService.FormatPersonName(me.DisplayName, me.Username, me.Email);
+
+        var greeting = EmailService.DeriveGreetingNameFromEmail(recipient) ?? "there";
+        var link = _emailService.BuildTaskLink(Guid.Empty, null);
+
+        await _emailService.TrySendTaskAssignedEmailAsync(
+            recipient,
+            greeting,
+            actorName,
+            "Sample task (SMTP test)",
+            "If you received this in Outlook, task assignment emails are working.",
+            "PQAD test project",
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7)),
+            link);
+
+        return Ok(new
+        {
+            message = $"Task assignment sample sent to {recipient}. Check inbox and Junk/Other in Outlook.",
+            recipient
+        });
+    }
+
     // POST: api/Admin/test-registration-invite?to=optional@email.com
     [HttpPost("test-registration-invite")]
     public async Task<IActionResult> TestRegistrationInvite([FromQuery] string? to = null)
