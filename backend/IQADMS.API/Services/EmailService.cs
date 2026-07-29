@@ -1,6 +1,7 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
+using IQADMS.API.Models;
 
 namespace IQADMS.API.Services;
 
