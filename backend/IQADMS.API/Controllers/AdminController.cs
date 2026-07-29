@@ -8,6 +8,7 @@ using IQADMS.API.DTOs.Admin;
 using IQADMS.API.Services;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using Microsoft.Extensions.Configuration;
 
 namespace IQADMS.API.Controllers;
 
@@ -18,11 +19,16 @@ public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly EmailService _emailService;
+    private readonly IConfiguration _config;
 
-    public AdminController(ApplicationDbContext context, EmailService emailService)
+    public AdminController(
+        ApplicationDbContext context,
+        EmailService emailService,
+        IConfiguration config)
     {
         _context = context;
         _emailService = emailService;
+        _config = config;
     }
 
     // GET: api/Admin/account-requests
