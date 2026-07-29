@@ -48,7 +48,6 @@ Please review this request in the admin panel.";
 
     public async Task<(bool Sent, string? Error)> TrySendRegistrationInviteAsync(
         string recipientEmail,
-        string? invitedByDisplayName = null,
         string? recipientDisplayName = null)
     {
         if (!IsSmtpConfigured(out var configError))
@@ -63,14 +62,12 @@ Please review this request in the admin panel.";
 
         var registerUrl = GetRegisterUrl();
         var siteUrl = GetPublicSiteUrl();
-        var greetingPlain = string.IsNullOrWhiteSpace(recipientDisplayName)
-            ? "Hello,"
-            : $"Hello {recipientDisplayName.Trim()},";
-        var greetingHtml = string.IsNullOrWhiteSpace(recipientDisplayName)
-            ? "Hello,"
-            : $"Hello {System.Net.WebUtility.HtmlEncode(recipientDisplayName.Trim())},";
+        var greetingName = ResolveGreetingName(recipientDisplayName, to);
+        var greetingPlain = FormatGreetingPlain(greetingName);
+        var greetingHtml = FormatGreetingHtml(greetingName);
 
-        var invitedLine = BuildInvitedLine(invitedByDisplayName);
+        const string invitedLine =
+            "An IQADMS administrator has invited you to create your account and join IQADMS.";
 
         var fromName = GetFromDisplayName();
         var body = $"""
@@ -78,7 +75,7 @@ Please review this request in the admin panel.";
 
 {invitedLine}
 
-Official IQADMS website:
+IQADMS website:
   {siteUrl}
 
 Create your account (registration page):
@@ -95,7 +92,7 @@ How to register:
 
 If you did not expect this invitation, you can safely ignore this email.
 
-— IQADMS · PQAD · UPSHD Molino
+— IQADMS
 """;
 
         var htmlBody = BuildRegistrationInviteHtml(
@@ -109,7 +106,7 @@ If you did not expect this invitation, you can safely ignore this email.
         {
             var smtp = _config.GetSection("SmtpSettings");
             var from = RequireFromAddress(smtp);
-            await SendAsync(from, to, "Register on IQADMS — PQAD Molino", body, htmlBody, fromName);
+            await SendAsync(from, to, "Register on IQADMS", body, htmlBody, fromName);
             _logger.LogInformation("Registration invite sent to {Email}", to);
             return (true, null);
         }
@@ -260,25 +257,63 @@ If you did not request a reset, contact your administrator.
     private static string RequireFromAddress(IConfigurationSection smtp) =>
         smtp["From"]?.Trim() ?? throw new InvalidOperationException("SMTP From is not configured.");
 
-    private string BuildInvitedLine(string? invitedByDisplayName)
+    /// <summary>Best-effort greeting from the email local part (e.g. maria.santos@… → Maria Santos).</summary>
+    public static string? DeriveGreetingNameFromEmail(string email)
     {
-        var orgLine =
-            "You have been invited to join IQADMS for the Planning and Quality Assurance Department (PQAD), University of Perpetual Help System DALTA — Molino Campus.";
+        var at = email.IndexOf('@');
+        if (at <= 0)
+            return null;
 
-        if (string.IsNullOrWhiteSpace(invitedByDisplayName))
-            return orgLine;
+        var local = email[..at].Trim();
+        if (local.Length == 0)
+            return null;
 
-        var label = invitedByDisplayName.Trim();
-        if (label.Contains('@', StringComparison.Ordinal))
-            return orgLine;
+        var plus = local.IndexOf('+');
+        if (plus > 0)
+            local = local[..plus];
 
-        return $"{label} (PQAD) has invited you to join IQADMS on the official UPSHD Molino website.";
+        var parts = local.Split(new[] { '.', '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return null;
+
+        var words = new List<string>();
+        foreach (var part in parts)
+        {
+            if (part.All(char.IsDigit))
+                continue;
+
+            if (part.Length == 1)
+            {
+                words.Add(part.ToUpperInvariant());
+                continue;
+            }
+
+            words.Add(char.ToUpperInvariant(part[0]) + part[1..].ToLowerInvariant());
+        }
+
+        return words.Count == 0 ? null : string.Join(' ', words);
     }
+
+    private static string? ResolveGreetingName(string? explicitName, string email)
+    {
+        if (!string.IsNullOrWhiteSpace(explicitName))
+            return explicitName.Trim();
+
+        return DeriveGreetingNameFromEmail(email);
+    }
+
+    private static string FormatGreetingPlain(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "Hello," : $"Hello {name.Trim()},";
+
+    private static string FormatGreetingHtml(string? name) =>
+        string.IsNullOrWhiteSpace(name)
+            ? "Hello,"
+            : $"Hello {System.Net.WebUtility.HtmlEncode(name.Trim())},";
 
     private string GetFromDisplayName()
     {
         var name = _config["SmtpSettings:FromName"]?.Trim();
-        return string.IsNullOrWhiteSpace(name) ? "IQADMS · PQAD · UPSHD Molino" : name;
+        return string.IsNullOrWhiteSpace(name) ? "IQADMS" : name;
     }
 
     private static string BuildRegistrationInviteHtml(
@@ -301,7 +336,7 @@ If you did not request a reset, contact your administrator.
             <td style="background:#7a0019;padding:20px 24px;text-align:center;">
               <img src="{logoUrl}" alt="IQADMS" width="56" height="56" style="display:block;margin:0 auto 12px;" />
               <div style="color:#ffffff;font-size:18px;font-weight:700;">IQADMS</div>
-              <div style="color:#fecaca;font-size:12px;margin-top:4px;">PQAD · UPSHD Molino Campus</div>
+              <div style="color:#fecaca;font-size:12px;margin-top:4px;">Planning &amp; Quality Assurance Department</div>
             </td>
           </tr>
           <tr>
@@ -312,7 +347,7 @@ If you did not request a reset, contact your administrator.
               <p style="margin:0 0 20px;">
                 <a href="{registerUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Register on IQADMS</a>
               </p>
-              <p style="margin:0 0 8px;font-size:13px;color:#64748b;">Official website: <a href="{siteUrl}">{System.Net.WebUtility.HtmlEncode(siteUrl)}</a></p>
+              <p style="margin:0 0 8px;font-size:13px;color:#64748b;">IQADMS website: <a href="{siteUrl}">{System.Net.WebUtility.HtmlEncode(siteUrl)}</a></p>
               <p style="margin:0 0 16px;font-size:13px;">Use this email when you register: <strong>{System.Net.WebUtility.HtmlEncode(recipientEmail)}</strong></p>
               <p style="margin:0;font-size:12px;color:#94a3b8;">If you did not expect this invitation, you can ignore this email.</p>
             </td>
@@ -417,6 +452,172 @@ If you did not request a reset, contact your administrator.
         publicUrl = GetPublicSiteUrl(),
         registerUrl = GetRegisterUrl()
     };
+
+    public static string FormatPersonName(string? displayName, string? username, string email)
+    {
+        if (!string.IsNullOrWhiteSpace(displayName))
+            return displayName.Trim();
+        if (!string.IsNullOrWhiteSpace(username))
+            return username.Trim();
+        return email.Trim();
+    }
+
+    public string BuildTaskLink(Guid taskId, Guid? projectId)
+    {
+        var baseUrl = GetPublicSiteUrl().TrimEnd('/');
+        var query = $"task={taskId}";
+        if (projectId.HasValue)
+            query += $"&project={projectId.Value}";
+        return $"{baseUrl}/my-tasks?{query}";
+    }
+
+    public async Task TrySendTaskAssignedEmailAsync(
+        string assigneeEmail,
+        string assigneeGreetingName,
+        string actorName,
+        string taskTitle,
+        string? taskDescription,
+        string? projectTitle,
+        DateOnly? dueDate,
+        string taskLink)
+    {
+        if (!IsSmtpConfigured(out _))
+            return;
+
+        if (string.IsNullOrWhiteSpace(assigneeEmail))
+            return;
+
+        var dueLine = dueDate.HasValue ? dueDate.Value.ToString("yyyy-MM-dd") : "Not set";
+        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "—" : projectTitle.Trim();
+        var details = string.IsNullOrWhiteSpace(taskDescription)
+            ? "(No additional details.)"
+            : taskDescription.Trim();
+
+        var body = $"""
+Hello {assigneeGreetingName},
+
+{actorName} has assigned a task to you. Please review and comply.
+
+Task: {taskTitle}
+Project: {projectLine}
+Due date: {dueLine}
+
+Details:
+{details}
+
+Open task: {taskLink}
+
+Regards,
+{actorName}
+IQADMS
+""";
+
+        var htmlBody = BuildTaskActionHtml(
+            $"Hello {System.Net.WebUtility.HtmlEncode(assigneeGreetingName)},",
+            $"<p><strong>{System.Net.WebUtility.HtmlEncode(actorName)}</strong> has assigned a task to you. Please review and comply.</p>" +
+            $"<p><strong>Task:</strong> {System.Net.WebUtility.HtmlEncode(taskTitle)}<br />" +
+            $"<strong>Project:</strong> {System.Net.WebUtility.HtmlEncode(projectLine)}<br />" +
+            $"<strong>Due date:</strong> {System.Net.WebUtility.HtmlEncode(dueLine)}</p>" +
+            $"<p><strong>Details:</strong><br />{System.Net.WebUtility.HtmlEncode(details).Replace("\n", "<br />")}</p>" +
+            $"""<p><a href="{taskLink}" style="display:inline-block;background:#7a0019;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">Open task</a></p>""",
+            actorName);
+
+        try
+        {
+            var smtp = _config.GetSection("SmtpSettings");
+            var from = RequireFromAddress(smtp);
+            await SendAsync(
+                from,
+                assigneeEmail.Trim(),
+                "IQADMS — New task assigned",
+                body,
+                htmlBody,
+                GetFromDisplayName());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Task assigned email failed for {Email}", assigneeEmail);
+        }
+    }
+
+    public async Task TrySendTaskSubmittedEmailAsync(
+        string adminEmail,
+        string adminGreetingName,
+        string assigneeName,
+        string submitterName,
+        string taskTitle,
+        string? projectTitle,
+        string taskLink)
+    {
+        if (!IsSmtpConfigured(out _))
+            return;
+
+        if (string.IsNullOrWhiteSpace(adminEmail))
+            return;
+
+        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "—" : projectTitle.Trim();
+
+        var body = $"""
+Hello {adminGreetingName},
+
+The task "{taskTitle}" assigned to {assigneeName} has been submitted and is waiting for your review. Please check for revisions or approve the submission.
+
+Project: {projectLine}
+Submitted by: {submitterName}
+
+Review task: {taskLink}
+
+Regards,
+IQADMS
+""";
+
+        var htmlBody = BuildTaskActionHtml(
+            $"Hello {System.Net.WebUtility.HtmlEncode(adminGreetingName)},",
+            $"<p>The task <strong>{System.Net.WebUtility.HtmlEncode(taskTitle)}</strong> assigned to " +
+            $"<strong>{System.Net.WebUtility.HtmlEncode(assigneeName)}</strong> has been submitted and is waiting for your review. " +
+            "Please check for revisions or approve the submission.</p>" +
+            $"<p><strong>Project:</strong> {System.Net.WebUtility.HtmlEncode(projectLine)}<br />" +
+            $"<strong>Submitted by:</strong> {System.Net.WebUtility.HtmlEncode(submitterName)}</p>" +
+            $"""<p><a href="{taskLink}" style="display:inline-block;background:#7a0019;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">Review task</a></p>""",
+            null);
+
+        try
+        {
+            var smtp = _config.GetSection("SmtpSettings");
+            var from = RequireFromAddress(smtp);
+            await SendAsync(
+                from,
+                adminEmail.Trim(),
+                "IQADMS — Task submitted for review",
+                body,
+                htmlBody,
+                GetFromDisplayName());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Task submitted email failed for {Email}", adminEmail);
+        }
+    }
+
+    private static string BuildTaskActionHtml(string greetingHtml, string bodyHtml, string? regardsName)
+    {
+        var regards = string.IsNullOrWhiteSpace(regardsName)
+            ? "<p>Regards,<br />IQADMS</p>"
+            : $"<p>Regards,<br />{System.Net.WebUtility.HtmlEncode(regardsName)}<br />IQADMS</p>";
+        return $"""
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:16px;font-family:Segoe UI,system-ui,sans-serif;color:#334155;background:#f8fafc;">
+  <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;">
+    <div style="font-size:18px;font-weight:700;color:#7a0019;margin-bottom:12px;">IQADMS</div>
+    <p style="margin:0 0 12px;">{greetingHtml}</p>
+    {bodyHtml}
+    {regards}
+  </div>
+</body>
+</html>
+""";
+    }
 
     private static string NormalizeSmtpPassword(string? password) =>
         (password ?? string.Empty).Replace(" ", string.Empty).Trim();

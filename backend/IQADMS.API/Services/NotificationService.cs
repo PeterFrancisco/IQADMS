@@ -117,6 +117,7 @@ public class NotificationService
         string? body,
         string? linkPath,
         Guid? relatedTaskId = null,
+        Guid? relatedProjectId = null,
         string? dedupKey = null)
     {
         var adminIds = await _context.Users
@@ -126,7 +127,15 @@ public class NotificationService
 
         foreach (var adminId in adminIds)
         {
-            await NotifyAsync(adminId, category, title, body, linkPath, relatedTaskId, dedupKey: dedupKey);
+            await NotifyAsync(
+                adminId,
+                category,
+                title,
+                body,
+                linkPath,
+                relatedTaskId,
+                relatedProjectId,
+                dedupKey);
         }
     }
 

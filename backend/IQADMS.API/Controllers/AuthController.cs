@@ -153,8 +153,7 @@ public class AuthController : ControllerBase
             "Password reset requested",
             $"{user.DisplayName ?? user.Username} ({user.Email}) requested a password reset.",
             "/settings?tab=password-resets",
-            user.Id,
-            $"pwd-reset-{user.Id}-{DateTime.UtcNow:yyyyMMdd}");
+            dedupKey: $"pwd-reset-{user.Id}-{DateTime.UtcNow:yyyyMMdd}");
 
         return Ok(new
         {

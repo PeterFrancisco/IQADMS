@@ -18,12 +18,18 @@ public class TasksController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _env;
     private readonly NotificationService _notifications;
+    private readonly EmailService _email;
 
-    public TasksController(ApplicationDbContext context, IWebHostEnvironment env, NotificationService notifications)
+    public TasksController(
+        ApplicationDbContext context,
+        IWebHostEnvironment env,
+        NotificationService notifications,
+        EmailService email)
     {
         _context = context;
         _env = env;
         _notifications = notifications;
+        _email = email;
     }
 
     [HttpGet]
@@ -31,6 +37,9 @@ public class TasksController : ControllerBase
     {
         var userId = GetUserId();
         var isAdmin = await IsAdminAsync(userId);
+
+        if (isAdmin && !projectId.HasValue && !relatedDepartmentId.HasValue)
+            return Ok(new List<TaskResponse>());
 
         var query = _context.WorkspaceTasks
             .Where(t => !t.IsDeleted)
@@ -82,8 +91,10 @@ public class TasksController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Title))
             return BadRequest(new { message = "Task title is required." });
 
-        if (request.ProjectId.HasValue &&
-            !await _context.Projects.AnyAsync(p => p.Id == request.ProjectId && !p.IsDeleted))
+        if (!request.ProjectId.HasValue)
+            return BadRequest(new { message = "A project is required for every task. Open Tasks from a project or choose a project when creating." });
+
+        if (!await _context.Projects.AnyAsync(p => p.Id == request.ProjectId && !p.IsDeleted))
             return BadRequest(new { message = "Project not found." });
 
         if (request.RelatedDepartmentId.HasValue &&
@@ -124,6 +135,8 @@ public class TasksController : ControllerBase
                 task.Id,
                 task.ProjectId,
                 $"task-assigned-{task.Id}-{task.AssignedToUserId}");
+
+            await SendTaskAssignedEmailsAsync(task.Id, userId, task.AssignedToUserId.Value);
         }
 
         return Ok(await MapTaskById(task.Id));
@@ -261,6 +274,8 @@ public class TasksController : ControllerBase
                         task.Id,
                         task.ProjectId,
                         $"task-assigned-{task.Id}-{request.AssignedToUserId}");
+
+                    await SendTaskAssignedEmailsAsync(task.Id, userId, request.AssignedToUserId.Value);
                 }
             }
             else if (task.AssignedToUserId != null)
@@ -494,7 +509,10 @@ public class TasksController : ControllerBase
                 $"\"{task.Title}\" was submitted by the assignee.",
                 $"/my-tasks?task={task.Id}",
                 task.Id,
-                $"task-submitted-{task.Id}-{task.SubmittedAt:O}");
+                task.ProjectId,
+                dedupKey: $"task-submitted-{task.Id}-{task.SubmittedAt:O}");
+
+            await SendTaskSubmittedEmailsAsync(task.Id, userId);
         }
 
         return Ok(await MapTaskById(id));
@@ -715,7 +733,8 @@ public class TasksController : ControllerBase
                     $"\"{task.Title}\" moved to In Progress.",
                     $"/my-tasks?task={task.Id}",
                     task.Id,
-                    $"task-inprogress-{task.Id}-{DateTime.UtcNow:yyyyMMddHHmm}");
+                    task.ProjectId,
+                    dedupKey: $"task-inprogress-{task.Id}-{DateTime.UtcNow:yyyyMMddHHmm}");
             }
             return Ok(await MapTaskById(task.Id));
         }
@@ -747,7 +766,94 @@ public class TasksController : ControllerBase
                 "Task in progress",
                 $"\"{task.Title}\" is now In Progress.",
                 $"/my-tasks?task={task.Id}",
-                task.Id);
+                task.Id,
+                task.ProjectId);
+        }
+    }
+
+    private async Task SendTaskAssignedEmailsAsync(Guid taskId, Guid actorUserId, Guid assigneeUserId)
+    {
+        var task = await _context.WorkspaceTasks
+            .AsNoTracking()
+            .Include(t => t.Project)
+            .FirstOrDefaultAsync(t => t.Id == taskId && !t.IsDeleted);
+        if (task == null)
+            return;
+
+        var users = await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == actorUserId || u.Id == assigneeUserId)
+            .ToListAsync();
+        var actor = users.FirstOrDefault(u => u.Id == actorUserId);
+        var assignee = users.FirstOrDefault(u => u.Id == assigneeUserId);
+        if (actor == null || assignee == null || !assignee.IsActive)
+            return;
+
+        var actorName = EmailService.FormatPersonName(actor.DisplayName, actor.Username, actor.Email);
+        var assigneeGreeting = EmailService.FormatPersonName(assignee.DisplayName, assignee.Username, assignee.Email);
+        if (string.IsNullOrWhiteSpace(assigneeGreeting))
+            assigneeGreeting = EmailService.DeriveGreetingNameFromEmail(assignee.Email) ?? "there";
+
+        var link = _email.BuildTaskLink(task.Id, task.ProjectId);
+        await _email.TrySendTaskAssignedEmailAsync(
+            assignee.Email,
+            assigneeGreeting,
+            actorName,
+            task.Title,
+            task.Description,
+            task.Project?.Title,
+            task.DueDate,
+            link);
+    }
+
+    private async Task SendTaskSubmittedEmailsAsync(Guid taskId, Guid submitterUserId)
+    {
+        var task = await _context.WorkspaceTasks
+            .AsNoTracking()
+            .Include(t => t.Project)
+            .Include(t => t.AssignedToUser)
+            .FirstOrDefaultAsync(t => t.Id == taskId && !t.IsDeleted);
+        if (task == null)
+            return;
+
+        var submitter = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == submitterUserId);
+        var submitterName = submitter == null
+            ? "Assignee"
+            : EmailService.FormatPersonName(submitter.DisplayName, submitter.Username, submitter.Email);
+
+        var assigneeName = task.AssignedToUser == null
+            ? "the assignee"
+            : EmailService.FormatPersonName(
+                task.AssignedToUser.DisplayName,
+                task.AssignedToUser.Username,
+                task.AssignedToUser.Email);
+
+        var link = _email.BuildTaskLink(task.Id, task.ProjectId);
+
+        var adminIds = await _context.Users
+            .Where(u => u.IsAdmin && u.IsActive)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        var admins = await _context.Users
+            .AsNoTracking()
+            .Where(u => adminIds.Contains(u.Id))
+            .ToListAsync();
+
+        foreach (var admin in admins)
+        {
+            var adminGreeting = EmailService.FormatPersonName(admin.DisplayName, admin.Username, admin.Email);
+            if (string.IsNullOrWhiteSpace(adminGreeting))
+                adminGreeting = EmailService.DeriveGreetingNameFromEmail(admin.Email) ?? "there";
+
+            await _email.TrySendTaskSubmittedEmailAsync(
+                admin.Email,
+                adminGreeting,
+                assigneeName,
+                submitterName,
+                task.Title,
+                task.Project?.Title,
+                link);
         }
     }
 

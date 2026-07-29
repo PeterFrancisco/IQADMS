@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import TaskWorkspaceBoard from '../components/TaskWorkspaceBoard'
 import AppModal, { ConfirmDialog } from '../components/AppModal'
@@ -67,6 +67,7 @@ function isTaskAssignee(task, userId) {
 
 export default function DashboardPage() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const filterProjectId = searchParams.get('project') || ''
   const filterDepartmentId = searchParams.get('department') || ''
   const filterTaskId = searchParams.get('task') || ''
@@ -184,6 +185,10 @@ export default function DashboardPage() {
 
   const createTaskWithDetails = async () => {
     if (!createForm.title.trim() || saving) return
+    if (!createForm.projectId?.trim()) {
+      await appDialog.alert('Choose a project for this task. Tasks are tracked per project.')
+      return
+    }
 
     try {
       setSaving(true)
@@ -555,6 +560,15 @@ export default function DashboardPage() {
   const filterProject = projects.find(p => p.id === filterProjectId)
   const filterDepartment = departments.find(d => d.id === filterDepartmentId)
 
+  const progressDoneCount = tasks.filter(
+    t => t.status === 'Submitted' || t.status === 'Completed' || t.status === 'Done'
+  ).length
+  const progressTotal = tasks.length
+  const progressPercent =
+    progressTotal === 0 ? 0 : Math.round((progressDoneCount / progressTotal) * 100)
+
+  const adminNeedsProject = isAdmin && !filterProjectId
+
   return (
     <DashboardLayout>
       <div>
@@ -577,6 +591,51 @@ export default function DashboardPage() {
         </p>
         </header>
 
+        {adminNeedsProject && (
+          <div
+            style={{
+              marginBottom: '1.25rem',
+              padding: '1rem 1.25rem',
+              borderRadius: 12,
+              border: '1px solid #fecaca',
+              background: '#fff5f5',
+              maxWidth: 640
+            }}
+          >
+            <p style={{ margin: '0 0 0.75rem', color: '#7a0019', fontWeight: 600 }}>
+              Select a project to view and manage tasks
+            </p>
+            <p style={{ margin: '0 0 0.75rem', color: '#475569', fontSize: '0.95rem' }}>
+              Each task board belongs to one project so PQAD can track progress (for example 5/10 tasks submitted or
+              completed = 50%).
+            </p>
+            {projects.length === 0 ? (
+              <Link to="/projects" style={{ color: '#7a0019', fontWeight: 600 }}>
+                Create a project first →
+              </Link>
+            ) : (
+              <select
+                style={{ width: '100%', maxWidth: 420, padding: '0.5rem', borderRadius: 8, border: '1px solid #cbd5e1' }}
+                defaultValue=""
+                onChange={e => {
+                  if (e.target.value) navigate(`/my-tasks?project=${e.target.value}`)
+                }}
+              >
+                <option value="" disabled>
+                  Choose project…
+                </option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
+        {!adminNeedsProject && (
+        <>
         {!isAdmin && (
           <p style={{ color: '#475569', marginBottom: '1rem', fontSize: '0.95rem', maxWidth: 720 }}>
             Open a task by clicking its <strong>title</strong>. Use <strong>Status</strong> to move from To Do → In Progress (you cannot move back to To Do). When In Progress, use <strong>Submit</strong> to send your Google Drive link.
@@ -586,6 +645,13 @@ export default function DashboardPage() {
         <div className="tasks-stats-grid">
           {isAdmin && (
             <MiniStat label="Total Tasks" value={tasks.length} color="#9e1b32" />
+          )}
+          {filterProjectId && progressTotal > 0 && (
+            <MiniStat
+              label="Work progress"
+              value={`${progressDoneCount}/${progressTotal} (${progressPercent}%)`}
+              color="#0d9488"
+            />
           )}
           <MiniStat label="To Do" value={tasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length} color="#7a0019" />
           <MiniStat label="In Progress" value={tasks.filter(t => t.status === 'In Progress').length} color="#f59e0b" />
@@ -609,7 +675,7 @@ export default function DashboardPage() {
           onToggleWrap={isAdmin ? toggleWrapColumn : undefined}
           onDeleteColumn={isAdmin ? deleteColumn : undefined}
           onAddColumnRight={isAdmin ? openAddColumn : undefined}
-          onCreateTask={isAdmin ? () => setShowCreateModal(true) : undefined}
+          onCreateTask={isAdmin && filterProjectId ? () => setShowCreateModal(true) : undefined}
           onOpenTask={openTaskDetail}
           onAssign={isAdmin ? assignMember : undefined}
           onStatus={updateStatus}
@@ -621,6 +687,8 @@ export default function DashboardPage() {
           currentUserId={currentUserId}
           onDeleteTask={isAdmin ? deleteTask : undefined}
         />
+        </>
+        )}
 
         <ConfirmDialog
           open={Boolean(deleteColumnPrompt)}
@@ -1013,13 +1081,14 @@ export default function DashboardPage() {
             onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
           />
 
-          <label style={labelStyle}>Project</label>
+          <label style={labelStyle}>Project (required)</label>
           <select
+            required
             style={{ ...selectStyle, marginBottom: '1rem' }}
             value={createForm.projectId}
             onChange={e => setCreateForm({ ...createForm, projectId: e.target.value })}
           >
-            <option value="">None</option>
+            <option value="">Select project…</option>
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.title}</option>
             ))}

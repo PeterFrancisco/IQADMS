@@ -168,6 +168,12 @@ export default function ProjectsPage() {
                     <Badge label={`Priority: ${p.priority}`} muted />
                     {p.dueDate && <Badge label={`Due ${p.dueDate}`} muted />}
                     <Badge label={`${p.openTaskCount} open / ${p.taskCount} tasks`} muted />
+                    {p.taskCount > 0 && (
+                      <Badge
+                        label={`Progress ${p.taskProgressDone ?? 0}/${p.taskCount} (${p.taskProgressPercent ?? 0}%)`}
+                        muted
+                      />
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>

@@ -401,11 +401,10 @@ public class AdminController : ControllerBase
         if (string.IsNullOrWhiteSpace(recipient))
             return BadRequest(new { message = "Pass ?to=email or set SmtpSettings:AdminEmail." });
 
-        var invitedBy = await GetCurrentUserInviteLabelAsync();
+        var recipientName = await ResolveRecipientNameForInviteAsync(recipient);
         var (sent, error) = await _emailService.TrySendRegistrationInviteAsync(
             recipient,
-            invitedBy,
-            "Sample invite");
+            recipientName);
 
         if (!sent)
             return BadRequest(new { message = error, inviteEmailSent = false, inviteEmailError = error });
@@ -548,19 +547,19 @@ public class AdminController : ControllerBase
         return user != null && user.IsAdmin;
     }
 
-    private async Task<string?> GetCurrentUserInviteLabelAsync()
+    private async Task<string?> ResolveRecipientNameForInviteAsync(string email, string? explicitName = null)
     {
-        var user = await _context.Users.FindAsync(GetCurrentUserId());
-        if (user == null)
-            return null;
+        if (!string.IsNullOrWhiteSpace(explicitName))
+            return explicitName.Trim();
 
-        if (!string.IsNullOrWhiteSpace(user.DisplayName))
+        var normalized = email.Trim().ToLowerInvariant();
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => !u.IsDeleted && u.Email.ToLower() == normalized);
+        if (!string.IsNullOrWhiteSpace(user?.DisplayName))
             return user.DisplayName.Trim();
 
-        if (!string.IsNullOrWhiteSpace(user.Username))
-            return user.Username.Trim();
-
-        return null;
+        return EmailService.DeriveGreetingNameFromEmail(email);
     }
 
     private async Task<(bool Sent, string? Error)> SendInviteForAllowedUserAsync(
@@ -570,11 +569,10 @@ public class AdminController : ControllerBase
         if (allowed.IsRegistered)
             return (false, "This email is already registered.");
 
-        var invitedBy = await GetCurrentUserInviteLabelAsync();
+        var recipientName = await ResolveRecipientNameForInviteAsync(allowed.Email, recipientDisplayName);
         var (sent, error) = await _emailService.TrySendRegistrationInviteAsync(
             allowed.Email,
-            invitedBy,
-            recipientDisplayName);
+            recipientName);
 
         allowed.LastInviteSentAt = DateTime.UtcNow;
         allowed.LastInviteError = sent ? null : error;

@@ -37,7 +37,9 @@ public class ProjectsController : ControllerBase
             {
                 ProjectId = g.Key,
                 Total = g.Count(),
-                Open = g.Count(t => t.Status != "Completed" && t.Status != "Cancelled" && t.Status != "Done")
+                Open = g.Count(t => t.Status != "Completed" && t.Status != "Cancelled" && t.Status != "Done"),
+                ProgressDone = g.Count(t =>
+                    t.Status == "Submitted" || t.Status == "Completed" || t.Status == "Done")
             })
             .ToListAsync();
 
@@ -46,7 +48,11 @@ public class ProjectsController : ControllerBase
         var result = projects.Select(p =>
         {
             statsMap.TryGetValue(p.Id, out var stats);
-            return MapProject(p, stats?.Total ?? 0, stats?.Open ?? 0);
+            return MapProject(
+                p,
+                stats?.Total ?? 0,
+                stats?.Open ?? 0,
+                stats?.ProgressDone ?? 0);
         });
 
         return Ok(result);
@@ -67,8 +73,11 @@ public class ProjectsController : ControllerBase
         var open = await _context.WorkspaceTasks.CountAsync(t =>
             !t.IsDeleted && t.ProjectId == id &&
             t.Status != "Completed" && t.Status != "Cancelled" && t.Status != "Done");
+        var progressDone = await _context.WorkspaceTasks.CountAsync(t =>
+            !t.IsDeleted && t.ProjectId == id &&
+            (t.Status == "Submitted" || t.Status == "Completed" || t.Status == "Done"));
 
-        return Ok(MapProject(project, total, open));
+        return Ok(MapProject(project, total, open, progressDone));
     }
 
     [HttpPost]
@@ -95,7 +104,7 @@ public class ProjectsController : ControllerBase
         await _context.Entry(project).Collection(p => p.Members).Query().Include(m => m.User).LoadAsync();
         await _context.Entry(project).Collection(p => p.Departments).Query().Include(d => d.Department).LoadAsync();
 
-        return Ok(MapProject(project, 0, 0));
+        return Ok(MapProject(project, 0, 0, 0));
     }
 
     [HttpPut("{id}")]
@@ -134,7 +143,11 @@ public class ProjectsController : ControllerBase
             !t.IsDeleted && t.ProjectId == id &&
             t.Status != "Completed" && t.Status != "Cancelled" && t.Status != "Done");
 
-        return Ok(MapProject(project, total, open));
+        var progressDone = await _context.WorkspaceTasks.CountAsync(t =>
+            !t.IsDeleted && t.ProjectId == id &&
+            (t.Status == "Submitted" || t.Status == "Completed" || t.Status == "Done"));
+
+        return Ok(MapProject(project, total, open, progressDone));
     }
 
     [HttpDelete("{id}")]
@@ -178,8 +191,12 @@ public class ProjectsController : ControllerBase
         await _context.SaveChangesAsync();
     }
 
-    private static ProjectResponse MapProject(Project p, int taskCount, int openTaskCount)
+    private static ProjectResponse MapProject(Project p, int taskCount, int openTaskCount, int progressDone)
     {
+        var progressPercent = taskCount == 0
+            ? 0
+            : (int)Math.Round(100.0 * progressDone / taskCount, MidpointRounding.AwayFromZero);
+
         return new ProjectResponse
         {
             Id = p.Id,
@@ -191,6 +208,8 @@ public class ProjectsController : ControllerBase
             Priority = p.Priority,
             TaskCount = taskCount,
             OpenTaskCount = openTaskCount,
+            TaskProgressDone = progressDone,
+            TaskProgressPercent = progressPercent,
             CreatedAt = p.CreatedAt,
             Members = p.Members.Select(m => new ProjectMemberDto
             {

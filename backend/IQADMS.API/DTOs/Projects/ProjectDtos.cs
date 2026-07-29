@@ -25,6 +25,9 @@ public class ProjectResponse
     public string Priority { get; set; } = string.Empty;
     public int TaskCount { get; set; }
     public int OpenTaskCount { get; set; }
+    /// <summary>Tasks in Submitted, Completed, or Done (monitoring progress).</summary>
+    public int TaskProgressDone { get; set; }
+    public int TaskProgressPercent { get; set; }
     public List<ProjectMemberDto> Members { get; set; } = new();
     public List<ProjectDepartmentDto> Departments { get; set; } = new();
     public DateTime CreatedAt { get; set; }
