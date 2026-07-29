@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import MonitoringPage from './pages/MonitoringPage'
+import AnalyticsPage from './pages/AnalyticsPage'
 import DashboardPage from './pages/DashboardPage'
 import DashboardHubPage from './pages/DashboardHubPage'
 import LoginPage from './pages/LoginPage'
@@ -17,10 +17,8 @@ import AdminManageUsersPage from './pages/AdminManageUsersPage'
 import ProjectsPage from './pages/ProjectsPage'
 import UpcomingDeadlinesPage from './pages/UpcomingDeadlinesPage'
 import RecentActivitiesPage from './pages/RecentActivitiesPage'
-import StatisticsPage from './pages/StatisticsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import CalendarPage from './pages/CalendarPage'
-import ReportsPage from './pages/ReportsPage'
 import FeedbackPage from './pages/FeedbackPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
 import AdminRoute from './components/AdminRoute'
@@ -101,13 +99,17 @@ export default function App() {
       />
 
       <Route
-        path="/statistics"
+        path="/analytics"
         element={
           <ProtectedRoute>
-            <StatisticsPage />
+            <AnalyticsPage />
           </ProtectedRoute>
         }
       />
+
+      <Route path="/statistics" element={<Navigate to="/analytics" replace />} />
+      <Route path="/reports" element={<Navigate to="/analytics" replace />} />
+      <Route path="/monitoring" element={<Navigate to="/analytics" replace />} />
 
       <Route
         path="/calendar"
@@ -123,15 +125,6 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AnnouncementsPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute>
-            <ReportsPage />
           </ProtectedRoute>
         }
       />
@@ -155,15 +148,6 @@ export default function App() {
           <ProtectedRoute>
             <FeedbackPage />
           </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/monitoring"
-        element={
-          <AdminRoute>
-            <MonitoringPage />
-          </AdminRoute>
         }
       />
 

@@ -59,12 +59,11 @@ export default function DashboardLayout({ children }) {
           <>
             <NavItem label="Projects" to="/projects" icon="projects" onNavigate={closeMobile} />
             <NavItem label="Documents" to="/documents" icon="documents" onNavigate={closeMobile} />
-            <NavItem label="Monitoring" to="/monitoring" icon="monitoring" onNavigate={closeMobile} />
           </>
         )}
         <NavItem label="Calendar" to="/calendar" icon="calendar" onNavigate={closeMobile} />
         <NavItem label="Announcements" to="/announcements" icon="announcements" onNavigate={closeMobile} />
-        <NavItem label="Reports" to="/reports" icon="reports" onNavigate={closeMobile} />
+        <NavItem label="Analytics" to="/analytics" icon="analytics" onNavigate={closeMobile} />
 
         <div className="sidebar-divider" />
 

@@ -36,10 +36,10 @@ const TILES = [
     desc: 'Assignments, reminders, and account alerts'
   },
   {
-    to: '/statistics',
-    icon: 'statistics',
-    title: 'Statistics',
-    desc: 'Completion rates, workload, and progress'
+    to: '/analytics',
+    icon: 'analytics',
+    title: 'Analytics',
+    desc: 'Monthly reports, task & document monitoring, CSV export'
   },
   {
     to: '/calendar',
@@ -54,23 +54,11 @@ const TILES = [
     desc: 'PACUCOA 2026 and other PQAD initiatives'
   },
   {
-    to: '/monitoring',
-    icon: 'monitoring',
-    title: 'Monitoring',
-    desc: 'Filter by project, department, task, and staff'
-  },
-  {
     to: '/documents',
     icon: 'documents',
     title: 'Documents',
     desc: 'Uploaded files and submission tracking'
   },
-  {
-    to: '/reports',
-    icon: 'reports',
-    title: 'Reports',
-    desc: 'Export PDF and Excel summaries'
-  }
 ]
 
 export default function DashboardHubPage() {

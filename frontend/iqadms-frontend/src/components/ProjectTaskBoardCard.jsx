@@ -22,7 +22,9 @@ export default function ProjectTaskBoardCard({
   tasks,
   children,
   onOpenFocus,
-  onCreateTask
+  onCreateTask,
+  focusLabel = 'Focus board',
+  subtitle
 }) {
   const stats = computeStats(tasks)
   const ringStyle = {
@@ -40,6 +42,7 @@ export default function ProjectTaskBoardCard({
           </div>
           <div>
             <h2 className="project-task-board-card__title">{projectTitle}</h2>
+            {subtitle && <p className="project-task-board-card__subtitle">{subtitle}</p>}
             <div className="project-task-board-card__badges">
               {projectStatus && <span className="project-task-board-card__badge">{projectStatus}</span>}
               {projectPriority && (
@@ -63,7 +66,7 @@ export default function ProjectTaskBoardCard({
           {onOpenFocus && (
             <button type="button" className="project-task-board-card__btn project-task-board-card__btn--ghost" onClick={onOpenFocus}>
               <AppIcon name="maximize" size={16} />
-              Focus board
+              {focusLabel}
             </button>
           )}
         </div>

@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import TaskWorkspaceBoard from '../components/TaskWorkspaceBoard'
 import TasksAdminToolbar from '../components/TasksAdminToolbar'
+import TasksMemberToolbar from '../components/TasksMemberToolbar'
 import ProjectTaskBoardCard from '../components/ProjectTaskBoardCard'
 import AppModal, { ConfirmDialog } from '../components/AppModal'
 import api from '../services/api'
@@ -170,6 +171,11 @@ export default function DashboardPage() {
   const [adminAssigneeFilter, setAdminAssigneeFilter] = useState('')
   const [adminToolbarProject, setAdminToolbarProject] = useState('')
   const [adminSortKey, setAdminSortKey] = useState('title-asc')
+
+  const [memberSearch, setMemberSearch] = useState('')
+  const [memberStatusFilter, setMemberStatusFilter] = useState('all')
+  const [memberToolbarProject, setMemberToolbarProject] = useState('')
+  const [memberSortKey, setMemberSortKey] = useState('title-asc')
 
   const openedTaskLinkRef = useRef(null)
 
@@ -385,12 +391,70 @@ export default function DashboardPage() {
     return sortProjectSections(sections, adminSortKey)
   }, [isAdmin, projects, adminFilteredTasks, adminToolbarProject, adminSortKey])
 
+  const memberProjects = useMemo(() => {
+    const map = new Map()
+    for (const t of tasks) {
+      const id = taskProjectId(t)
+      if (!id) continue
+      if (!map.has(id)) {
+        map.set(id, {
+          id,
+          title: t.projectTitle || t.ProjectTitle || 'Project'
+        })
+      }
+    }
+    return [...map.values()].sort((a, b) => a.title.localeCompare(b.title))
+  }, [tasks])
+
+  const memberFilteredTasks = useMemo(() => {
+    if (isAdmin) return tasks
+    return applyAdminTaskFilters(tasks, {
+      search: memberSearch,
+      status: memberStatusFilter,
+      assignee: '',
+      department: '',
+      project: memberToolbarProject
+    })
+  }, [tasks, isAdmin, memberSearch, memberStatusFilter, memberToolbarProject])
+
+  const memberProjectSections = useMemo(() => {
+    if (isAdmin) return []
+    let sections = memberProjects.map(p => ({
+      id: p.id,
+      title: p.title,
+      status: null,
+      priority: null,
+      tasks: memberFilteredTasks.filter(t => String(taskProjectId(t)) === String(p.id))
+    }))
+    const unassigned = memberFilteredTasks.filter(t => !taskProjectId(t))
+    if (unassigned.length) {
+      sections.push({
+        id: '__none__',
+        title: 'Other tasks',
+        status: null,
+        priority: null,
+        tasks: unassigned
+      })
+    }
+    if (memberToolbarProject) {
+      sections = sections.filter(s => s.id === memberToolbarProject)
+    }
+    return sortProjectSections(sections, memberSortKey)
+  }, [isAdmin, memberProjects, memberFilteredTasks, memberToolbarProject, memberSortKey])
+
   const adminFocusSortedTasks = useMemo(() => {
     if (!isAdmin || !filterProjectId) return sortedTasks
     return sortTasksList(
       adminFilteredTasks.filter(t => String(taskProjectId(t)) === filterProjectId)
     )
   }, [isAdmin, filterProjectId, sortedTasks, adminFilteredTasks, sortConfig, boardColumns, cellValues])
+
+  const memberFocusSortedTasks = useMemo(() => {
+    if (isAdmin || !filterProjectId) return sortedTasks
+    return sortTasksList(
+      memberFilteredTasks.filter(t => String(taskProjectId(t)) === filterProjectId)
+    )
+  }, [isAdmin, filterProjectId, sortedTasks, memberFilteredTasks, sortConfig, boardColumns, cellValues])
 
   const openCreateForProject = projectId => {
     setCreateForm(prev => ({
@@ -406,6 +470,13 @@ export default function DashboardPage() {
     setAdminAssigneeFilter('')
     setAdminToolbarProject('')
     setAdminSortKey('title-asc')
+  }
+
+  const clearMemberFilters = () => {
+    setMemberSearch('')
+    setMemberStatusFilter('all')
+    setMemberToolbarProject('')
+    setMemberSortKey('title-asc')
   }
 
   const renderTaskBoard = (taskList, createProjectId) => (
@@ -723,22 +794,42 @@ export default function DashboardPage() {
     }
   }
 
-  const filterProject = projects.find(p => p.id === filterProjectId)
+  const filterProject = (isAdmin ? projects : memberProjects).find(p => p.id === filterProjectId)
   const filterDepartment = departments.find(d => d.id === filterDepartmentId)
 
   const adminAllBoardsView = isAdmin && !filterProjectId
   const adminFocusView = isAdmin && !!filterProjectId
-  const statsTasks = adminFocusView ? adminFocusSortedTasks : isAdmin ? adminFilteredTasks : tasks
+  const memberAllBoardsView = !isAdmin && !filterProjectId
+  const memberFocusView = !isAdmin && !!filterProjectId
+  const showAllBoardsView = adminAllBoardsView || memberAllBoardsView
+  const showFocusView = adminFocusView || memberFocusView
+  const projectSections = isAdmin ? adminProjectSections : memberProjectSections
+
+  const statsTasks = adminFocusView
+    ? adminFocusSortedTasks
+    : memberFocusView
+      ? memberFocusSortedTasks
+      : isAdmin
+        ? adminFilteredTasks
+        : memberFilteredTasks
+
+  const progressDone = statsTasks.filter(
+    t => t.status === 'Submitted' || isCompletedStatus(t.status)
+  ).length
+  const progressLabel =
+    statsTasks.length === 0
+      ? '0/0 (0%)'
+      : `${progressDone}/${statsTasks.length} (${Math.round((progressDone / statsTasks.length) * 100)}%)`
 
   return (
     <DashboardLayout>
       <div>
         <header className="tasks-page-header">
-        <h1 style={{ marginBottom: '.25rem', color: '#7a0019' }}>{isAdmin ? 'Tasks' : 'My Tasks'}</h1>
+        <h1 className="tasks-page-title">{isAdmin ? 'Tasks' : 'My Tasks'}</h1>
         <p className="tasks-page-sub">
           {isAdmin
             ? 'One board per project: filter, sort, and scroll each table—or open Focus for a single project.'
-            : 'Your assigned work: click a task title for details, update status, and submit deliverables when ready.'}
+            : 'Your assignments grouped by project—filter, search, and open a project to focus on one board.'}
           {filterProject && (
             <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
               Filter: project · {filterProject.title}
@@ -787,24 +878,46 @@ export default function DashboardPage() {
           />
         )}
 
-        {(adminAllBoardsView || adminFocusView || !isAdmin) && (
+        {!isAdmin && (
+          <TasksMemberToolbar
+            projects={memberProjects}
+            projectFilter={memberToolbarProject}
+            onProjectFilterChange={setMemberToolbarProject}
+            statusFilter={memberStatusFilter}
+            onStatusFilterChange={setMemberStatusFilter}
+            searchQuery={memberSearch}
+            onSearchQueryChange={setMemberSearch}
+            sortKey={memberSortKey}
+            onSortKeyChange={setMemberSortKey}
+            onClearFilters={clearMemberFilters}
+            filteredTaskCount={memberFilteredTasks.length}
+            totalTaskCount={tasks.length}
+            viewMode={memberFocusView ? 'focus' : 'cards'}
+            onViewModeChange={mode => {
+              if (mode === 'cards') navigate('/my-tasks')
+            }}
+            focusProjectId={filterProjectId}
+            onExitFocus={() => navigate('/my-tasks')}
+          />
+        )}
+
+        {(showAllBoardsView || showFocusView) && (
         <>
         {!isAdmin && (
-          <p style={{ color: '#475569', marginBottom: '1rem', fontSize: '0.95rem', maxWidth: 720 }}>
-            Open a task by clicking its <strong>title</strong>. Use <strong>Status</strong> to move from To Do → In Progress (you cannot move back to To Do). When In Progress, use <strong>Submit</strong> to send your Google Drive link.
-          </p>
+          <div className="tasks-member-hint">
+            <strong>How to work on tasks</strong>
+            <ul>
+              <li>Click a task <strong>title</strong> to open details and reference files.</li>
+              <li>Move status from <strong>To Do</strong> → <strong>In Progress</strong> (you cannot go back to To Do).</li>
+              <li>When in progress, submit your Google Drive link for PQAD review.</li>
+            </ul>
+          </div>
         )}
 
         <div className="tasks-stats-grid">
-          {isAdmin && (
-            <MiniStat label="Total Tasks" value={statsTasks.length} color="#9e1b32" />
-          )}
-          {(filterProjectId || adminAllBoardsView) && statsTasks.length > 0 && (
-            <MiniStat
-              label="Work progress"
-              value={`${statsTasks.filter(t => t.status === 'Submitted' || isCompletedStatus(t.status)).length}/${statsTasks.length} (${Math.round((statsTasks.filter(t => t.status === 'Submitted' || isCompletedStatus(t.status)).length / statsTasks.length) * 100)}%)`}
-              color="#0d9488"
-            />
+          <MiniStat label={isAdmin ? 'Total Tasks' : 'My tasks'} value={statsTasks.length} color="#9e1b32" />
+          {statsTasks.length > 0 && (
+            <MiniStat label="Work progress" value={progressLabel} color="#0d9488" />
           )}
           <MiniStat label="To Do" value={statsTasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length} color="#7a0019" />
           <MiniStat label="In Progress" value={statsTasks.filter(t => t.status === 'In Progress').length} color="#f59e0b" />
@@ -812,36 +925,46 @@ export default function DashboardPage() {
           {!isAdmin && (
             <MiniStat label="Returned" value={statsTasks.filter(t => t.status === 'Returned').length} color="#c2410c" />
           )}
-          {isAdmin && (
-            <MiniStat label="Completed" value={statsTasks.filter(t => isCompletedStatus(t.status)).length} color="#16a34a" />
-          )}
+          <MiniStat
+            label="Completed"
+            value={statsTasks.filter(t => isCompletedStatus(t.status)).length}
+            color="#16a34a"
+          />
         </div>
 
-        {adminAllBoardsView ? (
+        {showAllBoardsView ? (
           <div className="tasks-project-boards">
-            {adminProjectSections.length === 0 && !loading ? (
+            {projectSections.length === 0 && !loading ? (
               <p style={{ color: '#64748b' }}>
-                No projects yet.{' '}
-                <Link to="/projects" style={{ color: '#7a0019', fontWeight: 600 }}>
-                  Create a project
-                </Link>{' '}
-                to add task boards.
+                {isAdmin ? (
+                  <>
+                    No projects yet.{' '}
+                    <Link to="/projects" style={{ color: '#7a0019', fontWeight: 600 }}>
+                      Create a project
+                    </Link>{' '}
+                    to add task boards.
+                  </>
+                ) : (
+                  'No tasks assigned to you yet.'
+                )}
               </p>
             ) : null}
-            {adminProjectSections.map(section => (
+            {projectSections.map(section => (
               <ProjectTaskBoardCard
                 key={section.id}
                 projectTitle={section.title}
                 projectStatus={section.status}
                 projectPriority={section.priority}
                 tasks={section.tasks}
+                subtitle={!isAdmin ? 'Your assignments in this project' : undefined}
+                focusLabel={isAdmin ? 'Focus board' : 'Open project'}
                 onOpenFocus={
                   section.id !== '__none__'
                     ? () => navigate(`/my-tasks?project=${section.id}`)
                     : undefined
                 }
                 onCreateTask={
-                  section.id !== '__none__' ? () => openCreateForProject(section.id) : undefined
+                  isAdmin && section.id !== '__none__' ? () => openCreateForProject(section.id) : undefined
                 }
               >
                 {renderTaskBoard(section.tasks, section.id !== '__none__' ? section.id : '')}
@@ -849,7 +972,12 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : (
-          renderTaskBoard(isAdmin ? adminFocusSortedTasks : sortedTasks, filterProjectId)
+          <div className="tasks-board-shell">
+            {renderTaskBoard(
+              isAdmin ? adminFocusSortedTasks : memberFocusSortedTasks,
+              filterProjectId
+            )}
+          </div>
         )}
         </>
         )}
