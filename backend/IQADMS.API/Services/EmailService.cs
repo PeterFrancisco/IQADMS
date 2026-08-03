@@ -47,7 +47,25 @@ Reason:
 
 Please review this request in the admin panel.";
 
-        await SendAsync(from, adminEmail, "IQADMS Access Request", body, htmlBody: null, GetFromDisplayName());
+        var settingsUrl = $"{GetPublicSiteUrl().TrimEnd('/')}/settings?section=account&tab=requests";
+        var htmlBody = BuildBrandedEmailHtml(
+            $"""
+<p style="margin:0 0 16px;line-height:1.5;">A new <strong>IQADMS access request</strong> has been submitted.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 16px;font-size:14px;line-height:1.6;">
+  <tr><td style="padding:4px 0;color:#64748b;width:110px;vertical-align:top;">Name</td><td style="padding:4px 0;"><strong>{System.Net.WebUtility.HtmlEncode(fullName)}</strong></td></tr>
+  <tr><td style="padding:4px 0;color:#64748b;vertical-align:top;">Email</td><td style="padding:4px 0;">{System.Net.WebUtility.HtmlEncode(email)}</td></tr>
+  <tr><td style="padding:4px 0;color:#64748b;vertical-align:top;">Department</td><td style="padding:4px 0;">{System.Net.WebUtility.HtmlEncode(department)}</td></tr>
+  <tr><td style="padding:4px 0;color:#64748b;vertical-align:top;">Position</td><td style="padding:4px 0;">{System.Net.WebUtility.HtmlEncode(position)}</td></tr>
+</table>
+<p style="margin:0 0 8px;font-weight:600;">Reason</p>
+<div style="margin:0 0 20px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;white-space:pre-wrap;line-height:1.55;">{System.Net.WebUtility.HtmlEncode(reason)}</div>
+<p style="margin:0 0 20px;">
+  <a href="{settingsUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Review access requests</a>
+</p>
+<p style="margin:0;font-size:12px;color:#94a3b8;">Open IQADMS → Settings → Account settings → Access requests.</p>
+""");
+
+        await SendAsync(from, adminEmail, "IQADMS Access Request", body, htmlBody, GetFromDisplayName(), replyToEmail: email);
     }
 
     public async Task<(bool Sent, string? Error)> TrySendRegistrationInviteAsync(
@@ -142,11 +160,14 @@ If you did not request a reset, contact your administrator.
 — IQADMS · PQAD · UPSHD Molino
 """;
 
-        var htmlBody = $"""
-<p>An IQADMS administrator approved your password reset request.</p>
-<p><a href="{resetUrl}">Set a new password</a></p>
-<p>This link expires in 24 hours. If you did not request a reset, contact your administrator.</p>
-""";
+        var htmlBody = BuildBrandedEmailHtml(
+            $"""
+<p style="margin:0 0 16px;line-height:1.5;">An IQADMS administrator approved your password reset request.</p>
+<p style="margin:0 0 20px;">
+  <a href="{resetUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Set a new password</a>
+</p>
+<p style="margin:0;font-size:12px;color:#94a3b8;">This link expires in 24 hours. If you did not request a reset, contact your administrator.</p>
+""");
 
         try
         {
@@ -322,6 +343,43 @@ If you did not request a reset, contact your administrator.
 
     public string PublicSenderName => GetFromDisplayName();
 
+    private string BuildBrandedEmailHtml(string contentHtml, string? headerSubtitle = null)
+    {
+        var siteUrl = GetPublicSiteUrl().TrimEnd('/');
+        var logoUrl = $"{siteUrl}/logo.svg";
+        var subtitle = string.IsNullOrWhiteSpace(headerSubtitle)
+            ? "Planning &amp; Quality Assurance Department"
+            : System.Net.WebUtility.HtmlEncode(headerSubtitle);
+
+        return $"""
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,system-ui,sans-serif;color:#334155;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:520px;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+          <tr>
+            <td style="background:#7a0019;padding:20px 24px;text-align:center;">
+              <img src="{logoUrl}" alt="IQADMS" width="56" height="56" style="display:block;margin:0 auto 12px;" />
+              <div style="color:#ffffff;font-size:18px;font-weight:700;">IQADMS</div>
+              <div style="color:#fecaca;font-size:12px;margin-top:4px;">{subtitle}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              {contentHtml}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+""";
+    }
+
     private static string BuildRegistrationInviteHtml(
         string greetingHtml,
         string invitedLine,
@@ -329,6 +387,19 @@ If you did not request a reset, contact your administrator.
         string registerUrl,
         string recipientEmail)
     {
+        var content = $"""
+<p style="margin:0 0 12px;">{greetingHtml}</p>
+<p style="margin:0 0 16px;line-height:1.5;">{System.Net.WebUtility.HtmlEncode(invitedLine)}</p>
+<p style="margin:0 0 8px;font-weight:600;">Create your account</p>
+<p style="margin:0 0 20px;">
+  <a href="{registerUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Register on IQADMS</a>
+</p>
+<p style="margin:0 0 8px;font-size:13px;color:#64748b;">IQADMS website: <a href="{siteUrl}">{System.Net.WebUtility.HtmlEncode(siteUrl)}</a></p>
+<p style="margin:0 0 16px;font-size:13px;">Use this email when you register: <strong>{System.Net.WebUtility.HtmlEncode(recipientEmail)}</strong></p>
+<p style="margin:0;font-size:12px;color:#94a3b8;">If you did not expect this invitation, you can ignore this email.</p>
+""";
+
+        // Static helper — inline branded shell (same layout as instance BuildBrandedEmailHtml).
         var logoUrl = $"{siteUrl.TrimEnd('/')}/logo.svg";
         return $"""
 <!DOCTYPE html>
@@ -347,15 +418,7 @@ If you did not request a reset, contact your administrator.
           </tr>
           <tr>
             <td style="padding:24px;">
-              <p style="margin:0 0 12px;">{greetingHtml}</p>
-              <p style="margin:0 0 16px;line-height:1.5;">{System.Net.WebUtility.HtmlEncode(invitedLine)}</p>
-              <p style="margin:0 0 8px;font-weight:600;">Create your account</p>
-              <p style="margin:0 0 20px;">
-                <a href="{registerUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Register on IQADMS</a>
-              </p>
-              <p style="margin:0 0 8px;font-size:13px;color:#64748b;">IQADMS website: <a href="{siteUrl}">{System.Net.WebUtility.HtmlEncode(siteUrl)}</a></p>
-              <p style="margin:0 0 16px;font-size:13px;">Use this email when you register: <strong>{System.Net.WebUtility.HtmlEncode(recipientEmail)}</strong></p>
-              <p style="margin:0;font-size:12px;color:#94a3b8;">If you did not expect this invitation, you can ignore this email.</p>
+              {content}
             </td>
           </tr>
         </table>
@@ -373,7 +436,8 @@ If you did not request a reset, contact your administrator.
         string subject,
         string body,
         string? htmlBody = null,
-        string? fromDisplayName = null)
+        string? fromDisplayName = null,
+        string? replyToEmail = null)
     {
         var smtp = _config.GetSection("SmtpSettings");
         var host = smtp["Host"]!.Trim();
@@ -389,7 +453,9 @@ If you did not request a reset, contact your administrator.
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
 
-        var replyTo = smtp["ReplyTo"]?.Trim() ?? smtp["AdminEmail"]?.Trim();
+        var replyTo = replyToEmail?.Trim()
+            ?? smtp["ReplyTo"]?.Trim()
+            ?? smtp["AdminEmail"]?.Trim();
         if (!string.IsNullOrWhiteSpace(replyTo) &&
             !string.Equals(replyTo, to, StringComparison.OrdinalIgnoreCase))
         {
@@ -741,24 +807,14 @@ IQADMS
         }
     }
 
-    private static string BuildTaskActionHtml(string greetingHtml, string bodyHtml, string? regardsName)
+    private string BuildTaskActionHtml(string greetingHtml, string bodyHtml, string? regardsName)
     {
         var regards = string.IsNullOrWhiteSpace(regardsName)
-            ? "<p>Regards,<br />IQADMS</p>"
-            : $"<p>Regards,<br />{System.Net.WebUtility.HtmlEncode(regardsName)}<br />IQADMS</p>";
-        return $"""
-<!DOCTYPE html>
-<html>
-<body style="margin:0;padding:16px;font-family:Segoe UI,system-ui,sans-serif;color:#334155;background:#f8fafc;">
-  <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;">
-    <div style="font-size:18px;font-weight:700;color:#7a0019;margin-bottom:12px;">IQADMS</div>
-    <p style="margin:0 0 12px;">{greetingHtml}</p>
-    {bodyHtml}
-    {regards}
-  </div>
-</body>
-</html>
-""";
+            ? "<p style=\"margin:16px 0 0;\">Regards,<br />IQADMS</p>"
+            : $"<p style=\"margin:16px 0 0;\">Regards,<br />{System.Net.WebUtility.HtmlEncode(regardsName)}<br />IQADMS</p>";
+
+        return BuildBrandedEmailHtml(
+            $"<p style=\"margin:0 0 12px;\">{greetingHtml}</p>{bodyHtml}{regards}");
     }
 
     public string GetFeedbackEmail()
@@ -801,11 +857,29 @@ Review in IQADMS under Settings → Account settings → Submitted reports (admi
 — IQADMS
 """;
 
+        var settingsUrl = $"{GetPublicSiteUrl().TrimEnd('/')}/settings?section=account&tab=feedback";
+        var typeBadgeColor = string.Equals(type, "bug", StringComparison.OrdinalIgnoreCase) ? "#b91c1c" : "#7a0019";
+        var htmlBody = BuildBrandedEmailHtml(
+            $"""
+<p style="margin:0 0 16px;line-height:1.5;">A new <span style="display:inline-block;background:{typeBadgeColor};color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;vertical-align:middle;">{System.Net.WebUtility.HtmlEncode(typeLabel)}</span> was submitted through IQADMS.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 16px;font-size:14px;line-height:1.6;">
+  <tr><td style="padding:4px 0;color:#64748b;width:110px;vertical-align:top;">From</td><td style="padding:4px 0;"><strong>{System.Net.WebUtility.HtmlEncode(reporterName)}</strong> (@{System.Net.WebUtility.HtmlEncode(reporterUsername)})</td></tr>
+  <tr><td style="padding:4px 0;color:#64748b;vertical-align:top;">Email</td><td style="padding:4px 0;"><a href="mailto:{System.Net.WebUtility.HtmlEncode(reporterEmail)}">{System.Net.WebUtility.HtmlEncode(reporterEmail)}</a></td></tr>
+  <tr><td style="padding:4px 0;color:#64748b;vertical-align:top;">Type</td><td style="padding:4px 0;">{System.Net.WebUtility.HtmlEncode(typeLabel)}</td></tr>
+</table>
+<p style="margin:0 0 8px;font-weight:600;">Message</p>
+<div style="margin:0 0 20px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;white-space:pre-wrap;line-height:1.55;">{System.Net.WebUtility.HtmlEncode(message)}</div>
+<p style="margin:0 0 20px;">
+  <a href="{settingsUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">View submitted reports</a>
+</p>
+<p style="margin:0;font-size:12px;color:#94a3b8;">Open IQADMS → Settings → Account settings → Submitted reports. Reply to this email to reach the user who sent the report.</p>
+""");
+
         try
         {
             var smtp = _config.GetSection("SmtpSettings");
             var from = RequireFromAddress(smtp);
-            await SendAsync(from, to, subject, body, htmlBody: null, GetFromDisplayName());
+            await SendAsync(from, to, subject, body, htmlBody, GetFromDisplayName(), replyToEmail: reporterEmail);
             _logger.LogInformation("Feedback email sent to {Email} ({Type})", to, typeLabel);
             return (true, null);
         }
