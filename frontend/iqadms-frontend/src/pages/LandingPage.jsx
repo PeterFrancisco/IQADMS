@@ -13,7 +13,6 @@ import {
   philosophy,
   vision
 } from '../config/institutionAbout'
-import { upshd } from '../theme/upshd'
 import { isSignedIn } from '../utils/authSession'
 import '../theme/landing.css'
 
@@ -251,7 +250,7 @@ export default function LandingPage() {
 
       <footer className="landing-footer">
         <p>
-          <strong style={{ color: upshd.maroon }}>IQADMS</strong> · Planning and Quality Assurance Department
+          <strong className="landing-footer-brand">IQADMS</strong> · Planning and Quality Assurance Department
         </p>
         <p>{molinoCampus.institutionName}, {molinoCampus.campusName}</p>
         <p>{molinoCampus.address}</p>

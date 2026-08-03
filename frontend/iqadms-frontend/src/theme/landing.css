@@ -419,6 +419,10 @@
   font-size: 0.8rem;
 }
 
+.landing-footer-brand {
+  color: var(--upshd-maroon);
+}
+
 @media (max-width: 768px) {
   .landing-topbar-inner {
     padding: 0.65rem 1rem;
@@ -506,4 +510,131 @@
   .landing-topbar-inner {
     flex-wrap: wrap;
   }
+}
+
+/* Night mode — soft slate + rose/gold accents (avoid dark maroon on black) */
+html[data-theme='dark'] .landing {
+  background: var(--upshd-bg);
+}
+
+html[data-theme='dark'] .landing-topbar {
+  background: rgba(28, 36, 48, 0.94);
+  border-bottom-color: var(--upshd-border);
+}
+
+html[data-theme='dark'] .landing-nav a {
+  color: var(--upshd-text-muted);
+}
+
+html[data-theme='dark'] .landing-nav a:hover {
+  color: var(--upshd-gold);
+}
+
+html[data-theme='dark'] .landing-topbar .landing-btn-primary {
+  background: linear-gradient(180deg, #f0c4cf 0%, #e2a8b5 100%);
+  color: #1a1216;
+}
+
+html[data-theme='dark'] .landing-topbar .landing-btn-primary:hover {
+  background: linear-gradient(180deg, #f5d5dd 0%, #e8b5c0 100%);
+}
+
+html[data-theme='dark'] .landing-topbar .landing-btn-ghost {
+  color: var(--upshd-heading-accent);
+}
+
+html[data-theme='dark'] .landing-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(165deg, #1a222d 0%, #222c3a 42%, #2a3545 100%);
+  color: #f1f5f9;
+  border-bottom: 1px solid rgba(226, 168, 181, 0.12);
+}
+
+html[data-theme='dark'] .landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 70% at 10% -10%, rgba(226, 168, 181, 0.14), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(212, 184, 150, 0.08), transparent 50%);
+  pointer-events: none;
+}
+
+html[data-theme='dark'] .landing-hero-inner {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme='dark'] .landing-eyebrow {
+  color: var(--upshd-gold);
+  opacity: 1;
+}
+
+html[data-theme='dark'] .landing-hero .landing-btn-primary {
+  background: linear-gradient(180deg, #f0c4cf 0%, #e2a8b5 100%);
+  color: #1a1216;
+}
+
+html[data-theme='dark'] .landing-hero .landing-btn-primary:hover {
+  background: linear-gradient(180deg, #f5d5dd 0%, #e8b5c0 100%);
+}
+
+html[data-theme='dark'] .landing-hero .landing-btn-outline {
+  border-color: rgba(240, 196, 207, 0.55);
+  color: var(--upshd-heading-accent);
+}
+
+html[data-theme='dark'] .landing-hero .landing-btn-outline:hover {
+  background: rgba(240, 196, 207, 0.1);
+  border-color: rgba(240, 196, 207, 0.75);
+}
+
+html[data-theme='dark'] .landing-section h2,
+html[data-theme='dark'] .landing-highlight h3,
+html[data-theme='dark'] .landing-link-card h3,
+html[data-theme='dark'] .landing-about-subhead,
+html[data-theme='dark'] .landing-about-name {
+  color: var(--upshd-heading-accent);
+}
+
+html[data-theme='dark'] .landing-motto {
+  background: rgba(226, 168, 181, 0.12);
+  color: var(--upshd-heading-accent);
+  border: 1px solid rgba(226, 168, 181, 0.22);
+}
+
+html[data-theme='dark'] .landing-about-institution {
+  border-left-color: var(--upshd-gold);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme='dark'] .landing-about-contact a,
+html[data-theme='dark'] .landing-about-more a,
+html[data-theme='dark'] .landing-link-cta {
+  color: var(--upshd-gold);
+}
+
+html[data-theme='dark'] .landing-about-contact a:hover,
+html[data-theme='dark'] .landing-about-more a:hover {
+  color: var(--upshd-heading-accent);
+}
+
+html[data-theme='dark'] .landing-highlight,
+html[data-theme='dark'] .landing-link-card,
+html[data-theme='dark'] .landing-footer {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
+}
+
+html[data-theme='dark'] .landing-link-card:hover {
+  border-color: rgba(226, 168, 181, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme='dark'] .landing-link-icon-wrap {
+  color: var(--upshd-gold);
+}
+
+html[data-theme='dark'] .landing-footer-brand {
+  color: var(--upshd-heading-accent);
 }

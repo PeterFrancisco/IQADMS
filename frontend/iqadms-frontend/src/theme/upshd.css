@@ -127,6 +127,71 @@ body {
   line-height: 1.45;
 }
 
+.dashboard-hub-events {
+  background: var(--upshd-surface);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--upshd-border);
+  border-left: 4px solid var(--upshd-maroon);
+}
+
+.dashboard-hub-events-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-hub-events-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--upshd-maroon);
+}
+
+.dashboard-hub-events-head a {
+  color: var(--upshd-maroon);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.dashboard-hub-events-head a:hover {
+  color: var(--upshd-maroon-light);
+}
+
+.dashboard-hub-events ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--upshd-text);
+}
+
+.dashboard-hub-events li {
+  margin-bottom: 0.35rem;
+}
+
+.dashboard-hub-events-meta {
+  color: var(--upshd-text-muted);
+  font-size: 0.9rem;
+}
+
+html[data-theme='dark'] .dashboard-hub-events {
+  border-left-color: var(--upshd-heading-accent);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+html[data-theme='dark'] .dashboard-hub-events-head h2,
+html[data-theme='dark'] .dashboard-hub-events-head a {
+  color: var(--upshd-heading-accent);
+}
+
+html[data-theme='dark'] .dashboard-hub-events-head a:hover {
+  color: var(--upshd-gold);
+}
+
 /* Theme variants */
 html[data-theme='light'] {
   --upshd-bg: #ffffff;
@@ -137,18 +202,39 @@ html[data-theme='light'] {
 }
 
 html[data-theme='dark'] {
-  --upshd-bg: #0f1419;
-  --upshd-surface: #1a222d;
-  --upshd-border: #2d3748;
-  --upshd-text: #e2e8f0;
-  --upshd-text-muted: #94a3b8;
-  --upshd-maroon-muted: #3d1520;
-  --upshd-maroon-light: #c44d66;
+  --upshd-bg: #121820;
+  --upshd-surface: #1c2430;
+  --upshd-border: #2f3a4a;
+  --upshd-text: #e8edf4;
+  --upshd-text-muted: #9aa8bc;
+  --upshd-maroon-muted: rgba(226, 168, 181, 0.14);
+  --upshd-maroon-light: #e2a8b5;
+  --upshd-heading-accent: #f0c4cf;
+  --upshd-link-accent: #d4b896;
+  --upshd-gold: #d4b896;
 }
 
 html[data-theme='dark'] .sidebar,
 html[data-theme='dark'] .main-header {
-  background: #151b24;
+  background: #171e28;
+}
+
+html[data-theme='dark'] .main-title,
+html[data-theme='dark'] .dashboard-hub-header h1,
+html[data-theme='dark'] .placeholder-page h1 {
+  color: var(--upshd-heading-accent);
+}
+
+html[data-theme='dark'] .dashboard-hub-campus {
+  color: var(--upshd-gold);
+}
+
+html[data-theme='dark'] .dashboard-tile-title {
+  color: var(--upshd-heading-accent);
+}
+
+html[data-theme='dark'] .dashboard-tile:hover {
+  border-color: rgba(226, 168, 181, 0.45);
 }
 
 html[data-theme='dark'] .nav-item:hover,

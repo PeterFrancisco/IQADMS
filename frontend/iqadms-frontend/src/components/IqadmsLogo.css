@@ -38,3 +38,7 @@
 .iqadms-logo--center .iqadms-logo-text {
   align-items: center;
 }
+
+html[data-theme='dark'] .iqadms-logo-title {
+  color: var(--upshd-heading-accent, #f0c4cf);
+}

@@ -87,27 +87,16 @@ export default function DashboardHubPage() {
         </header>
 
         {upcoming.length > 0 && (
-          <section
-            style={{
-              background: 'var(--upshd-surface, #fff)',
-              borderRadius: 12,
-              padding: '1rem 1.25rem',
-              marginBottom: '1.5rem',
-              boxShadow: '0 2px 8px rgba(0,0,0,.06)',
-              borderLeft: '4px solid #7a0019'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.05rem', color: '#7a0019' }}>Upcoming PQAD events</h2>
-              <Link to="/announcements" style={{ color: '#7a0019', fontWeight: 600, fontSize: '0.9rem' }}>
-                View all
-              </Link>
+          <section className="dashboard-hub-events">
+            <div className="dashboard-hub-events-head">
+              <h2>Upcoming PQAD events</h2>
+              <Link to="/announcements">View all</Link>
             </div>
-            <ul style={{ margin: 0, paddingLeft: '1.1rem', color: '#334155' }}>
+            <ul>
               {upcoming.map(a => (
-                <li key={a.id} style={{ marginBottom: '0.35rem' }}>
+                <li key={a.id}>
                   <strong>{a.title}</strong>
-                  <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                  <span className="dashboard-hub-events-meta">
                     {' '}
                     · {a.category} · {a.startDate}
                     {a.endDate && a.endDate !== a.startDate ? ` to ${a.endDate}` : ''}
