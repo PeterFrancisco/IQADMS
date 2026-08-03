@@ -6,12 +6,11 @@ import { SocialLinksRow } from '../components/SocialLinks'
 import api from '../services/api'
 import ActivityStatusText from '../components/ActivityStatusText'
 import { normalizePresence } from '../config/presence'
-import { upshd } from '../theme/upshd'
+import '../theme/profile-page.css'
 import {
   InfoRow,
   SectionCard,
-  SidebarCard,
-  profileStyles
+  SidebarCard
 } from './profileShared'
 
 export default function MemberProfilePage() {
@@ -55,8 +54,8 @@ export default function MemberProfilePage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div style={profileStyles.page}>
-          <div style={profileStyles.loadingCard}>Loading profile...</div>
+        <div className="profile-page">
+          <div className="profile-loading-card">Loading profile...</div>
         </div>
       </DashboardLayout>
     )
@@ -65,11 +64,11 @@ export default function MemberProfilePage() {
   if (!member) {
     return (
       <DashboardLayout>
-        <div style={profileStyles.page}>
-          <button type="button" style={profileStyles.backLink} onClick={() => navigate(-1)}>
+        <div className="profile-page">
+          <button type="button" className="profile-back-link" onClick={() => navigate(-1)}>
             ← Back
           </button>
-          <div style={profileStyles.loadingCard}>Member not found.</div>
+          <div className="profile-loading-card">Member not found.</div>
         </div>
       </DashboardLayout>
     )
@@ -80,15 +79,15 @@ export default function MemberProfilePage() {
 
   return (
     <DashboardLayout>
-      <div style={profileStyles.page}>
-        <button type="button" style={profileStyles.backLink} onClick={() => navigate(-1)}>
+      <div className="profile-page">
+        <button type="button" className="profile-back-link" onClick={() => navigate(-1)}>
           ← Back
         </button>
 
-        <div style={profileStyles.hero}>
-          <div style={profileStyles.heroOverlay} />
-          <div style={profileStyles.heroContent}>
-            <div style={profileStyles.avatarWrap}>
+        <div className="profile-hero">
+          <div className="profile-hero-overlay" />
+          <div className="profile-hero-content">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
               <AvatarWithPresence
                 user={{
                   displayName,
@@ -101,28 +100,24 @@ export default function MemberProfilePage() {
               />
             </div>
 
-            <div style={profileStyles.heroText}>
-              <h1 style={profileStyles.heroTitle}>{displayName}</h1>
-              <p style={profileStyles.heroSub}>@{member.username}</p>
+            <div className="profile-hero-text">
+              <h1 className="profile-hero-title">{displayName}</h1>
+              <p className="profile-hero-sub">@{member.username}</p>
               <ActivityStatusText
                 presence={presence}
                 lastActiveAt={member.lastActiveAt}
                 className="profile-header-activity hero-activity-on-dark"
               />
-              {member.position && <p style={profileStyles.heroRole}>{member.position}</p>}
-              <span style={{
-                ...profileStyles.badge,
-                background: member.isAdmin ? upshd.maroonMuted : '#dcfce7',
-                color: member.isAdmin ? upshd.maroon : '#166534'
-              }}>
+              {member.position && <p className="profile-hero-role">{member.position}</p>}
+              <span className={`profile-role-badge ${member.isAdmin ? 'profile-role-badge--admin' : 'profile-role-badge--member'}`}>
                 {member.isAdmin ? 'Administrator' : 'PQAD Staff'}
               </span>
             </div>
           </div>
         </div>
 
-        <div style={profileStyles.grid}>
-          <div style={profileStyles.sidebar}>
+        <div className="profile-layout">
+          <div className="profile-sidebar">
             <SidebarCard title="Contact">
               <InfoRow label="Email" value={member.email} />
               <InfoRow label="Username" value={`@${member.username}`} />
@@ -136,19 +131,17 @@ export default function MemberProfilePage() {
             </SidebarCard>
 
             <SidebarCard title="Completed tasks">
-              <div style={profileStyles.statNumber}>{workHistory.length}</div>
-              <div style={profileStyles.statLabel}>tasks in work history</div>
+              <div className="profile-stat-number">{workHistory.length}</div>
+              <div className="profile-stat-label">tasks in work history</div>
             </SidebarCard>
           </div>
 
-          <div style={profileStyles.main}>
+          <div className="profile-main">
             <SectionCard title="About" subtitle="Public profile information">
               {member.bio ? (
-                <p style={{ margin: 0, color: '#475569', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
-                  {member.bio}
-                </p>
+                <p className="profile-bio-text">{member.bio}</p>
               ) : (
-                <p style={profileStyles.emptyText}>No bio added yet.</p>
+                <p className="profile-empty-text">No bio added yet.</p>
               )}
             </SectionCard>
 
@@ -158,7 +151,8 @@ export default function MemberProfilePage() {
                   href={member.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: upshd.maroon, fontWeight: 600, wordBreak: 'break-all' }}
+                  className="profile-history-link"
+                  style={{ wordBreak: 'break-all' }}
                 >
                   {member.websiteUrl}
                 </a>
@@ -167,18 +161,18 @@ export default function MemberProfilePage() {
 
             <SectionCard title="Announcements & meetings" subtitle="Published by this member">
               {memberAnnouncements.length === 0 ? (
-                <p style={profileStyles.emptyText}>No announcements or meetings published yet.</p>
+                <p className="profile-empty-text">No announcements or meetings published yet.</p>
               ) : (
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   {memberAnnouncements.map(a => (
-                    <div key={a.id} style={profileStyles.historyCard}>
-                      <div style={profileStyles.historyTitle}>{a.title}</div>
-                      <div style={profileStyles.historyMeta}>
+                    <div key={a.id} className="profile-history-card">
+                      <div className="profile-history-title">{a.title}</div>
+                      <div className="profile-history-meta">
                         {a.category} · {a.startDate}
                         {a.location ? <> · {a.location}</> : null}
                       </div>
                       {a.description && (
-                        <p style={{ margin: '0.35rem 0 0', fontSize: '0.88rem', color: '#64748b' }}>
+                        <p className="profile-empty-text" style={{ margin: '0.35rem 0 0', fontSize: '0.88rem' }}>
                           {a.description.length > 120 ? `${a.description.slice(0, 120)}…` : a.description}
                         </p>
                       )}
@@ -190,13 +184,13 @@ export default function MemberProfilePage() {
 
             <SectionCard title="Work history" subtitle="Tasks completed as assignee">
               {workHistory.length === 0 ? (
-                <p style={profileStyles.emptyText}>No completed tasks yet.</p>
+                <p className="profile-empty-text">No completed tasks yet.</p>
               ) : (
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   {workHistory.map(item => (
-                    <div key={item.taskId} style={profileStyles.historyCard}>
-                      <div style={profileStyles.historyTitle}>{item.title}</div>
-                      <div style={profileStyles.historyMeta}>
+                    <div key={item.taskId} className="profile-history-card">
+                      <div className="profile-history-title">{item.title}</div>
+                      <div className="profile-history-meta">
                         Assigned by {item.createdByName || 'Unknown'}
                         {item.completedAt && (
                           <> · {new Date(item.completedAt).toLocaleDateString()}</>
@@ -207,7 +201,7 @@ export default function MemberProfilePage() {
                           href={item.deliverableGoogleDriveLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={profileStyles.historyLink}
+                          className="profile-history-link"
                         >
                           View finished work →
                         </a>

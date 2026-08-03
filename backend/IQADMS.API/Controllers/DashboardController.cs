@@ -151,6 +151,9 @@ public class DashboardController : ControllerBase
     [HttpGet("recent-activity")]
     public async Task<IActionResult> GetRecentActivity([FromQuery] int limit = 40, [FromQuery] Guid? projectId = null)
     {
+        if (!await IsAdminAsync())
+            return Forbid();
+
         limit = Math.Clamp(limit, 1, 100);
 
         var query = _context.TaskActivityLogs
@@ -391,5 +394,11 @@ public class DashboardController : ControllerBase
             User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
         return Guid.Parse(claim!);
+    }
+
+    private async Task<bool> IsAdminAsync()
+    {
+        var userId = GetUserId();
+        return await _context.Users.AnyAsync(u => u.Id == userId && u.IsAdmin && u.IsActive);
     }
 }

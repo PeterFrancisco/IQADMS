@@ -1,0 +1,55 @@
+/* Accent palettes — work with original, light, and night appearance modes */
+
+:root,
+html[data-accent='maroon'] {
+  --upshd-hero-gradient: linear-gradient(135deg, #5c0012 0%, #7a0019 50%, #9e1b32 100%);
+}
+
+html[data-accent='slate'] {
+  --upshd-maroon: #334155;
+  --upshd-maroon-dark: #1e293b;
+  --upshd-maroon-light: #475569;
+  --upshd-maroon-muted: #e2e8f0;
+  --upshd-hero-gradient: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+}
+
+html[data-theme='dark'][data-accent='slate'] {
+  --upshd-heading-accent: #cbd5e1;
+  --upshd-maroon-light: #94a3b8;
+  --upshd-maroon-muted: rgba(148, 163, 184, 0.16);
+  --upshd-link-accent: #94a3b8;
+}
+
+html[data-accent='ocean'] {
+  --upshd-maroon: #0f766e;
+  --upshd-maroon-dark: #115e59;
+  --upshd-maroon-light: #14b8a6;
+  --upshd-maroon-muted: #ccfbf1;
+  --upshd-hero-gradient: linear-gradient(135deg, #115e59 0%, #0f766e 50%, #14b8a6 100%);
+}
+
+html[data-theme='dark'][data-accent='ocean'] {
+  --upshd-heading-accent: #99f6e4;
+  --upshd-maroon-light: #5eead4;
+  --upshd-maroon-muted: rgba(94, 234, 212, 0.12);
+  --upshd-link-accent: #5eead4;
+}
+
+html[data-accent='forest'] {
+  --upshd-maroon: #166534;
+  --upshd-maroon-dark: #14532d;
+  --upshd-maroon-light: #22c55e;
+  --upshd-maroon-muted: #dcfce7;
+  --upshd-hero-gradient: linear-gradient(135deg, #14532d 0%, #166534 50%, #22c55e 100%);
+}
+
+html[data-theme='dark'][data-accent='forest'] {
+  --upshd-heading-accent: #bbf7d0;
+  --upshd-maroon-light: #86efac;
+  --upshd-maroon-muted: rgba(134, 239, 172, 0.12);
+  --upshd-link-accent: #86efac;
+}
+
+html[data-theme='dark'][data-accent='maroon'] {
+  --upshd-hero-gradient: linear-gradient(165deg, #1a222d 0%, #222c3a 42%, #2a3545 100%);
+}

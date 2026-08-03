@@ -7,13 +7,12 @@ import { SocialLinksEditorList, SocialLinksRow } from '../components/SocialLinks
 import { normalizePresence } from '../config/presence'
 import ActivityStatusText from '../components/ActivityStatusText'
 import { notifyProfileUpdated } from '../utils/profileEvents'
-import { upshd } from '../theme/upshd'
+import '../theme/profile-page.css'
 import {
   InfoRow,
   SectionCard,
   SidebarCard,
-  profileGridStyle,
-  profileStyles
+  profileGridStyle
 } from './profileShared'
 
 export default function ProfilePage() {
@@ -261,8 +260,8 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div style={profileStyles.page}>
-          <div style={profileStyles.loadingCard}>Loading your profile...</div>
+        <div className="profile-page">
+          <div className="profile-loading-card">Loading your profile...</div>
         </div>
       </DashboardLayout>
     )
@@ -270,12 +269,11 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <div style={profileStyles.page}>
-        {/* Hero */}
-        <div style={profileStyles.hero}>
-          <div style={profileStyles.heroOverlay} />
-          <div style={profileStyles.heroContent}>
-            <div style={profileStyles.avatarWrap}>
+      <div className="profile-page">
+        <div className="profile-hero">
+          <div className="profile-hero-overlay" />
+          <div className="profile-hero-content">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
               <AvatarWithPresence
                 user={{
                   displayName: profile.displayName,
@@ -296,7 +294,7 @@ export default function ProfilePage() {
               />
               <button
                 type="button"
-                style={profileStyles.avatarBtn}
+                className="profile-avatar-btn"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingPhoto}
               >
@@ -304,24 +302,20 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div style={profileStyles.heroText}>
-              <h1 style={profileStyles.heroTitle}>{profile.displayName || profile.username}</h1>
-              <p style={profileStyles.heroSub}>@{profile.username}</p>
+            <div className="profile-hero-text">
+              <h1 className="profile-hero-title">{profile.displayName || profile.username}</h1>
+              <p className="profile-hero-sub">@{profile.username}</p>
               <ActivityStatusText
                 presence={presence}
                 lastActiveAt={lastActiveAt}
                 className="profile-header-activity hero-activity-on-dark"
               />
-              {profile.position && <p style={profileStyles.heroRole}>{profile.position}</p>}
-              <span style={{
-                ...profileStyles.badge,
-                background: isAdmin ? upshd.maroonMuted : '#dcfce7',
-                color: isAdmin ? upshd.maroon : '#166534'
-              }}>
+              {profile.position && <p className="profile-hero-role">{profile.position}</p>}
+              <span className={`profile-role-badge ${isAdmin ? 'profile-role-badge--admin' : 'profile-role-badge--member'}`}>
                 {isAdmin ? 'Administrator' : 'PQAD Staff'}
               </span>
               <div style={{ marginTop: '0.85rem' }}>
-                <button type="button" style={primaryButton} onClick={() => setEditOpen(true)}>
+                <button type="button" className="profile-primary-btn" onClick={() => setEditOpen(true)}>
                   Edit profile
                 </button>
               </div>
@@ -330,19 +324,13 @@ export default function ProfilePage() {
         </div>
 
         {(message || error) && (
-          <div style={{
-            ...profileStyles.alert,
-            background: error ? '#fef2f2' : '#ecfdf5',
-            color: error ? '#b91c1c' : '#047857',
-            borderColor: error ? '#fecaca' : '#a7f3d0'
-          }}>
+          <div className={`profile-alert ${error ? 'profile-alert--error' : 'profile-alert--success'}`}>
             {error || message}
           </div>
         )}
 
-        <div style={profileStyles.grid}>
-          {/* Left sidebar */}
-          <div style={profileStyles.sidebar}>
+        <div className="profile-layout">
+          <div className="profile-sidebar">
             <SidebarCard title="Contact">
               <InfoRow label="Email" value={profile.email} />
               <InfoRow label="Username" value={`@${profile.username}`} />
@@ -356,18 +344,17 @@ export default function ProfilePage() {
             </SidebarCard>
 
             <SidebarCard title="Completed tasks">
-              <div style={profileStyles.statNumber}>{workHistory.length}</div>
-              <div style={profileStyles.statLabel}>tasks in work history</div>
+              <div className="profile-stat-number">{workHistory.length}</div>
+              <div className="profile-stat-label">tasks in work history</div>
             </SidebarCard>
           </div>
 
-          {/* Main */}
-          <div style={profileStyles.main}>
+          <div className="profile-main">
             <SectionCard title="About" subtitle="How you appear to your team">
               {profile.bio ? (
-                <p style={{ margin: 0, color: '#475569', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{profile.bio}</p>
+                <p className="profile-bio-text">{profile.bio}</p>
               ) : (
-                <p style={profileStyles.emptyText}>No bio yet. Use Edit profile to add one.</p>
+                <p className="profile-empty-text">No bio yet. Use Edit profile to add one.</p>
               )}
               <div style={{ ...profileGridStyle, marginTop: '1rem' }}>
                 <InfoRow label="Display name" value={profile.displayName} />
@@ -379,18 +366,18 @@ export default function ProfilePage() {
 
             <SectionCard title="Announcements & meetings" subtitle="Items you published">
               {myAnnouncements.length === 0 ? (
-                <p style={profileStyles.emptyText}>No announcements or meetings published yet.</p>
+                <p className="profile-empty-text">No announcements or meetings published yet.</p>
               ) : (
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   {myAnnouncements.map(a => (
-                    <div key={a.id} style={profileStyles.historyCard}>
-                      <div style={profileStyles.historyTitle}>{a.title}</div>
-                      <div style={profileStyles.historyMeta}>
+                    <div key={a.id} className="profile-history-card">
+                      <div className="profile-history-title">{a.title}</div>
+                      <div className="profile-history-meta">
                         {a.category} · {a.startDate}
                         {a.location ? <> · {a.location}</> : null}
                       </div>
                       {a.description && (
-                        <p style={{ margin: '0.35rem 0 0', fontSize: '0.88rem', color: '#64748b' }}>
+                        <p className="profile-empty-text" style={{ margin: '0.35rem 0 0', fontSize: '0.88rem' }}>
                           {a.description.length > 120 ? `${a.description.slice(0, 120)}…` : a.description}
                         </p>
                       )}
@@ -402,13 +389,13 @@ export default function ProfilePage() {
 
             <SectionCard title="Work history" subtitle="Tasks you completed as assignee">
               {workHistory.length === 0 ? (
-                <p style={profileStyles.emptyText}>No completed tasks yet. Finish assigned tasks on Home to build your history.</p>
+                <p className="profile-empty-text">No completed tasks yet. Finish assigned tasks on Home to build your history.</p>
               ) : (
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   {workHistory.map(item => (
-                    <div key={item.taskId} style={profileStyles.historyCard}>
-                      <div style={profileStyles.historyTitle}>{item.title}</div>
-                      <div style={profileStyles.historyMeta}>
+                    <div key={item.taskId} className="profile-history-card">
+                      <div className="profile-history-title">{item.title}</div>
+                      <div className="profile-history-meta">
                         Assigned by {item.createdByName || 'Unknown'}
                         {item.completedAt && (
                           <> · {new Date(item.completedAt).toLocaleDateString()}</>
@@ -419,7 +406,7 @@ export default function ProfilePage() {
                           href={item.deliverableGoogleDriveLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={profileStyles.historyLink}
+                          className="profile-history-link"
                         >
                           View finished work →
                         </a>
@@ -439,8 +426,8 @@ export default function ProfilePage() {
           size="lg"
           footer={
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button type="button" style={secondaryButton} onClick={() => setEditOpen(false)}>Cancel</button>
-              <button type="button" style={primaryButton} onClick={saveProfile} disabled={saving}>
+              <button type="button" className="profile-secondary-btn" onClick={() => setEditOpen(false)}>Cancel</button>
+              <button type="button" className="profile-primary-btn" onClick={saveProfile} disabled={saving}>
                 {saving ? 'Saving…' : 'Save changes'}
               </button>
             </div>
@@ -453,13 +440,13 @@ export default function ProfilePage() {
               <Input label="Age" type="number" value={profile.age} onChange={v => handleProfileChange('age', v)} />
             </div>
             <div>
-              <label style={labelStyle}>Bio</label>
-              <textarea rows="4" value={profile.bio} onChange={e => handleProfileChange('bio', e.target.value)} style={textareaStyle} placeholder="Tell your team a little about yourself..." />
+              <label className="profile-field-label">Bio</label>
+              <textarea rows="4" value={profile.bio} onChange={e => handleProfileChange('bio', e.target.value)} className="profile-field-textarea" placeholder="Tell your team a little about yourself..." />
             </div>
             <SocialLinksEditorList links={socialEditorLinks} onEdit={onSocialEdit} />
             <Input label="Website / portfolio" placeholder="https://yourwebsite.com" value={profile.website} onChange={v => handleProfileChange('website', v)} />
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: upshd.maroon }}>Change password</h3>
+            <div style={{ borderTop: '1px solid var(--upshd-border, #e2e8f0)', paddingTop: '1rem' }}>
+              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: 'var(--upshd-maroon, #7a0019)' }}>Change password</h3>
               <div style={profileGridStyle}>
                 <Input label="Current password" type="password" value={passwords.currentPassword} onChange={v => handlePasswordChange('currentPassword', v)} />
                 <div />
@@ -467,7 +454,7 @@ export default function ProfilePage() {
                 <Input label="Confirm new password" type="password" value={passwords.confirmPassword} onChange={v => handlePasswordChange('confirmPassword', v)} />
               </div>
               <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
-                <button type="button" onClick={changePassword} disabled={saving} style={secondaryButton}>Update password</button>
+                <button type="button" onClick={changePassword} disabled={saving} className="profile-secondary-btn">Update password</button>
               </div>
             </div>
           </div>
@@ -480,64 +467,16 @@ export default function ProfilePage() {
 function Input({ label, value, onChange, type = 'text', placeholder, readOnly = false }) {
   return (
     <div>
-      <label style={labelStyle}>{label}</label>
+      <label className="profile-field-label">{label}</label>
       <input
         type={type}
         value={value}
         placeholder={placeholder}
         readOnly={readOnly}
         onChange={e => onChange(e.target.value)}
-        style={{
-          ...inputStyle,
-          background: readOnly ? '#f8fafc' : 'white',
-          cursor: readOnly ? 'not-allowed' : 'text'
-        }}
+        className="profile-field-input"
       />
     </div>
   )
 }
 
-const labelStyle = {
-  display: 'block',
-  marginBottom: '0.45rem',
-  fontWeight: '600',
-  color: '#374151',
-  fontSize: '0.9rem'
-}
-
-const inputStyle = {
-  width: '100%',
-  padding: '0.75rem 0.85rem',
-  border: '1px solid #cbd5e1',
-  borderRadius: '10px',
-  outline: 'none',
-  fontSize: '0.95rem',
-  boxSizing: 'border-box'
-}
-
-const textareaStyle = {
-  width: '100%',
-  padding: '0.85rem',
-  border: '1px solid #cbd5e1',
-  borderRadius: '10px',
-  outline: 'none',
-  fontSize: '0.95rem',
-  boxSizing: 'border-box',
-  resize: 'vertical',
-  fontFamily: 'inherit'
-}
-
-const primaryButton = {
-  padding: '0.75rem 1.25rem',
-  border: 'none',
-  borderRadius: '10px',
-  background: upshd.maroon,
-  color: 'white',
-  fontWeight: '600',
-  cursor: 'pointer'
-}
-
-const secondaryButton = {
-  ...primaryButton,
-  background: upshd.maroonDark
-}

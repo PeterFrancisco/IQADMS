@@ -12,6 +12,7 @@
   --upshd-border: #e5e7eb;
   --upshd-danger: #b91c1c;
   --upshd-success: #15803d;
+  --upshd-hero-gradient: linear-gradient(135deg, #5c0012 0%, #7a0019 50%, #9e1b32 100%);
 }
 
 body {

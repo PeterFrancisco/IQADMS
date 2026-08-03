@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import {
+  accentLinkStyle,
+  bodyTextStyle,
+  fieldInputStyle,
+  mutedTextStyle,
+  pageSubtitleStyle,
+  pageTitleStyle,
+  surfaceCardStyle
+} from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
 export default function RecentActivitiesPage() {
@@ -38,12 +46,12 @@ export default function RecentActivitiesPage() {
   return (
     <DashboardLayout>
       <h1 style={pageTitleStyle}>Recent Activities</h1>
-      <p style={{ color: '#64748b', marginBottom: '1.25rem' }}>
+      <p style={pageSubtitleStyle}>
         Task updates, comments, attachments, and status changes across PQAD.
       </p>
 
       <div style={{ marginBottom: '1.25rem' }}>
-        <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginRight: '0.5rem' }}>
+        <label style={{ fontSize: '0.85rem', fontWeight: 600, ...bodyTextStyle, marginRight: '0.5rem' }}>
           Project
         </label>
         <select value={projectId} onChange={e => setProjectId(e.target.value)} style={selectStyle}>
@@ -64,22 +72,22 @@ export default function RecentActivitiesPage() {
             <li key={a.id} style={card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                 <div>
-                  <Link to={`/my-tasks?task=${a.taskId}`} style={{ color: upshd.maroon, fontWeight: 700, textDecoration: 'none' }}>
+                  <Link to={`/my-tasks?task=${a.taskId}`} style={{ ...accentLinkStyle, fontWeight: 700 }}>
                     {a.taskTitle}
                   </Link>
                   {a.projectTitle && (
-                    <span style={{ color: '#64748b', fontSize: '0.85rem', marginLeft: 8 }}>· {a.projectTitle}</span>
+                    <span style={{ ...mutedTextStyle, fontSize: '0.85rem', marginLeft: 8 }}>· {a.projectTitle}</span>
                   )}
                 </div>
-                <time style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                <time style={{ ...mutedTextStyle, fontSize: '0.85rem', opacity: 0.85 }}>
                   {new Date(a.createdAt).toLocaleString()}
                 </time>
               </div>
-              <p style={{ margin: '0.5rem 0 0', color: '#334155' }}>
+              <p style={{ margin: '0.5rem 0 0', color: 'var(--upshd-text, #334155)' }}>
                 <strong style={{ textTransform: 'capitalize' }}>{a.action}</strong>
                 {a.detail ? `: ${a.detail}` : ''}
                 {a.actorName && (
-                  <span style={{ color: '#64748b' }}> · {a.actorName}</span>
+                  <span style={mutedTextStyle}> · {a.actorName}</span>
                 )}
               </p>
             </li>
@@ -90,5 +98,5 @@ export default function RecentActivitiesPage() {
   )
 }
 
-const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
-const selectStyle = { padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 220 }
+const card = { ...surfaceCardStyle, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const selectStyle = { ...fieldInputStyle, padding: '0.5rem 0.75rem', minWidth: 220 }

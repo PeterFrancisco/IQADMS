@@ -7,6 +7,7 @@ import NotificationToastWatcher from './components/NotificationToastWatcher.jsx'
 
 import './index.css'
 import './theme/upshd.css'
+import './theme/theme-accents.css'
 import './theme/dark-mode.css'
 import './theme/mobile.css'
 import './theme/icons.css'

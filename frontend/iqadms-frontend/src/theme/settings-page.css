@@ -294,6 +294,41 @@
   color: #fff;
 }
 
+.settings-accent-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.settings-accent-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--upshd-border, #cbd5e1);
+  background: var(--upshd-surface, #fff);
+  color: var(--upshd-text, #1e293b);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.settings-accent-btn.active {
+  background: var(--upshd-maroon-muted, #f3e8eb);
+  border-color: var(--upshd-maroon-light, #9e1b32);
+  color: var(--upshd-maroon, #7a0019);
+}
+
+.settings-accent-swatch {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+  flex-shrink: 0;
+}
+
 .settings-storage__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

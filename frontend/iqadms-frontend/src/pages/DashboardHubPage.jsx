@@ -27,7 +27,8 @@ const TILES = [
     to: '/recent-activities',
     icon: 'activities',
     title: 'Recent Activities',
-    desc: 'Latest updates from tasks and projects'
+    desc: 'Latest updates from tasks and projects',
+    adminOnly: true
   },
   {
     to: '/notifications',
@@ -52,13 +53,15 @@ const TILES = [
     to: '/projects',
     icon: 'projects',
     title: 'Projects',
-    desc: 'PACUCOA 2026 and other PQAD initiatives'
+    desc: 'PACUCOA 2026 and other PQAD initiatives',
+    adminOnly: true
   },
   {
     to: '/documents',
     icon: 'documents',
     title: 'Documents',
-    desc: 'Uploaded files and submission tracking'
+    desc: 'Uploaded files and submission tracking',
+    adminOnly: true
   },
 ]
 

@@ -3,8 +3,15 @@ import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { resolveNotificationLink } from '../utils/notificationLink'
-import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'
+import {
+  accentTextStyle,
+  bodyTextStyle,
+  ghostButtonStyle,
+  mutedTextStyle,
+  pageTitleStyle,
+  primaryButtonStyle,
+  surfaceCardStyle
+} from '../theme/pageStyles'
 import { appDialog } from '../utils/appDialog'
 
 
@@ -77,7 +84,7 @@ export default function NotificationsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
         <div>
           <h1 style={pageTitleStyle}>Notifications</h1>
-          <p style={{ color: '#64748b', margin: 0 }}>
+          <p style={{ ...mutedTextStyle, margin: 0 }}>
             Assignments, due dates, comments, and admin alerts.
           </p>
         </div>
@@ -102,16 +109,16 @@ export default function NotificationsPage() {
               key={n.id}
               style={{
                 ...card,
-                borderLeft: n.isRead ? '4px solid #e2e8f0' : `4px solid ${upshd.maroon}`,
+                borderLeft: n.isRead ? '4px solid var(--upshd-border, #e2e8f0)' : '4px solid var(--upshd-maroon, #7a0019)',
                 opacity: n.isRead ? 0.85 : 1
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                 <div>
                   <span style={badge}>{CATEGORY_LABELS[n.category] || n.category}</span>
-                  <h3 style={{ margin: '0.35rem 0', color: upshd.maroon, fontSize: '1.05rem' }}>{n.title}</h3>
-                  {n.body && <p style={{ margin: 0, color: '#475569' }}>{n.body}</p>}
-                  <time style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                  <h3 style={{ margin: '0.35rem 0', ...accentTextStyle, fontSize: '1.05rem' }}>{n.title}</h3>
+                  {n.body && <p style={{ margin: 0, ...bodyTextStyle }}>{n.body}</p>}
+                  <time style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.8rem', ...mutedTextStyle, opacity: 0.85 }}>
                     {new Date(n.createdAt).toLocaleString()}
                   </time>
                 </div>
@@ -147,9 +154,9 @@ function FilterBtn({ active, onClick, children }) {
       style={{
         padding: '0.45rem 0.85rem',
         borderRadius: 999,
-        border: active ? 'none' : '1px solid #cbd5e1',
-        background: active ? upshd.maroon : '#fff',
-        color: active ? '#fff' : '#475569',
+        border: active ? 'none' : '1px solid var(--upshd-border, #cbd5e1)',
+        background: active ? 'var(--upshd-maroon, #7a0019)' : 'var(--upshd-surface, #fff)',
+        color: active ? '#fff' : 'var(--upshd-text-muted, #475569)',
         fontWeight: 600,
         cursor: 'pointer'
       }}
@@ -159,8 +166,8 @@ function FilterBtn({ active, onClick, children }) {
   )
 }
 
-const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
-const badge = { fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }
-const primaryBtn = { padding: '0.45rem 0.75rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }
-const ghostBtn = { padding: '0.45rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer', fontSize: '0.85rem' }
+const card = { ...surfaceCardStyle, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const badge = { fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', ...mutedTextStyle, letterSpacing: '0.04em' }
+const primaryBtn = { ...primaryButtonStyle, padding: '0.45rem 0.75rem', fontSize: '0.85rem' }
+const ghostBtn = { ...ghostButtonStyle, padding: '0.45rem 0.75rem', fontSize: '0.85rem' }
 const dangerBtn = { ...ghostBtn, color: '#dc2626', borderColor: '#fecaca', fontSize: '0.8rem' }

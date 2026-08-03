@@ -1,5 +1,3 @@
-import { upshd } from './upshd'
-
 /** Shared layout for login, register, and request-access pages */
 export const authPageStyle = {
   minHeight: '100vh',
@@ -23,7 +21,7 @@ export const authCardStyle = {
 
 export const authHeadingStyle = {
   marginTop: 0,
-  color: upshd.maroon
+  color: 'var(--upshd-maroon, #7a0019)'
 }
 
 export const authPrimaryButtonStyle = {
@@ -32,7 +30,7 @@ export const authPrimaryButtonStyle = {
   padding: '0.9rem',
   border: 'none',
   borderRadius: '10px',
-  background: upshd.maroon,
+  background: 'var(--upshd-maroon, #7a0019)',
   color: 'white',
   fontWeight: '700',
   cursor: 'pointer'
@@ -42,10 +40,10 @@ export const authOutlineButtonStyle = {
   width: '100%',
   marginTop: '0.75rem',
   padding: '0.9rem',
-  border: `1px solid ${upshd.maroon}`,
+  border: '1px solid var(--upshd-maroon, #7a0019)',
   borderRadius: '10px',
   background: 'var(--upshd-surface, #fff)',
-  color: upshd.maroon,
+  color: 'var(--upshd-maroon, #7a0019)',
   fontWeight: '700',
   cursor: 'pointer'
 }
@@ -63,12 +61,12 @@ export const authInputStyle = {
 
 export const pageTitleStyle = {
   margin: '0 0 0.25rem',
-  color: upshd.maroon
+  color: 'var(--upshd-maroon, #7a0019)'
 }
 
 export const sectionTitleStyle = {
   marginTop: 0,
-  color: upshd.maroon
+  color: 'var(--upshd-maroon, #7a0019)'
 }
 
 export const tableHeadRowStyle = {
@@ -120,13 +118,42 @@ export const primaryButtonStyle = {
   padding: '0.85rem 1.2rem',
   border: 'none',
   borderRadius: '10px',
-  background: upshd.maroon,
+  background: 'var(--upshd-maroon, #7a0019)',
   color: 'white',
   fontWeight: '600',
   cursor: 'pointer'
 }
 
 export const linkStyle = {
-  color: upshd.maroonLight,
+  color: 'var(--upshd-maroon-light, #9e1b32)',
   textDecoration: 'none'
+}
+
+export const mutedTextStyle = {
+  color: 'var(--upshd-text-muted, #64748b)'
+}
+
+export const bodyTextStyle = {
+  color: 'var(--upshd-text, #475569)'
+}
+
+export const accentTextStyle = {
+  color: 'var(--upshd-maroon, #7a0019)'
+}
+
+export const pageSubtitleStyle = {
+  color: 'var(--upshd-text-muted, #64748b)',
+  marginBottom: '1.25rem'
+}
+
+export const accentLinkStyle = {
+  color: 'var(--upshd-maroon, #7a0019)',
+  fontWeight: 600,
+  textDecoration: 'none'
+}
+
+export const sectionHeadingStyle = {
+  margin: '0 0 0.75rem',
+  fontSize: '1.05rem',
+  color: 'var(--upshd-maroon, #7a0019)'
 }

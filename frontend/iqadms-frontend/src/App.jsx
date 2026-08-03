@@ -80,9 +80,9 @@ export default function App() {
       <Route
         path="/recent-activities"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <RecentActivitiesPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
 
