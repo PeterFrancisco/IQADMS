@@ -4,11 +4,13 @@ import SettingsAdminAccount from '../components/settings/SettingsAdminAccount'
 import SettingsGeneral from '../components/settings/SettingsGeneral'
 import SettingsMemberAccount from '../components/settings/SettingsMemberAccount'
 import SettingsSupport from '../components/settings/SettingsSupport'
+import SettingsStorage from '../components/settings/SettingsStorage'
 import '../theme/settings-page.css'
 
 const SECTIONS = [
   { id: 'account', label: 'Account settings' },
   { id: 'general', label: 'General settings' },
+  { id: 'storage', label: 'Storage', adminOnly: true },
   { id: 'support', label: 'Support', membersOnly: true }
 ]
 
@@ -17,7 +19,11 @@ export default function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const section = searchParams.get('section') || 'account'
 
-  const visibleSections = SECTIONS.filter(s => !s.membersOnly || !isAdmin)
+  const visibleSections = SECTIONS.filter(s => {
+    if (s.adminOnly && !isAdmin) return false
+    if (s.membersOnly && isAdmin) return false
+    return true
+  })
 
   function setSection(id) {
     const params = { section: id }
@@ -34,7 +40,7 @@ export default function SettingsPage() {
           <h1>Settings</h1>
           <p>
             {isAdmin
-              ? 'Account management, appearance, and system preferences.'
+              ? 'Account management, appearance, storage, and system preferences.'
               : 'Your account, appearance, and support options.'}
           </p>
         </header>
@@ -57,6 +63,8 @@ export default function SettingsPage() {
         ) : null}
 
         {activeSection === 'general' ? <SettingsGeneral /> : null}
+
+        {activeSection === 'storage' && isAdmin ? <SettingsStorage /> : null}
 
         {activeSection === 'support' && !isAdmin ? <SettingsSupport /> : null}
       </div>
