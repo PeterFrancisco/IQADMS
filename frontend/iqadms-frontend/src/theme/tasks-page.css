@@ -2,6 +2,28 @@
   margin-bottom: 1.25rem;
 }
 
+.tasks-page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tasks-page-delete-project {
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #dc2626;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tasks-page-delete-project:hover {
+  background: #fef2f2;
+}
+
 .tasks-page-header h1,
 .tasks-page-title {
   margin: 0 0 0.35rem;
@@ -442,6 +464,17 @@
 
 .project-task-board-card__btn--ghost:hover {
   background: #fff5f5;
+}
+
+.project-task-board-card__btn--danger {
+  background: #fff;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  box-shadow: none;
+}
+
+.project-task-board-card__btn--danger:hover {
+  background: #fef2f2;
 }
 
 .project-task-board-card__chips {

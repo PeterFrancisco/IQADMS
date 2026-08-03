@@ -158,6 +158,16 @@ public class ProjectsController : ControllerBase
 
         project.IsDeleted = true;
         project.UpdatedAt = DateTime.UtcNow;
+
+        var linkedTasks = await _context.WorkspaceTasks
+            .Where(t => t.ProjectId == id && !t.IsDeleted)
+            .ToListAsync();
+        foreach (var task in linkedTasks)
+        {
+            task.ProjectId = null;
+            task.UpdatedAt = DateTime.UtcNow;
+        }
+
         await _context.SaveChangesAsync();
 
         return NoContent();

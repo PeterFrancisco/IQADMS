@@ -3,6 +3,9 @@ import { useLocation } from 'react-router-dom'
 import api from '../services/api'
 import { appToast } from '../utils/appToast'
 import { isSignedIn } from '../utils/authSession'
+import { resolveNotificationLink } from '../utils/notificationLink'
+
+const POLL_MS = 8000
 
 /** Polls for new notifications and shows top-center toasts with sound. */
 export default function NotificationToastWatcher() {
@@ -35,7 +38,7 @@ export default function NotificationToastWatcher() {
           appToast.notification({
             title: n.title || 'Notification',
             body: n.body,
-            linkPath: n.linkPath || '/notifications',
+            linkPath: resolveNotificationLink(n),
             silent: false
           })
         }
@@ -50,7 +53,7 @@ export default function NotificationToastWatcher() {
     }
 
     poll()
-    const id = window.setInterval(poll, 20000)
+    const id = window.setInterval(poll, POLL_MS)
     const onChange = () => poll()
     window.addEventListener('iqadms-notifications-changed', onChange)
 

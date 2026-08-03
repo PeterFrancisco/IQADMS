@@ -69,6 +69,7 @@ export default function TasksMemberToolbar({
           <span>Project</span>
           <select value={projectFilter} onChange={e => onProjectFilterChange(e.target.value)}>
             <option value="">All projects</option>
+            <option value="__none__">No project</option>
             {projects.map(p => (
               <option key={p.id} value={p.id}>
                 {p.title}

@@ -13,6 +13,14 @@ import AppIcon from '../components/AppIcon'
 import '../theme/tasks-page.css'
 import { appDialog } from '../utils/appDialog'
 import { notifyTaskEmailFromResponse, explainNoAssigneeEmail } from '../utils/taskEmailFeedback'
+import {
+  NO_PROJECT_SECTION,
+  buildTaskBoardLink,
+  effectiveTaskSectionId
+} from '../utils/notificationLink'
+import { dispatchNotificationsChanged, dispatchTasksChanged } from '../utils/appEvents'
+
+const TASK_POLL_MS = 10000
 
 
 const STATUS_OPTIONS = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
@@ -77,15 +85,14 @@ function taskRelatedDepartmentId(task) {
   return task?.relatedDepartmentId ?? task?.RelatedDepartmentId ?? ''
 }
 
-function applyAdminTaskFilters(tasks, { search, status, assignee, department, project }) {
+function applyAdminTaskFilters(tasks, { search, status, assignee, department, project, activeProjectIds }) {
   let list = tasks
   const q = search.trim().toLowerCase()
   if (q) list = list.filter(t => (t.title || '').toLowerCase().includes(q))
   if (status !== 'all') list = list.filter(t => t.status === status)
   if (assignee) list = list.filter(t => String(taskAssigneeId(t)) === assignee)
   if (department) list = list.filter(t => String(taskRelatedDepartmentId(t)) === department)
-  if (project === '__none__') list = list.filter(t => !taskProjectId(t))
-  else if (project) list = list.filter(t => String(taskProjectId(t)) === project)
+  if (project) list = list.filter(t => effectiveTaskSectionId(t, activeProjectIds) === project)
   return list
 }
 
@@ -185,6 +192,23 @@ export default function DashboardPage() {
   }, [filterProjectId, filterDepartmentId])
 
   useEffect(() => {
+    const onTasksChanged = () => loadData(true)
+    window.addEventListener('iqadms-tasks-changed', onTasksChanged)
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') loadData(true)
+    }, TASK_POLL_MS)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadData(true)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('iqadms-tasks-changed', onTasksChanged)
+      window.clearInterval(pollId)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [filterProjectId, filterDepartmentId])
+
+  useEffect(() => {
     if (!filterTaskId || loading) return
     if (openedTaskLinkRef.current === filterTaskId) return
 
@@ -194,10 +218,18 @@ export default function DashboardPage() {
       const found = tasks.find(t => t.id === filterTaskId)
       try {
         const task = found || (await api.get(`/Tasks/${filterTaskId}`)).data
-        if (!cancelled) {
-          openedTaskLinkRef.current = filterTaskId
-          await openTaskDetail(task)
+        if (cancelled) return
+
+        const activeIds = new Set(projects.map(p => String(p.id)))
+        const sectionId = effectiveTaskSectionId(task, activeIds)
+        if (!filterProjectId) {
+          navigate(buildTaskBoardLink(task.id, sectionId === NO_PROJECT_SECTION ? null : sectionId), {
+            replace: true
+          })
         }
+
+        openedTaskLinkRef.current = filterTaskId
+        await openTaskDetail(task)
       } catch (err) {
         console.error(err)
       }
@@ -207,14 +239,21 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [filterTaskId, loading, tasks])
+  }, [filterTaskId, filterProjectId, loading, tasks, projects, navigate])
 
-  async function loadData() {
+  function refreshAfterMutation() {
+    dispatchTasksChanged()
+    dispatchNotificationsChanged()
+  }
+
+  async function loadData(silent = false) {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       const taskUrl = '/Tasks'
       const taskParams = {}
-      if (filterProjectId) taskParams.projectId = filterProjectId
+      if (filterProjectId && filterProjectId !== NO_PROJECT_SECTION) {
+        taskParams.projectId = filterProjectId
+      }
       if (filterDepartmentId) taskParams.relatedDepartmentId = filterDepartmentId
       const [tasksRes, membersRes, columnsRes, valuesRes, projectsRes, deptRes] = await Promise.all([
         api.get(taskUrl, { params: taskParams }),
@@ -241,9 +280,14 @@ export default function DashboardPage() {
         await appDialog.alert(getApiErrorMessage(err, 'Failed to load My Tasks. Check your connection and try again.'))
       }
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
+
+  const activeProjectIds = useMemo(
+    () => new Set(projects.map(p => String(p.id))),
+    [projects]
+  )
 
   const guidOrNull = value => (value && String(value).trim() ? value : null)
 
@@ -300,7 +344,7 @@ export default function DashboardPage() {
         attachment: null
       })
       setShowCreateModal(false)
-      loadData()
+      refreshAfterMutation()
 
       const hadAssignee = assignedToOther
       if (res.headers?.['x-iqadms-task-email-error'] || res.headers?.['x-iqadms-task-email-to']) {
@@ -364,7 +408,8 @@ export default function DashboardPage() {
       status: adminStatusFilter,
       assignee: adminAssigneeFilter,
       department: filterDepartmentId,
-      project: adminToolbarProject
+      project: adminToolbarProject,
+      activeProjectIds
     })
   }, [
     tasks,
@@ -373,7 +418,8 @@ export default function DashboardPage() {
     adminStatusFilter,
     adminAssigneeFilter,
     filterDepartmentId,
-    adminToolbarProject
+    adminToolbarProject,
+    activeProjectIds
   ])
 
   const adminProjectSections = useMemo(() => {
@@ -383,12 +429,16 @@ export default function DashboardPage() {
       title: p.title,
       status: p.status,
       priority: p.priority,
-      tasks: adminFilteredTasks.filter(t => String(taskProjectId(t)) === String(p.id))
+      tasks: adminFilteredTasks.filter(
+        t => effectiveTaskSectionId(t, activeProjectIds) === String(p.id)
+      )
     }))
-    const unassigned = adminFilteredTasks.filter(t => !taskProjectId(t))
-    if (unassigned.length) {
+    const unassigned = adminFilteredTasks.filter(
+      t => effectiveTaskSectionId(t, activeProjectIds) === NO_PROJECT_SECTION
+    )
+    if (unassigned.length || adminToolbarProject === NO_PROJECT_SECTION) {
       sections.push({
-        id: '__none__',
+        id: NO_PROJECT_SECTION,
         title: 'No project',
         status: null,
         priority: null,
@@ -399,7 +449,7 @@ export default function DashboardPage() {
       sections = sections.filter(s => s.id === adminToolbarProject)
     }
     return sortProjectSections(sections, adminSortKey)
-  }, [isAdmin, projects, adminFilteredTasks, adminToolbarProject, adminSortKey])
+  }, [isAdmin, projects, adminFilteredTasks, adminToolbarProject, adminSortKey, activeProjectIds])
 
   const memberProjects = useMemo(() => {
     const map = new Map()
@@ -416,6 +466,11 @@ export default function DashboardPage() {
     return [...map.values()].sort((a, b) => a.title.localeCompare(b.title))
   }, [tasks])
 
+  const memberActiveProjectIds = useMemo(
+    () => new Set(memberProjects.map(p => String(p.id))),
+    [memberProjects]
+  )
+
   const memberFilteredTasks = useMemo(() => {
     if (isAdmin) return tasks
     return applyAdminTaskFilters(tasks, {
@@ -423,9 +478,10 @@ export default function DashboardPage() {
       status: memberStatusFilter,
       assignee: '',
       department: '',
-      project: memberToolbarProject
+      project: memberToolbarProject,
+      activeProjectIds: memberActiveProjectIds
     })
-  }, [tasks, isAdmin, memberSearch, memberStatusFilter, memberToolbarProject])
+  }, [tasks, isAdmin, memberSearch, memberStatusFilter, memberToolbarProject, memberActiveProjectIds])
 
   const memberProjectSections = useMemo(() => {
     if (isAdmin) return []
@@ -434,13 +490,17 @@ export default function DashboardPage() {
       title: p.title,
       status: null,
       priority: null,
-      tasks: memberFilteredTasks.filter(t => String(taskProjectId(t)) === String(p.id))
+      tasks: memberFilteredTasks.filter(
+        t => effectiveTaskSectionId(t, memberActiveProjectIds) === String(p.id)
+      )
     }))
-    const unassigned = memberFilteredTasks.filter(t => !taskProjectId(t))
-    if (unassigned.length) {
+    const unassigned = memberFilteredTasks.filter(
+      t => effectiveTaskSectionId(t, memberActiveProjectIds) === NO_PROJECT_SECTION
+    )
+    if (unassigned.length || memberToolbarProject === NO_PROJECT_SECTION) {
       sections.push({
-        id: '__none__',
-        title: 'Other tasks',
+        id: NO_PROJECT_SECTION,
+        title: 'No project',
         status: null,
         priority: null,
         tasks: unassigned
@@ -450,21 +510,35 @@ export default function DashboardPage() {
       sections = sections.filter(s => s.id === memberToolbarProject)
     }
     return sortProjectSections(sections, memberSortKey)
-  }, [isAdmin, memberProjects, memberFilteredTasks, memberToolbarProject, memberSortKey])
+  }, [isAdmin, memberProjects, memberFilteredTasks, memberToolbarProject, memberSortKey, memberActiveProjectIds])
 
   const adminFocusSortedTasks = useMemo(() => {
     if (!isAdmin || !filterProjectId) return sortedTasks
+    if (filterProjectId === NO_PROJECT_SECTION) {
+      return sortTasksList(
+        adminFilteredTasks.filter(
+          t => effectiveTaskSectionId(t, activeProjectIds) === NO_PROJECT_SECTION
+        )
+      )
+    }
     return sortTasksList(
       adminFilteredTasks.filter(t => String(taskProjectId(t)) === filterProjectId)
     )
-  }, [isAdmin, filterProjectId, sortedTasks, adminFilteredTasks, sortConfig, boardColumns, cellValues])
+  }, [isAdmin, filterProjectId, sortedTasks, adminFilteredTasks, sortConfig, boardColumns, cellValues, activeProjectIds])
 
   const memberFocusSortedTasks = useMemo(() => {
     if (isAdmin || !filterProjectId) return sortedTasks
+    if (filterProjectId === NO_PROJECT_SECTION) {
+      return sortTasksList(
+        memberFilteredTasks.filter(
+          t => effectiveTaskSectionId(t, memberActiveProjectIds) === NO_PROJECT_SECTION
+        )
+      )
+    }
     return sortTasksList(
       memberFilteredTasks.filter(t => String(taskProjectId(t)) === filterProjectId)
     )
-  }, [isAdmin, filterProjectId, sortedTasks, memberFilteredTasks, sortConfig, boardColumns, cellValues])
+  }, [isAdmin, filterProjectId, sortedTasks, memberFilteredTasks, sortConfig, boardColumns, cellValues, memberActiveProjectIds])
 
   const openCreateForProject = projectId => {
     setCreateForm(prev => ({
@@ -552,7 +626,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error(err)
       await appDialog.alert('Failed to save cell value.')
-      loadData()
+      refreshAfterMutation()
     }
   }
 
@@ -567,7 +641,7 @@ export default function DashboardPage() {
     try {
       await api.delete(`/BoardColumns/${columnId}`)
       setDeleteColumnPrompt(null)
-      loadData()
+      refreshAfterMutation()
     } catch (err) {
       console.error(err)
       await appDialog.alert(err.response?.data?.message || `Failed to delete column "${columnName}".`)
@@ -596,7 +670,7 @@ export default function DashboardPage() {
       setNewColumnForm({ name: '', columnType: 'text', optionsText: '', binding: '' })
       setInsertAfterColumnId(null)
       setShowAddColumnModal(false)
-      loadData()
+      refreshAfterMutation()
 
     } catch (err) {
       console.error(err)
@@ -612,6 +686,7 @@ export default function DashboardPage() {
       if (selectedTask?.id === id) {
         setSelectedTask(res.data)
       }
+      refreshAfterMutation()
     } catch (err) {
       console.error(err)
       const apiMsg = err.response?.data?.message
@@ -673,9 +748,31 @@ export default function DashboardPage() {
       return
     try {
       await api.delete(`/Tasks/${task.id}`)
-      loadData()
+      dispatchTasksChanged()
+      dispatchNotificationsChanged()
     } catch (err) {
       await appDialog.alert(err.response?.data?.message || 'Failed to delete task.')
+    }
+  }
+
+  const deleteProjectBoard = async (projectId, title) => {
+    if (!isAdmin || projectId === NO_PROJECT_SECTION) return
+    if (
+      !(await appDialog.confirm({
+        title: 'Delete project',
+        message: `Delete project "${title}"? Tasks in this board will move to No project.`,
+        confirmLabel: 'Delete project',
+        danger: true
+      }))
+    )
+      return
+    try {
+      await api.delete(`/Projects/${projectId}`)
+      dispatchTasksChanged()
+      if (filterProjectId === projectId) navigate('/my-tasks')
+      refreshAfterMutation()
+    } catch (err) {
+      await appDialog.alert(err.response?.data?.message || 'Failed to delete project.')
     }
   }
 
@@ -685,7 +782,7 @@ export default function DashboardPage() {
       setTaskActionLoading(true)
       const res = await api.post(`/Tasks/${selectedTask.id}/return`, { remark: adminReturnRemark.trim() })
       setSelectedTask(res.data)
-      loadData()
+      refreshAfterMutation()
       closeTaskDetail()
     } catch (err) {
       await appDialog.alert(err.response?.data?.message || 'Failed to return task.')
@@ -702,7 +799,7 @@ export default function DashboardPage() {
         remark: adminCompleteRemark.trim() || null
       })
       setSelectedTask(res.data)
-      loadData()
+      refreshAfterMutation()
       closeTaskDetail()
     } catch (err) {
       await appDialog.alert(err.response?.data?.message || 'Failed to complete task.')
@@ -720,7 +817,7 @@ export default function DashboardPage() {
       setMemberAttachment(null)
       const refreshed = (await api.get(`/Tasks/${selectedTask.id}`)).data
       setSelectedTask(refreshed)
-      loadData()
+      refreshAfterMutation()
       if (
         uploadRes.headers?.['x-iqadms-task-email-error'] ||
         uploadRes.headers?.['x-iqadms-task-email-sent']
@@ -754,7 +851,7 @@ export default function DashboardPage() {
         await notifyTaskEmailFromResponse(res, 'Deliverable submitted for review.')
       }
       closeTaskDetail()
-      loadData()
+      refreshAfterMutation()
     } catch (err) {
       console.error(err)
       await appDialog.alert(err.response?.data?.message || 'Failed to submit deliverable.')
@@ -773,6 +870,7 @@ export default function DashboardPage() {
         await notifyTaskEmailFromResponse(res, 'Assignee updated.')
       }
       setTasks(prev => prev.map(t => (t.id === id ? res.data : t)))
+      refreshAfterMutation()
     } catch (err) {
       console.error(err)
       await appDialog.alert('Failed to assign member.')
@@ -810,7 +908,7 @@ export default function DashboardPage() {
       const res = await api.post(`/Tasks/${selectedTask.id}/comments`, { body: newComment.trim() })
       setTaskComments(prev => [...prev, res.data])
       setNewComment('')
-      loadData()
+      refreshAfterMutation()
     } catch (err) {
       console.error(err)
       await appDialog.alert(err.response?.data?.message || 'Failed to post comment.')
@@ -819,7 +917,10 @@ export default function DashboardPage() {
     }
   }
 
-  const filterProject = (isAdmin ? projects : memberProjects).find(p => p.id === filterProjectId)
+  const filterProject =
+    filterProjectId === NO_PROJECT_SECTION
+      ? { id: NO_PROJECT_SECTION, title: 'No project' }
+      : (isAdmin ? projects : memberProjects).find(p => p.id === filterProjectId)
   const filterDepartment = departments.find(d => d.id === filterDepartmentId)
 
   const adminAllBoardsView = isAdmin && !filterProjectId
@@ -850,6 +951,8 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div>
         <header className="tasks-page-header">
+        <div className="tasks-page-header-row">
+          <div>
         <h1 className="tasks-page-title">{isAdmin ? 'Tasks' : 'My Tasks'}</h1>
         <p className="tasks-page-sub">
           {isAdmin
@@ -866,6 +969,17 @@ export default function DashboardPage() {
             </span>
           )}
         </p>
+          </div>
+          {isAdmin && adminFocusView && filterProjectId && filterProjectId !== NO_PROJECT_SECTION && filterProject ? (
+            <button
+              type="button"
+              className="tasks-page-delete-project"
+              onClick={() => deleteProjectBoard(filterProjectId, filterProject.title)}
+            >
+              Delete project
+            </button>
+          ) : null}
+        </div>
         </header>
 
         {isAdmin && (
@@ -962,13 +1076,17 @@ export default function DashboardPage() {
             {projectSections.length === 0 && !loading ? (
               <p style={{ color: '#64748b' }}>
                 {isAdmin ? (
-                  <>
-                    No projects yet.{' '}
-                    <Link to="/projects" style={{ color: '#7a0019', fontWeight: 600 }}>
-                      Create a project
-                    </Link>{' '}
-                    to add task boards.
-                  </>
+                  adminToolbarProject === NO_PROJECT_SECTION ? (
+                    'No tasks without a project.'
+                  ) : (
+                    <>
+                      No projects yet.{' '}
+                      <Link to="/projects" style={{ color: '#7a0019', fontWeight: 600 }}>
+                        Create a project
+                      </Link>{' '}
+                      to add task boards.
+                    </>
+                  )
                 ) : (
                   'No tasks assigned to you yet.'
                 )}
@@ -983,16 +1101,20 @@ export default function DashboardPage() {
                 tasks={section.tasks}
                 subtitle={!isAdmin ? 'Your assignments in this project' : undefined}
                 focusLabel={isAdmin ? 'Focus board' : 'Open project'}
-                onOpenFocus={
-                  section.id !== '__none__'
-                    ? () => navigate(`/my-tasks?project=${section.id}`)
+                onOpenFocus={() => navigate(`/my-tasks?project=${section.id}`)}
+                onCreateTask={
+                  isAdmin ? () => openCreateForProject(section.id === NO_PROJECT_SECTION ? '' : section.id) : undefined
+                }
+                onDeleteProject={
+                  isAdmin && section.id !== NO_PROJECT_SECTION
+                    ? () => deleteProjectBoard(section.id, section.title)
                     : undefined
                 }
-                onCreateTask={
-                  isAdmin && section.id !== '__none__' ? () => openCreateForProject(section.id) : undefined
-                }
               >
-                {renderTaskBoard(section.tasks, section.id !== '__none__' ? section.id : '')}
+                {renderTaskBoard(
+                  section.tasks,
+                  section.id !== NO_PROJECT_SECTION ? section.id : ''
+                )}
               </ProjectTaskBoardCard>
             ))}
           </div>

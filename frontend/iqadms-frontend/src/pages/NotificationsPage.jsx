@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
+import { resolveNotificationLink } from '../utils/notificationLink'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import { pageTitleStyle } from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
 const CATEGORY_LABELS = {
@@ -115,12 +117,12 @@ export default function NotificationsPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-end' }}>
                   {!n.isRead && (
-                    <button type="button" style={primaryBtn} onClick={() => markRead(n.id, n.linkPath)}>
-                      {n.linkPath ? 'Open & mark read' : 'Mark read'}
+                    <button type="button" style={primaryBtn} onClick={() => markRead(n.id, resolveNotificationLink(n))}>
+                      {resolveNotificationLink(n) !== '/notifications' ? 'Open & mark read' : 'Mark read'}
                     </button>
                   )}
-                  {n.isRead && n.linkPath && (
-                    <Link to={n.linkPath} style={{ ...ghostBtn, textDecoration: 'none', textAlign: 'center' }}>
+                  {n.isRead && resolveNotificationLink(n) !== '/notifications' && (
+                    <Link to={resolveNotificationLink(n)} style={{ ...ghostBtn, textDecoration: 'none', textAlign: 'center' }}>
                       Open
                     </Link>
                   )}

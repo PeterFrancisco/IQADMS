@@ -24,9 +24,13 @@ export default function DashboardLayout({ children }) {
     loadUnreadCount()
     const onChange = () => loadUnreadCount()
     window.addEventListener('iqadms-notifications-changed', onChange)
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') loadUnreadCount()
+    }, 8000)
     const heartbeatId = startPresenceHeartbeat()
     return () => {
       window.removeEventListener('iqadms-notifications-changed', onChange)
+      window.clearInterval(pollId)
       clearInterval(heartbeatId)
     }
   }, [])

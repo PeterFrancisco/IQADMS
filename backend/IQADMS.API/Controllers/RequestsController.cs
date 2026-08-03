@@ -173,7 +173,7 @@ public class RequestsController : ControllerBase
             "task",
             "Extension approved",
             $"Your deadline extension for \"{ext.Task.Title}\" was approved.",
-            $"/my-tasks?task={ext.TaskId}",
+            NotificationService.BuildTaskLinkPath(ext.TaskId, ext.Task.ProjectId),
             ext.TaskId,
             ext.Task.ProjectId,
             $"extension-approved-{ext.Id}");
@@ -206,7 +206,7 @@ public class RequestsController : ControllerBase
             "task",
             "Extension declined",
             $"Your deadline extension for \"{ext.Task.Title}\" was not approved.",
-            $"/my-tasks?task={ext.TaskId}",
+            NotificationService.BuildTaskLinkPath(ext.TaskId, ext.Task.ProjectId),
             ext.TaskId,
             ext.Task.ProjectId,
             $"extension-rejected-{ext.Id}");

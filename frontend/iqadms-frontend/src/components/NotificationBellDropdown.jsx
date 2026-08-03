@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import api from '../services/api'
+import { resolveNotificationLink } from '../utils/notificationLink'
 import '../theme/notification-bell.css'
 
 const CATEGORY_LABEL = {
@@ -72,7 +73,8 @@ export default function NotificationBellDropdown() {
       // ignore
     }
     setOpen(false)
-    if (n.linkPath) navigate(n.linkPath)
+    const path = resolveNotificationLink(n)
+    if (path) navigate(path)
   }
 
   return (

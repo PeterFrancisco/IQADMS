@@ -5,8 +5,8 @@ import api from '../services/api'
 import { upshd } from '../theme/upshd'
 import { pageTitleStyle } from '../theme/pageStyles'
 import '../theme/projects-page.css'
+import { countOrphanTasks, NO_PROJECT_SECTION } from '../utils/notificationLink'
 import { appDialog } from '../utils/appDialog'
-
 
 const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled']
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical']
@@ -24,6 +24,7 @@ const emptyForm = () => ({
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
+  const [orphanTaskCount, setOrphanTaskCount] = useState(0)
   const [members, setMembers] = useState([])
   const [departments, setDepartments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -39,14 +40,17 @@ export default function ProjectsPage() {
   async function loadAll() {
     try {
       setLoading(true)
-      const [projRes, membersRes, deptRes] = await Promise.all([
+      const [projRes, membersRes, deptRes, tasksRes] = await Promise.all([
         api.get('/Projects'),
         api.get('/Profile/members'),
-        api.get('/Departments')
+        api.get('/Departments'),
+        api.get('/Tasks')
       ])
       setProjects(projRes.data)
       setMembers(membersRes.data)
       setDepartments(deptRes.data)
+      const activeIds = new Set(projRes.data.map(p => String(p.id)))
+      setOrphanTaskCount(countOrphanTasks(tasksRes.data, activeIds))
     } catch (err) {
       console.error(err)
       await appDialog.alert(err.response?.data?.message || 'Failed to load projects.')
@@ -120,7 +124,7 @@ export default function ProjectsPage() {
     if (
       !(await appDialog.confirm({
         title: 'Delete project',
-        message: `Delete project "${title}"? Tasks will remain but lose project link.`,
+        message: `Delete project "${title}"? Tasks in this board will move to No project.`,
         confirmLabel: 'Delete',
         danger: true
       }))
@@ -151,12 +155,35 @@ export default function ProjectsPage() {
 
       {loading ? (
         <p>Loading projects…</p>
-      ) : projects.length === 0 ? (
+      ) : projects.length === 0 && orphanTaskCount === 0 ? (
         <div style={emptyCard}>
           <p style={{ margin: 0, color: '#64748b' }}>No projects yet. Create one to group tasks and departments.</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '1rem' }}>
+          {orphanTaskCount > 0 && (
+            <div key={NO_PROJECT_SECTION} className="projects-page-card projects-page-card--orphan">
+              <div className="projects-page-card__top">
+                <div className="projects-page-card__progress" style={{ background: 'conic-gradient(#64748b 0deg, #e2e8f0 0)' }} aria-hidden>
+                  <span>—</span>
+                </div>
+                <div className="projects-page-card__main">
+                  <h2 className="projects-page-card__title">No project</h2>
+                  <p className="projects-page-card__desc">
+                    Tasks not linked to an active project ({orphanTaskCount} task{orphanTaskCount === 1 ? '' : 's'}).
+                  </p>
+                  <div className="projects-page-card__badges">
+                    <Badge label={`${orphanTaskCount} task${orphanTaskCount === 1 ? '' : 's'}`} muted />
+                  </div>
+                </div>
+                <div className="projects-page-card__actions">
+                  <Link to={`/my-tasks?project=${NO_PROJECT_SECTION}`} className="projects-page-card__link">
+                    View tasks
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
           {projects.map(p => (
             <div key={p.id} className="projects-page-card">
               <div className="projects-page-card__top">

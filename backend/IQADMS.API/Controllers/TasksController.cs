@@ -133,7 +133,7 @@ public class TasksController : ControllerBase
                 "task",
                 "Task assigned to you",
                 $"You were assigned \"{task.Title}\".",
-                "/my-tasks",
+                NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                 task.Id,
                 task.ProjectId,
                 $"task-assigned-{task.Id}-{task.AssignedToUserId}");
@@ -287,7 +287,7 @@ public class TasksController : ControllerBase
                         "task",
                         "Task assigned to you",
                         $"You were assigned \"{task.Title}\".",
-                        "/my-tasks",
+                        NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                         task.Id,
                         task.ProjectId,
                         $"task-assigned-{task.Id}-{request.AssignedToUserId}");
@@ -317,7 +317,7 @@ public class TasksController : ControllerBase
                         "task",
                         "Removed from task",
                         $"You were unassigned from \"{task.Title}\".",
-                        "/my-tasks",
+                        NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                         task.Id,
                         task.ProjectId,
                         $"task-unassigned-{task.Id}-{previousAssignee}");
@@ -424,7 +424,7 @@ public class TasksController : ControllerBase
                 "task",
                 "New comment on task",
                 $"Comment on \"{task.Title}\".",
-                "/my-tasks",
+                NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                 task.Id,
                 task.ProjectId);
         }
@@ -565,7 +565,7 @@ public class TasksController : ControllerBase
                 "task",
                 "Task submitted for review",
                 $"\"{task.Title}\" was submitted by the assignee.",
-                $"/my-tasks?task={task.Id}",
+                NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                 task.Id,
                 task.ProjectId,
                 dedupKey: $"task-submitted-{task.Id}-{task.SubmittedAt:O}");
@@ -613,8 +613,9 @@ public class TasksController : ControllerBase
                 "task",
                 "Task returned — incomplete",
                 notice,
-                $"/my-tasks?task={task.Id}",
-                task.Id);
+                NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
+                task.Id,
+                task.ProjectId);
         }
 
         return Ok(await MapTaskById(id));
@@ -653,8 +654,9 @@ public class TasksController : ControllerBase
                 "task",
                 "Task approved — completed",
                 notice,
-                $"/my-tasks?task={task.Id}",
-                task.Id);
+                NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
+                task.Id,
+                task.ProjectId);
         }
 
         return Ok(await MapTaskById(id));
@@ -793,7 +795,7 @@ public class TasksController : ControllerBase
                     "task",
                     "Task in progress",
                     $"\"{task.Title}\" moved to In Progress.",
-                    $"/my-tasks?task={task.Id}",
+                    NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                     task.Id,
                     task.ProjectId,
                     dedupKey: $"task-inprogress-{task.Id}-{DateTime.UtcNow:yyyyMMddHHmm}");
@@ -827,7 +829,7 @@ public class TasksController : ControllerBase
                 "task",
                 "Task in progress",
                 $"\"{task.Title}\" is now In Progress.",
-                $"/my-tasks?task={task.Id}",
+                NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                 task.Id,
                 task.ProjectId);
         }

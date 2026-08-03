@@ -13,6 +13,13 @@ public class NotificationService
         _context = context;
     }
 
+    public static string BuildTaskLinkPath(Guid taskId, Guid? projectId)
+    {
+        if (projectId.HasValue)
+            return $"/my-tasks?task={taskId}&project={projectId}";
+        return $"/my-tasks?task={taskId}&project=__none__";
+    }
+
     public async Task NotifyAsync(
         Guid userId,
         string category,
@@ -70,7 +77,7 @@ public class NotificationService
                     "reminder",
                     "Task due today",
                     $"\"{task.Title}\" is due today.",
-                    "/my-tasks",
+                    BuildTaskLinkPath(task.Id, task.ProjectId),
                     task.Id,
                     task.ProjectId,
                     $"task-due-today-{task.Id}-{todayKey}");
@@ -82,7 +89,7 @@ public class NotificationService
                     "reminder",
                     "Overdue task",
                     $"\"{task.Title}\" was due on {due:yyyy-MM-dd}.",
-                    "/my-tasks",
+                    BuildTaskLinkPath(task.Id, task.ProjectId),
                     task.Id,
                     task.ProjectId,
                     $"task-overdue-{task.Id}-{todayKey}");
