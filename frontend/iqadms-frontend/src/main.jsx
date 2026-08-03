@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AppDialogProvider } from './components/AppDialogProvider.jsx'
+import { AppToastProvider } from './components/AppToastProvider.jsx'
+import NotificationToastWatcher from './components/NotificationToastWatcher.jsx'
 
 import './index.css'
 import './theme/upshd.css'
@@ -11,7 +13,9 @@ import App from './App.jsx'
 import { startSessionKeepAlive } from './services/api'
 import { isSignedIn } from './utils/authSession'
 import { ensureLatestAppShell } from './utils/appBuildCache'
+import { applyUserPreferences } from './utils/userPreferences'
 
+applyUserPreferences()
 ensureLatestAppShell()
 
 if (isSignedIn()) {
@@ -21,9 +25,12 @@ if (isSignedIn()) {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <AppDialogProvider>
-        <App />
-      </AppDialogProvider>
+      <AppToastProvider>
+        <AppDialogProvider>
+          <NotificationToastWatcher />
+          <App />
+        </AppDialogProvider>
+      </AppToastProvider>
     </BrowserRouter>
   </StrictMode>
 )

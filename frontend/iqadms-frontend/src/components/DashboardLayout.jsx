@@ -72,15 +72,6 @@ export default function DashboardLayout({ children }) {
 
         <NavItem label="Notifications" to="/notifications" icon="notifications" badge={unreadNotifications} onNavigate={closeMobile} />
         <TeamMembersDropdown label="PQAD Team" icon="team" onNavigate={closeMobile} />
-
-        {isAdmin && (
-          <>
-            <div className="sidebar-divider" />
-            <NavItem label="Account Requests" to="/settings" icon="account-requests" onNavigate={closeMobile} />
-            <NavItem label="Add Account" to="/admin/add-account" icon="add-account" onNavigate={closeMobile} />
-            <NavItem label="Manage Users" to="/admin/manage-users" icon="manage-users" onNavigate={closeMobile} />
-          </>
-        )}
       </aside>
 
       <main className={`main ${sidebarOpen ? 'main-shifted' : ''}`}>
@@ -381,28 +372,9 @@ function ProfileMenu() {
           <AppIcon name="profile" size={18} /> Profile
         </button>
 
-        {isAdmin ? (
-          <>
-            <button type="button" className="menu-item" onClick={() => go('/admin/add-account')}>
-              <AppIcon name="add-account" size={18} /> Add Account
-            </button>
-            <button type="button" className="menu-item" onClick={() => go('/admin/manage-users')}>
-              <AppIcon name="manage-users" size={18} /> Manage Users
-            </button>
-            <button type="button" className="menu-item" onClick={() => go('/settings')}>
-              <AppIcon name="account-requests" size={18} /> Account Requests
-            </button>
-          </>
-        ) : (
-          <>
-            <button type="button" className="menu-item" onClick={() => go('/report/bug')}>
-              <AppIcon name="bug" size={18} /> Report a Bug
-            </button>
-            <button type="button" className="menu-item" onClick={() => go('/report/feedback')}>
-              <AppIcon name="feedback" size={18} /> Give Feedback
-            </button>
-          </>
-        )}
+        <button type="button" className="menu-item" onClick={() => go('/settings')}>
+          <AppIcon name="account-requests" size={18} /> Settings
+        </button>
 
         <div className="menu-divider" />
         <button type="button" className="menu-item danger" onClick={logout}>

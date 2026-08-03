@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle } from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
-export default function AdminManageUsersPage() {
+export function AdminManageUsersContent() {
   const [users, setUsers] = useState([])
   const [allowedUsers, setAllowedUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -135,8 +136,7 @@ export default function AdminManageUsersPage() {
   const currentUsername = localStorage.getItem('username')
 
   return (
-    <DashboardLayout>
-      <div style={{ display: 'grid', gap: '1.5rem' }}>
+    <div style={{ display: 'grid', gap: '1.5rem' }}>
         <div>
           <h1 style={pageTitleStyle}>Manage Users</h1>
           <p style={{ color: '#64748b', margin: 0 }}>Remove registered users or pending allowed emails.</p>
@@ -287,6 +287,13 @@ export default function AdminManageUsersPage() {
           </>
         )}
       </div>
+  )
+}
+
+export default function AdminManageUsersPage() {
+  return (
+    <DashboardLayout>
+      <AdminManageUsersContent />
     </DashboardLayout>
   )
 }

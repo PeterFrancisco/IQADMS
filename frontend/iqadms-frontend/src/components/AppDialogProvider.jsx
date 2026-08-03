@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import AppModal, { ConfirmDialog } from './AppModal'
 import { registerAppDialog } from '../utils/appDialog'
+import { appToast } from '../utils/appToast'
 
 const AppDialogContext = createContext(null)
 
@@ -46,11 +47,9 @@ export function AppDialogProvider({ children }) {
   const [confirmState, setConfirmState] = useState(null)
   const [promptState, setPromptState] = useState(null)
   const [promptValue, setPromptValue] = useState('')
-  const [alertState, setAlertState] = useState(null)
   const promptInputRef = useRef(null)
   const confirmResolveRef = useRef(null)
   const promptResolveRef = useRef(null)
-  const alertResolveRef = useRef(null)
 
   useEffect(() => {
     if (!promptState) return undefined
@@ -74,12 +73,6 @@ export function AppDialogProvider({ children }) {
     promptResolveRef.current = null
     setPromptState(null)
     setPromptValue('')
-  }, [])
-
-  const closeAlert = useCallback(() => {
-    alertResolveRef.current?.()
-    alertResolveRef.current = null
-    setAlertState(null)
   }, [])
 
   const confirm = useCallback((options) => {
@@ -114,11 +107,20 @@ export function AppDialogProvider({ children }) {
 
   const alert = useCallback((options) => {
     const message = typeof options === 'string' ? options : options.message
-    const title = typeof options === 'string' ? 'Notice' : (options.title ?? 'Notice')
-    return new Promise((resolve) => {
-      alertResolveRef.current = resolve
-      setAlertState({ title, message: message ?? '' })
+    const title = typeof options === 'string' ? undefined : options.title
+    const explicitError =
+      typeof options !== 'string' &&
+      (options.variant === 'error' || options.type === 'error')
+    const heuristicError =
+      typeof message === 'string' && /fail|error|could not|unable|invalid|not found/i.test(message)
+    const isError = explicitError || heuristicError
+    appToast.show({
+      title: title || (isError ? 'Error' : undefined),
+      message: message ?? '',
+      type: isError ? 'error' : 'success',
+      duration: Math.min(6000, 2800 + (message?.length || 0) * 8)
     })
+    return Promise.resolve()
   }, [])
 
   const apiRef = useRef({ confirm, prompt, alert })
@@ -192,23 +194,6 @@ export function AppDialogProvider({ children }) {
         />
       </AppModal>
 
-      <AppModal
-        open={Boolean(alertState)}
-        onClose={closeAlert}
-        title={alertState?.title}
-        size="sm"
-        footer={
-          <div className="app-modal-actions">
-            <button type="button" className="app-modal-btn app-modal-btn-primary" onClick={closeAlert}>
-              OK
-            </button>
-          </div>
-        }
-      >
-        <p className="app-modal-message" style={{ whiteSpace: 'pre-wrap' }}>
-          {alertState?.message}
-        </p>
-      </AppModal>
     </AppDialogContext.Provider>
   )
 }

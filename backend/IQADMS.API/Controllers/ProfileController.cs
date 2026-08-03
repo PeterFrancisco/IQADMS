@@ -100,6 +100,56 @@ public class ProfileController : ControllerBase
         return Ok(new { message = "Profile updated successfully." });
     }
 
+    [HttpPost("me/change-email")]
+    public async Task<IActionResult> ChangeEmail(ChangeEmailRequest request)
+    {
+        var userId = GetUserId();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || user.IsDeleted)
+            return NotFound();
+
+        var newEmail = (request.NewEmail ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(newEmail))
+            return BadRequest(new { message = "Email is required." });
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            return BadRequest(new { message = "Current password is incorrect." });
+
+        var taken = await _context.Users.AnyAsync(u =>
+            u.Id != userId && !u.IsDeleted && u.Email.ToLower() == newEmail.ToLower());
+        if (taken)
+            return BadRequest(new { message = "That email is already in use." });
+
+        user.Email = newEmail;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Email updated successfully." });
+    }
+
+    [HttpDelete("me")]
+    public async Task<IActionResult> DeleteAccount(DeleteAccountRequest request)
+    {
+        var userId = GetUserId();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null || user.IsDeleted)
+            return NotFound();
+
+        if (!string.Equals(request.ConfirmText?.Trim(), "DELETE", StringComparison.Ordinal))
+            return BadRequest(new { message = "Type DELETE to confirm account removal." });
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            return BadRequest(new { message = "Current password is incorrect." });
+
+        user.IsDeleted = true;
+        user.IsActive = false;
+        user.PresenceStatus = "offline";
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Your account has been deleted." });
+    }
+
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
     {

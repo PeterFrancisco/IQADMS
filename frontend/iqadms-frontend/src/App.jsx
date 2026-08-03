@@ -9,17 +9,14 @@ import RegisterPage from './pages/RegisterPage'
 import RequestSubmittedPage from './pages/RequestSubmittedPage'
 import SettingsPage from './pages/SettingsPage'
 import ProfilePage from './pages/ProfilePage'
-import AdminAddAccountPage from './pages/AdminAddAccountPage'
 import CompleteRegistrationPage from './pages/CompleteRegistrationPage'
 import MemberProfilePage from './pages/MemberProfilePage'
 import DocumentsPage from './pages/DocumentsPage'
-import AdminManageUsersPage from './pages/AdminManageUsersPage'
 import ProjectsPage from './pages/ProjectsPage'
 import UpcomingDeadlinesPage from './pages/UpcomingDeadlinesPage'
 import RecentActivitiesPage from './pages/RecentActivitiesPage'
 import NotificationsPage from './pages/NotificationsPage'
 import CalendarPage from './pages/CalendarPage'
-import FeedbackPage from './pages/FeedbackPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
 import AdminRoute from './components/AdminRoute'
 import LandingPage from './pages/LandingPage'
@@ -133,30 +130,15 @@ export default function App() {
       <Route path="/activities" element={<Navigate to="/dashboard" replace />} />
       <Route path="/departments" element={<Navigate to="/dashboard" replace />} />
 
-      <Route
-        path="/report/bug"
-        element={
-          <ProtectedRoute>
-            <FeedbackPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/report/feedback"
-        element={
-          <ProtectedRoute>
-            <FeedbackPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/report/bug" element={<Navigate to="/settings?section=support" replace />} />
+      <Route path="/report/feedback" element={<Navigate to="/settings?section=support" replace />} />
 
       <Route
         path="/settings"
         element={
-          <AdminRoute>
+          <ProtectedRoute>
             <SettingsPage />
-          </AdminRoute>
+          </ProtectedRoute>
         }
       />
 
@@ -189,20 +171,12 @@ export default function App() {
 
       <Route
         path="/admin/add-account"
-        element={
-          <AdminRoute>
-            <AdminAddAccountPage />
-          </AdminRoute>
-        }
+        element={<Navigate to="/settings?section=account&tab=add-account" replace />}
       />
 
       <Route
         path="/admin/manage-users"
-        element={
-          <AdminRoute>
-            <AdminManageUsersPage />
-          </AdminRoute>
-        }
+        element={<Navigate to="/settings?section=account&tab=manage-users" replace />}
       />
 
       <Route path="*" element={<Navigate to="/" replace />} />

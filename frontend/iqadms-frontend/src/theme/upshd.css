@@ -126,3 +126,43 @@ body {
   color: var(--upshd-text-muted);
   line-height: 1.45;
 }
+
+/* Theme variants */
+html[data-theme='light'] {
+  --upshd-bg: #ffffff;
+  --upshd-surface: #ffffff;
+  --upshd-border: #e2e8f0;
+  --upshd-text: #0f172a;
+  --upshd-text-muted: #64748b;
+}
+
+html[data-theme='dark'] {
+  --upshd-bg: #0f1419;
+  --upshd-surface: #1a222d;
+  --upshd-border: #2d3748;
+  --upshd-text: #e2e8f0;
+  --upshd-text-muted: #94a3b8;
+  --upshd-maroon-muted: #3d1520;
+}
+
+html[data-theme='dark'] .sidebar,
+html[data-theme='dark'] .main-header {
+  background: #151b24;
+}
+
+html[data-theme='dark'] .nav-item:hover,
+html[data-theme='dark'] .nav-item.active {
+  background: rgba(122, 0, 25, 0.25);
+}
+
+html[data-font-size='small'] {
+  font-size: 14px;
+}
+
+html[data-font-size='medium'] {
+  font-size: 16px;
+}
+
+html[data-font-size='large'] {
+  font-size: 18px;
+}

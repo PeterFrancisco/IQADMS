@@ -5,7 +5,7 @@ import { pageTitleStyle, sectionTitleStyle, tableHeadRowStyle, primaryButtonStyl
 import { appDialog } from '../utils/appDialog'
 
 
-export default function AdminAddAccountPage() {
+export function AdminAddAccountContent() {
   const [email, setEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -150,8 +150,7 @@ export default function AdminAddAccountPage() {
   }
 
   return (
-    <DashboardLayout>
-      <div style={{ display: 'grid', gap: '1.5rem' }}>
+    <div style={{ display: 'grid', gap: '1.5rem' }}>
 
         {/* Add account card */}
         <div
@@ -432,6 +431,13 @@ export default function AdminAddAccountPage() {
           </table>
         </div>
       </div>
+  )
+}
+
+export default function AdminAddAccountPage() {
+  return (
+    <DashboardLayout>
+      <AdminAddAccountContent />
     </DashboardLayout>
   )
 }
