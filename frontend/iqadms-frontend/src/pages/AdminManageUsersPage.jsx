@@ -300,7 +300,7 @@ export default function AdminManageUsersPage() {
 
 function Section({ title, children }) {
   return (
-    <div style={{ background: 'white', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
+    <div style={{ background: 'var(--upshd-surface, #fff)', borderRadius: 16, padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
       <h2 style={sectionTitleStyle}>{title}</h2>
       {children}
     </div>
@@ -337,7 +337,7 @@ const secondaryBtn = {
   padding: '0.45rem 0.85rem',
   border: '1px solid #cbd5e1',
   borderRadius: 8,
-  background: '#fff',
+  background: 'var(--upshd-surface, #fff)',
   color: '#1e293b',
   cursor: 'pointer',
   fontWeight: 600

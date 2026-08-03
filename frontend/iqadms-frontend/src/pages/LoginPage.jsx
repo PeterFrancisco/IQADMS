@@ -99,7 +99,7 @@ export default function LoginPage() {
         style={{
           width: '100%',
           maxWidth: '420px',
-          background: 'white',
+          background: 'var(--upshd-surface, #fff)',
           borderRadius: '16px',
           padding: 'max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left))',
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)'

@@ -137,7 +137,7 @@ import { appDialog } from '../utils/appDialog'
             ) : (
             <div
                 style={{
-                background: '#fff',
+                background: 'var(--upshd-surface, #fff)',
                 borderRadius: 12,
                 padding: '1rem',
                 boxShadow: '0 2px 8px rgba(0,0,0,.08)'
@@ -467,7 +467,7 @@ import { appDialog } from '../utils/appDialog'
                             padding: '12px 22px',
                             borderRadius: '10px',
                             border: '1px solid #d1d5db',
-                            background: '#fff',
+                            background: 'var(--upshd-surface, #fff)',
                             cursor: 'pointer',
                             fontWeight: 600
                         }}
@@ -648,7 +648,7 @@ import { appDialog } from '../utils/appDialog'
     width: '520px',
     maxWidth: '90vw',
     maxHeight: '80vh',
-    background: '#fff',
+    background: 'var(--upshd-surface, #fff)',
     borderRadius: '18px',
     boxShadow: '0 25px 50px rgba(0,0,0,.25)',
     display: 'flex',

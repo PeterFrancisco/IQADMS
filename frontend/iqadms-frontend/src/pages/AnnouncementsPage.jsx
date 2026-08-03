@@ -224,12 +224,12 @@ export default function AnnouncementsPage() {
   )
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1.15rem 1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1.15rem 1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
 const badge = { fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }
 const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600, cursor: 'pointer' }
-const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }
+const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
 const dangerBtn = { ...ghostBtn, color: '#dc2626', borderColor: '#fecaca' }
 const overlay = { position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '1rem' }
-const modal = { background: '#fff', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '90vh', overflow: 'auto' }
+const modal = { background: 'var(--upshd-surface, #fff)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 480, maxHeight: '90vh', overflow: 'auto' }
 const label = { display: 'block', marginTop: '0.65rem', marginBottom: 4, fontWeight: 600, fontSize: '0.85rem', color: '#475569' }
 const input = { width: '100%', padding: '0.55rem 0.7rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }

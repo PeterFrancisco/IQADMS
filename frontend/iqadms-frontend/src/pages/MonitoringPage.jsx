@@ -49,7 +49,7 @@ export default function MonitoringPage() {
               justifyContent: 'space-between',
               alignItems: 'center',
               marginBottom: '2rem',
-              background: 'white',
+              background: 'var(--upshd-surface, #fff)',
               padding: '1rem 1.5rem',
               borderRadius: '12px',
               boxShadow: '0 2px 8px rgba(92, 0, 18, 0.06)',
@@ -129,7 +129,7 @@ export default function MonitoringPage() {
 
         <div
           style={{
-            background: 'white',
+            background: 'var(--upshd-surface, #fff)',
             borderRadius: '12px',
             padding: '1rem',
             boxShadow: '0 2px 8px rgba(92, 0, 18, 0.06)',
@@ -224,7 +224,7 @@ function SummaryCard({ title, value, color }) {
   return (
     <div
       style={{
-        background: 'white',
+        background: 'var(--upshd-surface, #fff)',
         borderRadius: '12px',
         padding: '1rem',
         boxShadow: '0 2px 8px rgba(92, 0, 18, 0.06)',

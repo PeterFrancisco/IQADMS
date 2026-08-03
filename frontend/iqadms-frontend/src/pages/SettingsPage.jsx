@@ -11,7 +11,7 @@ const SECTIONS = [
   { id: 'account', label: 'Account settings' },
   { id: 'general', label: 'General settings' },
   { id: 'storage', label: 'Storage', adminOnly: true },
-  { id: 'support', label: 'Support', membersOnly: true }
+  { id: 'support', label: 'Support' }
 ]
 
 export default function SettingsPage() {
@@ -40,7 +40,7 @@ export default function SettingsPage() {
           <h1>Settings</h1>
           <p>
             {isAdmin
-              ? 'Account management, appearance, storage, and system preferences.'
+              ? 'Account management, appearance, storage, and support.'
               : 'Your account, appearance, and support options.'}
           </p>
         </header>
@@ -66,7 +66,7 @@ export default function SettingsPage() {
 
         {activeSection === 'storage' && isAdmin ? <SettingsStorage /> : null}
 
-        {activeSection === 'support' && !isAdmin ? <SettingsSupport /> : null}
+        {activeSection === 'support' ? <SettingsSupport /> : null}
       </div>
     </DashboardLayout>
   )

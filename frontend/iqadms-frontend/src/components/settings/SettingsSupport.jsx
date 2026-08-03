@@ -13,7 +13,7 @@ export default function SettingsSupport() {
     try {
       await api.post('/Feedback', { type, message: message.trim() })
       clear('')
-      await appDialog.alert('Thank you. PQAD admins can review your report in Settings.')
+      await appDialog.alert('Thank you. PQAD will receive your report by email at iqadms.pqad@gmail.com.')
     } catch (err) {
       await appDialog.alert({ message: err.response?.data?.message || 'Failed to send.', type: 'error' })
     } finally {

@@ -212,16 +212,16 @@ export default function DepartmentsPage() {
   )
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
 const th = { textAlign: 'left', padding: '0.85rem 1rem', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }
 const td = { padding: '0.85rem 1rem', borderBottom: '1px solid #f1f5f9' }
-const linkBtn = { padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', color: upshd.maroon, fontWeight: 600 }
+const linkBtn = { padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer', fontSize: '0.85rem', color: upshd.maroon, fontWeight: 600 }
 const overlay = { position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '1rem' }
-const modal = { background: '#fff', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,.25)' }
+const modal = { background: 'var(--upshd-surface, #fff)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,.25)' }
 const sectionTitle = { margin: '1rem 0 0.5rem', fontSize: '0.95rem', color: upshd.maroon }
 const list = { margin: 0, paddingLeft: '1.1rem', color: '#334155' }
 const anchor = { color: upshd.maroon, fontWeight: 600, textDecoration: 'none' }
 const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600 }
-const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }
+const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
 const label = { display: 'block', marginTop: '0.5rem', marginBottom: 4, fontSize: '0.8rem', fontWeight: 600, color: '#475569' }
 const input = { width: '100%', padding: '0.5rem 0.65rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }

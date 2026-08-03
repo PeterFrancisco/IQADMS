@@ -133,7 +133,7 @@ export default function UpcomingDeadlinesPage() {
   )
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
 const th = { textAlign: 'left', padding: '0.85rem 1rem', fontWeight: 600, color: '#374151', borderBottom: '1px solid #e5e7eb' }
 const td = { padding: '0.85rem 1rem', borderBottom: '1px solid #f1f5f9', verticalAlign: 'top' }
 const selectStyle = { padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1' }

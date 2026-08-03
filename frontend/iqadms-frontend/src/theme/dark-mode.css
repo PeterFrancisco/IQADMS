@@ -1,0 +1,392 @@
+/* Night mode — overrides hardcoded light surfaces across IQADMS pages */
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --upshd-surface-raised: #222b38;
+  --upshd-input-bg: #151b24;
+  --upshd-hover: rgba(255, 255, 255, 0.06);
+  --upshd-maroon-light: #c44d66;
+  --upshd-danger-bg: rgba(185, 28, 28, 0.18);
+  --upshd-success-bg: rgba(21, 128, 61, 0.18);
+  --upshd-info-bg: rgba(37, 99, 235, 0.15);
+  --upshd-warning-bg: rgba(217, 119, 6, 0.15);
+  --upshd-card-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] body {
+  background: var(--upshd-bg);
+  color: var(--upshd-text);
+}
+
+/* Layout / chrome */
+html[data-theme='dark'] .menu-toggle {
+  background: var(--upshd-surface);
+  color: var(--upshd-text);
+  box-shadow: var(--upshd-card-shadow);
+}
+
+html[data-theme='dark'] .profile-menu,
+html[data-theme='dark'] .profile-header,
+html[data-theme='dark'] .menu-item {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .profile-header {
+  background: var(--upshd-surface-raised);
+}
+
+html[data-theme='dark'] .profile-header strong {
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .profile-header small,
+html[data-theme='dark'] .profile-header-email {
+  color: var(--upshd-text-muted) !important;
+}
+
+html[data-theme='dark'] .menu-item:hover {
+  background: var(--upshd-hover);
+}
+
+html[data-theme='dark'] .menu-item.danger:hover {
+  background: var(--upshd-danger-bg);
+}
+
+html[data-theme='dark'] .menu-divider {
+  background: var(--upshd-border);
+}
+
+html[data-theme='dark'] .avatar-btn .avatar-presence-dot {
+  border-color: var(--upshd-surface);
+}
+
+html[data-theme='dark'] .docs-storage-pill,
+html[data-theme='dark'] .docs-toolbar,
+html[data-theme='dark'] .docs-search,
+html[data-theme='dark'] .docs-dropzone {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .docs-dropzone.drag-over {
+  background: var(--upshd-maroon-muted);
+  border-color: var(--upshd-maroon-light);
+}
+
+/* Documents (actual class names) */
+html[data-theme='dark'] .docs-sidebar,
+html[data-theme='dark'] .docs-folder-menu,
+html[data-theme='dark'] .docs-main,
+html[data-theme='dark'] .docs-file-table,
+html[data-theme='dark'] .docs-trash-banner {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .docs-folder-btn,
+html[data-theme='dark'] .docs-folder-menu-btn {
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .docs-folder-btn:hover,
+html[data-theme='dark'] .docs-folder-menu button:hover {
+  background: var(--upshd-hover);
+}
+
+html[data-theme='dark'] .docs-folder-row.active .docs-folder-btn {
+  background: var(--upshd-maroon-muted);
+  color: var(--upshd-maroon-light);
+}
+
+html[data-theme='dark'] .docs-file-row,
+html[data-theme='dark'] .docs-file-table th {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .docs-file-row:hover {
+  background: var(--upshd-hover);
+}
+
+/* Tasks (actual class names) */
+html[data-theme='dark'] .tasks-board-shell,
+html[data-theme='dark'] .tasks-stat-card,
+html[data-theme='dark'] .tasks-admin-toolbar,
+html[data-theme='dark'] .task-work-package,
+html[data-theme='dark'] .tasks-kanban-column,
+html[data-theme='dark'] .tasks-kanban-card,
+html[data-theme='dark'] .tasks-list-row,
+html[data-theme='dark'] .tasks-modal-panel {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+  box-shadow: var(--upshd-card-shadow);
+}
+
+html[data-theme='dark'] .tasks-stat-card__label,
+html[data-theme='dark'] .tasks-page-sub,
+html[data-theme='dark'] .task-work-steps {
+  color: var(--upshd-text-muted);
+}
+
+html[data-theme='dark'] .tasks-kanban-card {
+  background: var(--upshd-surface-raised);
+}
+
+html[data-theme='dark'] .tasks-admin-toolbar__search input,
+html[data-theme='dark'] .tasks-admin-toolbar select {
+  background: var(--upshd-input-bg);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .tasks-admin-toolbar__view-toggle {
+  background: var(--upshd-border);
+}
+
+html[data-theme='dark'] .tasks-admin-toolbar__view-toggle button.is-active {
+  background: var(--upshd-surface-raised);
+  color: var(--upshd-maroon-light);
+}
+
+html[data-theme='dark'] .task-ref-download {
+  background: var(--upshd-surface-raised);
+  border-color: var(--upshd-border);
+  color: var(--upshd-maroon-light);
+}
+
+html[data-theme='dark'] .task-ref-download:hover {
+  background: var(--upshd-maroon-muted);
+  border-color: var(--upshd-maroon-light);
+}
+
+/* Workspace board (actual class names) */
+html[data-theme='dark'] .workspace-board-shell,
+html[data-theme='dark'] .workspace-board-th,
+html[data-theme='dark'] .workspace-board-table td,
+html[data-theme='dark'] .workspace-col-menu,
+html[data-theme='dark'] .workspace-cell-input,
+html[data-theme='dark'] .workspace-status-pill {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .workspace-board-table tbody tr:hover td {
+  background: var(--upshd-hover);
+}
+
+html[data-theme='dark'] .workspace-col-menu-btn,
+html[data-theme='dark'] .workspace-sort-indicator {
+  color: var(--upshd-text-muted);
+}
+
+html[data-theme='dark'] .workspace-col-rename-input,
+html[data-theme='dark'] .workspace-cell-input input,
+html[data-theme='dark'] .workspace-cell-input textarea,
+html[data-theme='dark'] .workspace-cell-input select {
+  background: var(--upshd-input-bg);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+/* Notification bell (actual class names) */
+html[data-theme='dark'] .notification-bell-btn {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-maroon-light);
+}
+
+html[data-theme='dark'] .notification-bell-panel,
+html[data-theme='dark'] .notification-bell-panel-head,
+html[data-theme='dark'] .notification-bell-item {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .notification-bell-item:hover {
+  background: var(--upshd-hover);
+}
+
+html[data-theme='dark'] .notification-bell-item.unread {
+  background: var(--upshd-warning-bg);
+}
+
+html[data-theme='dark'] .notification-bell-item-meta,
+html[data-theme='dark'] .notification-bell-item-preview,
+html[data-theme='dark'] .notification-bell-empty {
+  color: var(--upshd-text-muted);
+}
+
+
+/* Projects */
+html[data-theme='dark'] .projects-card,
+html[data-theme='dark'] .projects-progress-ring-inner {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+  box-shadow: var(--upshd-card-shadow);
+}
+
+html[data-theme='dark'] .projects-card-desc {
+  color: var(--upshd-text-muted);
+}
+
+html[data-theme='dark'] .projects-ghost-btn {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+/* Modals & toasts */
+html[data-theme='dark'] .app-modal-panel,
+html[data-theme='dark'] .app-modal-header,
+html[data-theme='dark'] .app-modal-footer {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .app-modal-btn-secondary {
+  background: var(--upshd-surface-raised);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .app-modal-input {
+  background: var(--upshd-input-bg);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .app-toast {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+  box-shadow: var(--upshd-card-shadow);
+}
+
+html[data-theme='dark'] .app-toast--success {
+  background: var(--upshd-success-bg);
+  border-color: rgba(21, 128, 61, 0.45);
+}
+
+html[data-theme='dark'] .app-toast--error {
+  background: var(--upshd-danger-bg);
+  border-color: rgba(185, 28, 28, 0.45);
+}
+
+html[data-theme='dark'] .app-toast--warning {
+  background: var(--upshd-warning-bg);
+  border-color: rgba(217, 119, 6, 0.45);
+}
+
+/* Presence */
+html[data-theme='dark'] .presence-option {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .presence-option:hover {
+  background: var(--upshd-hover);
+}
+
+html[data-theme='dark'] .presence-option.selected {
+  background: var(--upshd-maroon-muted);
+  border-color: var(--upshd-maroon-light);
+}
+
+/* Analytics */
+html[data-theme='dark'] .analytics-card,
+html[data-theme='dark'] .analytics-stat {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .analytics-stat-label {
+  color: var(--upshd-text-muted);
+}
+
+/* Settings */
+html[data-theme='dark'] .settings-card.danger {
+  background: var(--upshd-danger-bg);
+  border-color: rgba(185, 28, 28, 0.4);
+}
+
+html[data-theme='dark'] .settings-danger-btn {
+  background: #b91c1c;
+}
+
+html[data-theme='dark'] .settings-muted-btn {
+  background: var(--upshd-maroon-muted);
+  border-color: rgba(196, 77, 102, 0.45);
+  color: var(--upshd-maroon-light);
+}
+
+/* Tables & generic inputs */
+html[data-theme='dark'] table {
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html[data-theme='dark'] textarea,
+html[data-theme='dark'] select {
+  background: var(--upshd-input-bg);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: var(--upshd-text-muted);
+  opacity: 0.85;
+}
+
+html[data-theme='dark'] hr {
+  border-color: var(--upshd-border);
+}
+
+html[data-theme='dark'] .placeholder-card,
+html[data-theme='dark'] .dashboard-tile {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  box-shadow: var(--upshd-card-shadow);
+}
+
+html[data-theme='dark'] .dashboard-tile-desc,
+html[data-theme='dark'] .placeholder-card ul {
+  color: var(--upshd-text-muted);
+}
+
+html[data-theme='dark'] .dashboard-tile:hover {
+  border-color: var(--upshd-maroon-light);
+}
+
+html[data-theme='dark'] .user-avatar-fallback,
+html[data-theme='dark'] .user-avatar-img {
+  border-color: var(--upshd-border);
+}
+
+html[data-theme='dark'] .social-link-card {
+  background: var(--upshd-surface);
+  border-color: var(--upshd-border);
+  color: var(--upshd-text);
+}
+
+html[data-theme='dark'] .social-link-desc {
+  color: var(--upshd-text-muted);
+}
+
+html[data-theme='dark'] .landing-feature-card {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}

@@ -155,7 +155,7 @@ export function AdminAddAccountContent() {
         {/* Add account card */}
         <div
           style={{
-            background: 'white',
+            background: 'var(--upshd-surface, #fff)',
             borderRadius: '16px',
             padding: '1.5rem',
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
@@ -294,7 +294,7 @@ export function AdminAddAccountContent() {
         {/* Allowed users table */}
         <div
           style={{
-            background: 'white',
+            background: 'var(--upshd-surface, #fff)',
             borderRadius: '16px',
             padding: '1.5rem',
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
@@ -318,7 +318,7 @@ export function AdminAddAccountContent() {
                   padding: '0.6rem 1rem',
                   borderRadius: '8px',
                   border: '1px solid #cbd5e1',
-                  background: 'white',
+                  background: 'var(--upshd-surface, #fff)',
                   cursor: 'pointer',
                   fontWeight: 600
                 }}
@@ -331,7 +331,7 @@ export function AdminAddAccountContent() {
                 padding: '0.6rem 1rem',
                 borderRadius: '8px',
                 border: '1px solid #cbd5e1',
-                background: 'white',
+                background: 'var(--upshd-surface, #fff)',
                 cursor: 'pointer'
               }}
             >
@@ -408,7 +408,7 @@ export function AdminAddAccountContent() {
                           padding: '0.4rem 0.75rem',
                           borderRadius: '8px',
                           border: '1px solid #cbd5e1',
-                          background: '#fff',
+                          background: 'var(--upshd-surface, #fff)',
                           cursor: 'pointer',
                           fontWeight: 600
                         }}

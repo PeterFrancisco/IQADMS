@@ -392,7 +392,7 @@ function Badge({ label, muted }) {
 }
 
 const projectCard = {
-  background: '#fff',
+  background: 'var(--upshd-surface, #fff)',
   borderRadius: 12,
   padding: '1.25rem 1.5rem',
   boxShadow: '0 2px 8px rgba(0,0,0,.06)'
@@ -406,12 +406,12 @@ const emptyCard = {
 
 const metaLabel = { fontWeight: 700, color: '#64748b', marginBottom: '0.35rem', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em' }
 const overlay = { position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '1rem' }
-const modal = { background: '#fff', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,.25)' }
+const modal = { background: 'var(--upshd-surface, #fff)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,.25)' }
 const labelStyle = { display: 'block', marginBottom: '0.35rem', marginTop: '0.75rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }
 const inputStyle = { width: '100%', padding: '0.6rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.95rem', boxSizing: 'border-box' }
 const checkList = { maxHeight: 140, overflow: 'auto', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.5rem 0.75rem' }
 const checkRow = { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0', cursor: 'pointer', fontSize: '0.9rem' }
 const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600, cursor: 'pointer' }
-const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }
+const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
 const dangerBtn = { ...ghostBtn, color: '#dc2626', borderColor: '#fecaca' }
 const linkBtn = { ...ghostBtn, textDecoration: 'none', color: upshd.maroon, fontWeight: 600 }

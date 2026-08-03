@@ -13,7 +13,7 @@ import {
 const THEME_LABELS = {
   original: 'Original (PQAD)',
   light: 'Light',
-  dark: 'Dark'
+  dark: 'Night'
 }
 
 const FONT_LABELS = {
@@ -72,7 +72,7 @@ export default function SettingsGeneral() {
 
       <section className="settings-card">
         <h3>Appearance</h3>
-        <p className="settings-card-desc">Choose light, dark, or the original PQAD theme.</p>
+        <p className="settings-card-desc">Choose light, night, or the original PQAD theme.</p>
         <div className="settings-option-row">
           {THEMES.map(t => (
             <button

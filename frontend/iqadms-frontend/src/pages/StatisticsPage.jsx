@@ -125,7 +125,7 @@ function StatCard({ label, value, color }) {
   )
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
 const sectionTitle = { margin: '0 0 0.75rem', fontSize: '1.05rem', color: upshd.maroon }
 const rowStyle = { display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid #f1f5f9' }
 const th = { textAlign: 'left', padding: '0.5rem 0.25rem', color: '#64748b', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }

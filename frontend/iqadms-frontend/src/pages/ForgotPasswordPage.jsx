@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: '#f8fafc' }}>
-      <div style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, padding: '2rem', boxShadow: '0 8px 24px rgba(0,0,0,.08)' }}>
+      <div style={{ width: '100%', maxWidth: 420, background: 'var(--upshd-surface, #fff)', borderRadius: 16, padding: '2rem', boxShadow: '0 8px 24px rgba(0,0,0,.08)' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
           <IqadmsLogo size={48} wordmarkLayout="stack" />
         </div>

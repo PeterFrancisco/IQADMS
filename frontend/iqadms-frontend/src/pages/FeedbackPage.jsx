@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import { pageTitleStyle } from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
 export default function FeedbackPage() {
@@ -24,7 +25,7 @@ export default function FeedbackPage() {
         message: message.trim()
       })
       setMessage('')
-      await appDialog.alert('Thank you. PQAD admins can review reports in the system.')
+      await appDialog.alert('Thank you. PQAD will receive your report by email at iqadms.pqad@gmail.com.')
       navigate('/dashboard')
     } catch (err) {
       console.error(err)
@@ -37,7 +38,7 @@ export default function FeedbackPage() {
   return (
     <DashboardLayout>
       <h1 style={pageTitleStyle}>{isBug ? 'Report a Bug' : 'Give Feedback'}</h1>
-      <p style={{ color: '#64748b', marginBottom: '1.25rem' }}>
+      <p style={{ color: 'var(--upshd-text-muted, #64748b)', marginBottom: '1.25rem' }}>
         {isBug
           ? 'Describe what went wrong, including steps to reproduce if you can.'
           : 'Share ideas to improve IQADMS for the PQAD team.'}
@@ -65,8 +66,8 @@ export default function FeedbackPage() {
   )
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)', maxWidth: 560 }
-const label = { display: 'block', marginBottom: 6, fontWeight: 600, color: '#475569' }
-const input = { width: '100%', padding: '0.65rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }
+const card = { background: 'var(--upshd-surface, #fff)', color: 'var(--upshd-text, #1f2937)', borderRadius: 12, padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)', maxWidth: 560, border: '1px solid var(--upshd-border, #e5e7eb)' }
+const label = { display: 'block', marginBottom: 6, fontWeight: 600, color: 'var(--upshd-text-muted, #475569)' }
+const input = { width: '100%', padding: '0.65rem', borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', background: 'var(--upshd-input-bg, var(--upshd-surface, #fff))', color: 'var(--upshd-text, #1f2937)', boxSizing: 'border-box' }
 const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600, cursor: 'pointer' }
-const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }
+const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', background: 'var(--upshd-surface, #fff)', color: 'var(--upshd-text, #1f2937)', cursor: 'pointer' }

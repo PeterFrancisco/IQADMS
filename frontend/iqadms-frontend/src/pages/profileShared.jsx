@@ -43,7 +43,7 @@ export const profileStyles = {
     margin: '0 auto'
   },
   loadingCard: {
-    background: '#fff',
+    background: 'var(--upshd-surface, #fff)',
     borderRadius: 16,
     padding: '2rem',
     textAlign: 'center',
@@ -131,7 +131,7 @@ export const profileStyles = {
     gap: '1rem'
   },
   sidebarCard: {
-    background: '#fff',
+    background: 'var(--upshd-surface, #fff)',
     borderRadius: 16,
     padding: '1.25rem',
     boxShadow: '0 2px 8px rgba(0,0,0,.06)'
@@ -147,7 +147,7 @@ export const profileStyles = {
     gap: '1.25rem'
   },
   card: {
-    background: '#fff',
+    background: 'var(--upshd-surface, #fff)',
     borderRadius: 16,
     padding: '1.5rem',
     boxShadow: '0 2px 8px rgba(0,0,0,.06)'

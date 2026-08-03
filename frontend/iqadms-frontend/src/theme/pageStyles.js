@@ -13,10 +13,12 @@ export const authPageStyle = {
 export const authCardStyle = {
   width: '100%',
   maxWidth: '460px',
-  background: 'white',
+  background: 'var(--upshd-surface, #fff)',
+  color: 'var(--upshd-text, #1f2937)',
   padding: '2rem',
   borderRadius: '16px',
-  boxShadow: '0 8px 24px rgba(92, 0, 18, 0.1)'
+  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)',
+  border: '1px solid var(--upshd-border, #e5e7eb)'
 }
 
 export const authHeadingStyle = {
@@ -42,7 +44,7 @@ export const authOutlineButtonStyle = {
   padding: '0.9rem',
   border: `1px solid ${upshd.maroon}`,
   borderRadius: '10px',
-  background: 'white',
+  background: 'var(--upshd-surface, #fff)',
   color: upshd.maroon,
   fontWeight: '700',
   cursor: 'pointer'
@@ -52,7 +54,9 @@ export const authInputStyle = {
   width: '100%',
   padding: '0.9rem',
   borderRadius: '10px',
-  border: '1px solid #cbd5e1',
+  border: '1px solid var(--upshd-border, #cbd5e1)',
+  background: 'var(--upshd-input-bg, var(--upshd-surface, #fff))',
+  color: 'var(--upshd-text, #1f2937)',
   marginTop: '0.5rem',
   boxSizing: 'border-box'
 }
@@ -68,7 +72,48 @@ export const sectionTitleStyle = {
 }
 
 export const tableHeadRowStyle = {
-  background: upshd.tableHeadBg
+  background: 'var(--upshd-maroon-muted, #f3e8eb)'
+}
+
+export const surfaceCardStyle = {
+  background: 'var(--upshd-surface, #fff)',
+  color: 'var(--upshd-text, #1f2937)',
+  borderRadius: 12,
+  padding: '1rem 1.15rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,.08)',
+  border: '1px solid var(--upshd-border, #e5e7eb)'
+}
+
+export const ghostButtonStyle = {
+  padding: '0.6rem 1rem',
+  borderRadius: 8,
+  border: '1px solid var(--upshd-border, #cbd5e1)',
+  background: 'var(--upshd-surface, #fff)',
+  color: 'var(--upshd-text, #1f2937)',
+  cursor: 'pointer'
+}
+
+export const modalSurfaceStyle = {
+  background: 'var(--upshd-surface, #fff)',
+  color: 'var(--upshd-text, #1f2937)',
+  borderRadius: 16,
+  padding: '1.5rem',
+  width: '100%',
+  maxWidth: 520,
+  maxHeight: '90vh',
+  overflow: 'auto',
+  boxShadow: '0 25px 50px rgba(0,0,0,.35)',
+  border: '1px solid var(--upshd-border, #e5e7eb)'
+}
+
+export const fieldInputStyle = {
+  width: '100%',
+  padding: '0.65rem 0.75rem',
+  borderRadius: 8,
+  border: '1px solid var(--upshd-border, #cbd5e1)',
+  background: 'var(--upshd-input-bg, var(--upshd-surface, #fff))',
+  color: 'var(--upshd-text, #1f2937)',
+  boxSizing: 'border-box'
 }
 
 export const primaryButtonStyle = {

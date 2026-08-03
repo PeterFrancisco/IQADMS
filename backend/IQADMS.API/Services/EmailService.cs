@@ -10,6 +10,9 @@ public class EmailService
     /// <summary>Used when App:PublicUrl is not set in appsettings (pqad).</summary>
     public const string DefaultPublicSiteUrl = "https://iqadms.iotlab-uphsdm.live";
 
+    /// <summary>Default inbox for bug reports and user feedback.</summary>
+    public const string DefaultFeedbackEmail = "iqadms.pqad@gmail.com";
+
     private readonly IConfiguration _config;
     private readonly ILogger<EmailService> _logger;
 
@@ -445,6 +448,7 @@ If you did not request a reset, contact your administrator.
             from = smtp["From"]?.Trim(),
             fromName = GetFromDisplayName(),
             adminEmail = smtp["AdminEmail"]?.Trim(),
+            feedbackEmail = GetFeedbackEmail(),
             passwordConfigured = normalizedLen > 0,
             passwordLength = normalizedLen,
             gmailFromMatchesUsername = string.Equals(
@@ -755,6 +759,62 @@ IQADMS
 </body>
 </html>
 """;
+    }
+
+    public string GetFeedbackEmail()
+    {
+        var smtp = _config.GetSection("SmtpSettings");
+        return smtp["FeedbackEmail"]?.Trim() ?? DefaultFeedbackEmail;
+    }
+
+    public async Task<(bool Sent, string? Error)> TrySendFeedbackReportAsync(
+        string reporterName,
+        string reporterEmail,
+        string reporterUsername,
+        string type,
+        string message)
+    {
+        if (!IsSmtpConfigured(out var configError))
+        {
+            _logger.LogWarning("Feedback email not sent: {Reason}", configError);
+            return (false, configError);
+        }
+
+        var to = GetFeedbackEmail();
+        var typeLabel = string.Equals(type, "bug", StringComparison.OrdinalIgnoreCase)
+            ? "Bug report"
+            : "Feedback";
+        var subject = $"IQADMS {typeLabel} from {reporterUsername}";
+
+        var body = $"""
+A new IQADMS {typeLabel.ToLowerInvariant()} was submitted.
+
+From: {reporterName} (@{reporterUsername})
+Email: {reporterEmail}
+Type: {typeLabel}
+
+Message:
+{message}
+
+Review in IQADMS under Settings → Account settings → Submitted reports (admin).
+
+— IQADMS
+""";
+
+        try
+        {
+            var smtp = _config.GetSection("SmtpSettings");
+            var from = RequireFromAddress(smtp);
+            await SendAsync(from, to, subject, body, htmlBody: null, GetFromDisplayName());
+            _logger.LogInformation("Feedback email sent to {Email} ({Type})", to, typeLabel);
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            var detail = DescribeSendFailure(ex);
+            _logger.LogWarning(ex, "Feedback email failed to {Email}", to);
+            return (false, detail);
+        }
     }
 
     private static string NormalizeSmtpPassword(string? password) =>

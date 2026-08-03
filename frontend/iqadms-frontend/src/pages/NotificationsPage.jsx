@@ -159,8 +159,8 @@ function FilterBtn({ active, onClick, children }) {
   )
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
 const badge = { fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.04em' }
 const primaryBtn = { padding: '0.45rem 0.75rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }
-const ghostBtn = { padding: '0.45rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }
+const ghostBtn = { padding: '0.45rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer', fontSize: '0.85rem' }
 const dangerBtn = { ...ghostBtn, color: '#dc2626', borderColor: '#fecaca', fontSize: '0.8rem' }

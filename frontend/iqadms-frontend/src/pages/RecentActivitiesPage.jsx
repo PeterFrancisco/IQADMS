@@ -90,5 +90,5 @@ export default function RecentActivitiesPage() {
   )
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
 const selectStyle = { padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', minWidth: 220 }

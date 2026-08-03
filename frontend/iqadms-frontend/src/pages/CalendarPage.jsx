@@ -234,7 +234,7 @@ const gridWrap = {
   display: 'grid',
   gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
   gap: '0.35rem',
-  background: '#fff',
+  background: 'var(--upshd-surface, #fff)',
   padding: '0.75rem',
   borderRadius: 12,
   boxShadow: '0 2px 8px rgba(0,0,0,.06)'
@@ -253,8 +253,8 @@ const dayCell = {
   width: '100%'
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
 const listRow = { display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }
 const dot = { width: 8, height: 8, borderRadius: 999, marginTop: 6, flexShrink: 0 }
-const navBtn = { width: 36, height: 36, borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1 }
-const ghostBtn = { padding: '0.45rem 0.85rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }
+const navBtn = { width: 36, height: 36, borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1 }
+const ghostBtn = { padding: '0.45rem 0.85rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }

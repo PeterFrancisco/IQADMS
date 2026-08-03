@@ -405,10 +405,10 @@ function StatusBadge({ status }) {
   )
 }
 
-const card = { background: '#fff', borderRadius: 12, padding: '1.15rem 1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1.15rem 1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
 const sectionTitle = { margin: '0 0 0.75rem', fontSize: '1.05rem', color: upshd.maroon }
 const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600, cursor: 'pointer' }
-const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }
+const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
 const label = { display: 'block', marginTop: '0.65rem', marginBottom: 4, fontWeight: 600, fontSize: '0.85rem', color: '#475569' }
 const input = { width: '100%', padding: '0.55rem 0.7rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }
 const list = { margin: 0, paddingLeft: '1.1rem', color: '#334155' }

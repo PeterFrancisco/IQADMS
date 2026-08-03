@@ -89,7 +89,7 @@ export default function DashboardHubPage() {
         {upcoming.length > 0 && (
           <section
             style={{
-              background: '#fff',
+              background: 'var(--upshd-surface, #fff)',
               borderRadius: 12,
               padding: '1rem 1.25rem',
               marginBottom: '1.5rem',

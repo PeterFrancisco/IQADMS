@@ -1,6 +1,7 @@
 using IQADMS.API.Data;
 using IQADMS.API.DTOs.Requests;
 using IQADMS.API.Models;
+using IQADMS.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,17 @@ namespace IQADMS.API.Controllers;
 public class FeedbackController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly EmailService _email;
+    private readonly ILogger<FeedbackController> _logger;
 
-    public FeedbackController(ApplicationDbContext context)
+    public FeedbackController(
+        ApplicationDbContext context,
+        EmailService email,
+        ILogger<FeedbackController> logger)
     {
         _context = context;
+        _email = email;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -33,15 +41,35 @@ public class FeedbackController : ControllerBase
         };
 
         var userId = GetUserId();
+        var message = request.Message.Trim();
 
         _context.UserFeedbacks.Add(new UserFeedback
         {
             UserId = userId,
             Type = type,
-            Message = request.Message.Trim()
+            Message = message
         });
 
         await _context.SaveChangesAsync();
+
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user != null)
+        {
+            var reporterName = EmailService.FormatPersonName(user.DisplayName, user.Username, user.Email);
+            var reporterUsername = user.Username ?? user.Email;
+            var (sent, err) = await _email.TrySendFeedbackReportAsync(
+                reporterName,
+                user.Email,
+                reporterUsername,
+                type,
+                message);
+
+            if (!sent)
+                _logger.LogWarning("Feedback saved but email not sent for user {UserId}: {Error}", userId, err);
+        }
 
         return Ok(new { message = "Thank you — your report was received." });
     }
