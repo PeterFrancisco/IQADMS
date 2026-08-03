@@ -53,6 +53,7 @@ builder.Services.AddScoped<SubmissionService>();
 builder.Services.AddHostedService<DocumentTrashCleanupService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<SystemStorageService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

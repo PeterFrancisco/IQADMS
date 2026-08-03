@@ -6,6 +6,7 @@ import AppModal from '../components/AppModal'
 import { useAppDialog } from '../components/AppDialogProvider'
 import api from '../services/api'
 import { getApiOrigin } from '../utils/apiOrigin'
+import { formatBytes } from '../utils/csvExport'
 import { pageTitleStyle } from '../theme/pageStyles'
 import '../theme/documents.css'
 
@@ -18,6 +19,7 @@ export default function DocumentsPage() {
   const dialog = useAppDialog()
   const [folders, setFolders] = useState([])
   const [storageStats, setStorageStats] = useState(null)
+  const [systemStorage, setSystemStorage] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedFolder, setSelectedFolder] = useState('General')
@@ -54,13 +56,15 @@ export default function DocumentsPage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [folderRes, statsRes, trashRes] = await Promise.all([
+      const [folderRes, statsRes, trashRes, systemRes] = await Promise.all([
         api.get('/Submissions/folders'),
         api.get('/Submissions/storage-stats'),
-        api.get('/Submissions/trash')
+        api.get('/Submissions/trash'),
+        api.get('/Admin/system-storage')
       ])
       setFolders(folderRes.data)
       setStorageStats(statsRes.data)
+      setSystemStorage(systemRes.data)
       setTrashInfo(trashRes.data)
       if (viewMode === 'library' && folderRes.data.length > 0 && !folderRes.data.some(f => f.folderPath === selectedFolder)) {
         setSelectedFolder(folderRes.data[0].folderPath)
@@ -68,6 +72,7 @@ export default function DocumentsPage() {
     } catch (err) {
       console.error(err)
       setFolders([])
+      setSystemStorage(null)
     } finally {
       setLoading(false)
     }
@@ -320,6 +325,51 @@ export default function DocumentsPage() {
     <DashboardLayout>
       <div className="docs-page">
         <h1 style={pageTitleStyle}>Documents</h1>
+
+        {systemStorage && (
+          <section className="docs-system-storage" aria-label="Server storage overview">
+            <div className="docs-system-storage__head">
+              <h2>Storage overview</h2>
+              <span className="docs-system-storage__badge">Admin only</span>
+            </div>
+            <p className="docs-system-storage__note">
+              Uploaded files, PostgreSQL, and pqad disk for this server. Task and profile data in the database are separate from document file storage.
+            </p>
+            <div className="docs-system-storage__grid">
+              <StorageMetric
+                label="Document library"
+                value={formatBytes(systemStorage.uploads?.documentsBytes ?? 0)}
+                detail={`${systemStorage.uploads?.fileCount ?? 0} files total under Uploads/`}
+              />
+              <StorageMetric
+                label="All IQADMS uploads"
+                value={formatBytes(systemStorage.uploads?.totalBytes ?? 0)}
+                detail={`Docs ${formatBytes(systemStorage.uploads?.documentsBytes ?? 0)} · Tasks ${formatBytes(systemStorage.uploads?.tasksBytes ?? 0)} · Profiles ${formatBytes(systemStorage.uploads?.profilesBytes ?? 0)}`}
+              />
+              <StorageMetric
+                label="Upload quota"
+                value={`${formatBytes(systemStorage.uploads?.totalBytes ?? 0)} / ${formatBytes(systemStorage.uploads?.maxBytes ?? 0)}`}
+                detail="Configured limit for uploaded files"
+              />
+              <StorageMetric
+                label="PostgreSQL database"
+                value={formatBytes(systemStorage.database?.sizeBytes ?? 0)}
+                detail={systemStorage.database?.name ? `Database: ${systemStorage.database.name}` : 'Tasks, users, settings'}
+              />
+              <StorageMetric
+                label="Server disk"
+                value={`${systemStorage.disk?.usedPercent ?? 0}% used`}
+                detail={`${formatBytes(systemStorage.disk?.freeBytes ?? 0)} free of ${formatBytes(systemStorage.disk?.totalBytes ?? 0)}${systemStorage.disk?.mountRoot ? ` (${systemStorage.disk.mountRoot})` : ''}`}
+              />
+            </div>
+            {systemStorage.uploads?.uploadsPath ? (
+              <p className="docs-system-storage__path">
+                Uploads folder: <code>{systemStorage.uploads.uploadsPath}</code>
+              </p>
+            ) : null}
+          </section>
+        )}
+
         <div className="docs-toolbar">
           <input
             className="docs-search"
@@ -619,5 +669,15 @@ export default function DocumentsPage() {
           )}
       </div>
     </DashboardLayout>
+  )
+}
+
+function StorageMetric({ label, value, detail }) {
+  return (
+    <div className="docs-system-storage__metric">
+      <span className="docs-system-storage__metric-label">{label}</span>
+      <strong className="docs-system-storage__metric-value">{value}</strong>
+      {detail ? <span className="docs-system-storage__metric-detail">{detail}</span> : null}
+    </div>
   )
 }

@@ -20,15 +20,28 @@ public class AdminController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly EmailService _emailService;
     private readonly IConfiguration _config;
+    private readonly SystemStorageService _systemStorage;
 
     public AdminController(
         ApplicationDbContext context,
         EmailService emailService,
-        IConfiguration config)
+        IConfiguration config,
+        SystemStorageService systemStorage)
     {
         _context = context;
         _emailService = emailService;
         _config = config;
+        _systemStorage = systemStorage;
+    }
+
+    // GET: api/Admin/account-requests
+    [HttpGet("system-storage")]
+    public async Task<IActionResult> GetSystemStorage()
+    {
+        if (!await IsCurrentUserAdmin())
+            return Forbid();
+
+        return Ok(await _systemStorage.GetSnapshotAsync());
     }
 
     // GET: api/Admin/account-requests
