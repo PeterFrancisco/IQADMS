@@ -24,6 +24,7 @@ export default function ProjectTaskBoardCard({
   onOpenFocus,
   onCreateTask,
   onDeleteProject,
+  deleteProjectLabel = 'Delete project',
   focusLabel = 'Focus board',
   subtitle
 }) {
@@ -76,7 +77,7 @@ export default function ProjectTaskBoardCard({
               className="project-task-board-card__btn project-task-board-card__btn--danger"
               onClick={onDeleteProject}
             >
-              Delete project
+              {deleteProjectLabel}
             </button>
           )}
         </div>

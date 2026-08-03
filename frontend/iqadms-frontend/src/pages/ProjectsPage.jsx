@@ -5,7 +5,7 @@ import api from '../services/api'
 import { upshd } from '../theme/upshd'
 import { pageTitleStyle } from '../theme/pageStyles'
 import '../theme/projects-page.css'
-import { countOrphanTasks, NO_PROJECT_SECTION } from '../utils/notificationLink'
+import { countOrphanTasks, effectiveTaskSectionId, NO_PROJECT_SECTION } from '../utils/notificationLink'
 import { appDialog } from '../utils/appDialog'
 
 const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled']
@@ -120,6 +120,32 @@ export default function ProjectsPage() {
     }
   }
 
+  async function clearOrphanTasks() {
+    if (
+      !(await appDialog.confirm({
+        title: 'Clear No project board',
+        message: `Delete all ${orphanTaskCount} task(s) not linked to an active project? This cannot be undone.`,
+        confirmLabel: 'Delete all tasks',
+        danger: true
+      }))
+    )
+      return
+    try {
+      const tasksRes = await api.get('/Tasks')
+      const activeIds = new Set(projects.map(p => String(p.id)))
+      const orphans = (tasksRes.data || []).filter(
+        t => effectiveTaskSectionId(t, activeIds) === NO_PROJECT_SECTION
+      )
+      await Promise.all(orphans.map(t => api.delete(`/Tasks/${t.id}`)))
+      await appDialog.alert('No project board cleared.')
+      loadAll()
+    } catch (err) {
+      console.error(err)
+      await appDialog.alert(err.response?.data?.message || 'Failed to delete tasks.')
+      loadAll()
+    }
+  }
+
   async function deleteProject(id, title) {
     if (
       !(await appDialog.confirm({
@@ -180,6 +206,9 @@ export default function ProjectsPage() {
                   <Link to={`/my-tasks?project=${NO_PROJECT_SECTION}`} className="projects-page-card__link">
                     View tasks
                   </Link>
+                  <button type="button" onClick={clearOrphanTasks} className="projects-page-card__danger">
+                    Clear board
+                  </button>
                 </div>
               </div>
             </div>

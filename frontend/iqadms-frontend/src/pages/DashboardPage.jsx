@@ -750,13 +750,46 @@ export default function DashboardPage() {
       await api.delete(`/Tasks/${task.id}`)
       dispatchTasksChanged()
       dispatchNotificationsChanged()
+      await appDialog.alert(`Task "${task.title}" deleted.`)
     } catch (err) {
       await appDialog.alert(err.response?.data?.message || 'Failed to delete task.')
     }
   }
 
-  const deleteProjectBoard = async (projectId, title) => {
-    if (!isAdmin || projectId === NO_PROJECT_SECTION) return
+  const clearNoProjectBoard = async (sectionTasks, title = 'No project') => {
+    if (!isAdmin) return
+    const list = sectionTasks || []
+    if (list.length === 0) {
+      await appDialog.alert('No tasks in this board.')
+      return
+    }
+    const names = list.map(t => `"${t.title}"`).join(', ')
+    if (
+      !(await appDialog.confirm({
+        title: 'Clear No project board',
+        message: `Delete ${list.length} task(s) from ${title}? (${names})\n\nThis cannot be undone.`,
+        confirmLabel: 'Delete all tasks',
+        danger: true
+      }))
+    )
+      return
+    try {
+      await Promise.all(list.map(t => api.delete(`/Tasks/${t.id}`)))
+      if (filterProjectId === NO_PROJECT_SECTION) navigate('/my-tasks')
+      refreshAfterMutation()
+      await appDialog.alert('Board cleared.')
+    } catch (err) {
+      await appDialog.alert(err.response?.data?.message || 'Failed to delete tasks.')
+      refreshAfterMutation()
+    }
+  }
+
+  const deleteProjectBoard = async (projectId, title, sectionTasks = []) => {
+    if (!isAdmin) return
+    if (projectId === NO_PROJECT_SECTION) {
+      await clearNoProjectBoard(sectionTasks, title)
+      return
+    }
     if (
       !(await appDialog.confirm({
         title: 'Delete project',
@@ -970,6 +1003,20 @@ export default function DashboardPage() {
           )}
         </p>
           </div>
+          {isAdmin && adminFocusView && filterProjectId === NO_PROJECT_SECTION ? (
+            <button
+              type="button"
+              className="tasks-page-delete-project"
+              onClick={() =>
+                clearNoProjectBoard(
+                  isAdmin ? adminFocusSortedTasks : memberFocusSortedTasks,
+                  'No project'
+                )
+              }
+            >
+              Clear board
+            </button>
+          ) : null}
           {isAdmin && adminFocusView && filterProjectId && filterProjectId !== NO_PROJECT_SECTION && filterProject ? (
             <button
               type="button"
@@ -1106,10 +1153,9 @@ export default function DashboardPage() {
                   isAdmin ? () => openCreateForProject(section.id === NO_PROJECT_SECTION ? '' : section.id) : undefined
                 }
                 onDeleteProject={
-                  isAdmin && section.id !== NO_PROJECT_SECTION
-                    ? () => deleteProjectBoard(section.id, section.title)
-                    : undefined
+                  isAdmin ? () => deleteProjectBoard(section.id, section.title, section.tasks) : undefined
                 }
+                deleteProjectLabel={section.id === NO_PROJECT_SECTION ? 'Clear board' : 'Delete project'}
               >
                 {renderTaskBoard(
                   section.tasks,
