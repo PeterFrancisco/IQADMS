@@ -5,10 +5,6 @@ html[data-theme='dark'] {
   --upshd-surface-raised: #252f3f;
   --upshd-input-bg: #171e28;
   --upshd-hover: rgba(255, 255, 255, 0.06);
-  --upshd-maroon-light: #e2a8b5;
-  --upshd-heading-accent: #f0c4cf;
-  --upshd-link-accent: #d4b896;
-  --upshd-gold: #d4b896;
   --upshd-danger-bg: rgba(185, 28, 28, 0.18);
   --upshd-success-bg: rgba(21, 128, 61, 0.18);
   --upshd-info-bg: rgba(37, 99, 235, 0.15);
@@ -330,12 +326,35 @@ html[data-theme='dark'] .settings-danger-btn {
 
 html[data-theme='dark'] .settings-muted-btn {
   background: var(--upshd-maroon-muted);
-  border-color: rgba(226, 168, 181, 0.35);
-  color: var(--upshd-heading-accent);
+  border-color: var(--upshd-hover-border, var(--upshd-maroon-light));
+  color: var(--upshd-page-heading);
 }
 
-html[data-theme='dark'] .settings-card h3 {
-  color: var(--upshd-heading-accent);
+html[data-theme='dark'] .settings-card h3,
+html[data-theme='dark'] .settings-page-header h1 {
+  color: var(--upshd-page-heading);
+}
+
+html[data-theme='dark'] .settings-link-btn {
+  background: var(--upshd-maroon-muted);
+  border-color: var(--upshd-hover-border, var(--upshd-maroon-light));
+  color: var(--upshd-page-link);
+}
+
+html[data-theme='dark'] .settings-accent-btn.active,
+html[data-theme='dark'] .settings-subtab.active {
+  background: var(--upshd-maroon-muted);
+  border-color: var(--upshd-maroon-light);
+  color: var(--upshd-page-heading);
+}
+
+html[data-theme='dark'] .settings-storage__metric-detail,
+html[data-theme='dark'] .settings-storage__path {
+  color: var(--upshd-text-muted);
+}
+
+html[data-theme='dark'] .settings-storage__path code {
+  color: var(--upshd-text-muted);
 }
 
 /* Tables & generic inputs */
@@ -374,7 +393,7 @@ html[data-theme='dark'] .placeholder-card ul {
 }
 
 html[data-theme='dark'] .dashboard-tile:hover {
-  border-color: rgba(226, 168, 181, 0.45);
+  border-color: var(--upshd-hover-border, var(--upshd-maroon-light));
 }
 
 html[data-theme='dark'] .user-avatar-fallback,
@@ -388,6 +407,6 @@ html[data-theme='dark'] .social-link-card {
   color: var(--upshd-text);
 }
 
-html[data-theme='dark'] .social-link-desc {
-  color: var(--upshd-text-muted);
+html[data-theme='dark'] .main a:not([class]) {
+  color: var(--upshd-page-link);
 }

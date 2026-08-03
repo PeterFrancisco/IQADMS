@@ -2,8 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import {
+  accentLinkStyle,
+  bodyTextStyle,
+  fieldInputStyle,
+  inlineCardStyle,
+  mutedTextStyle,
+  pageSubtitleStyle,
+  pageTitleStyle,
+  tableHeadRowStyle
+} from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
 const TYPE_LABELS = { task: 'Task', project: 'Project', accreditation: 'Accreditation', announcement: 'PQAD event' }
@@ -53,7 +62,7 @@ export default function UpcomingDeadlinesPage() {
   return (
     <DashboardLayout>
       <h1 style={pageTitleStyle}>Upcoming Deadlines</h1>
-      <p style={{ color: '#64748b', marginBottom: '1.25rem' }}>
+      <p style={pageSubtitleStyle}>
         Tasks, projects, and accreditation milestones with due dates.
       </p>
 
@@ -63,7 +72,7 @@ export default function UpcomingDeadlinesPage() {
           <option value="month">Next 30 days + overdue</option>
           <option value="all">All open deadlines</option>
         </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#475569' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', ...bodyTextStyle }}>
           <input type="checkbox" checked={overdueOnly} onChange={e => setOverdueOnly(e.target.checked)} />
           Overdue only
         </label>
@@ -77,7 +86,7 @@ export default function UpcomingDeadlinesPage() {
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: upshd.tableHeadBg }}>
+              <tr style={tableHeadRowStyle}>
                 <th style={th}>Due</th>
                 <th style={th}>Title</th>
                 <th style={th}>Type</th>
@@ -92,11 +101,11 @@ export default function UpcomingDeadlinesPage() {
                     <span style={{ fontWeight: 600 }}>{item.dueDate}</span>
                   </td>
                   <td style={td}>
-                    <Link to={itemLink(item)} style={{ color: upshd.maroon, fontWeight: 600, textDecoration: 'none' }}>
+                    <Link to={itemLink(item)} style={accentLinkStyle}>
                       {item.title}
                     </Link>
                     {item.status && (
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 2 }}>{item.status}</div>
+                      <div style={{ fontSize: '0.8rem', ...mutedTextStyle, marginTop: 2, opacity: 0.85 }}>{item.status}</div>
                     )}
                   </td>
                   <td style={td}>{TYPE_LABELS[item.itemType] || item.itemType}</td>
@@ -105,7 +114,7 @@ export default function UpcomingDeadlinesPage() {
                       <span>{item.projectTitle}</span>
                     )}
                     {item.assignedToName && (
-                      <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{item.assignedToName}</div>
+                      <div style={{ fontSize: '0.85rem', ...mutedTextStyle }}>{item.assignedToName}</div>
                     )}
                     {!item.projectTitle && !item.assignedToName && item.itemType !== 'project' && '-'}
                   </td>
@@ -133,7 +142,7 @@ export default function UpcomingDeadlinesPage() {
   )
 }
 
-const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
-const th = { textAlign: 'left', padding: '0.85rem 1rem', fontWeight: 600, color: '#374151', borderBottom: '1px solid #e5e7eb' }
-const td = { padding: '0.85rem 1rem', borderBottom: '1px solid #f1f5f9', verticalAlign: 'top' }
-const selectStyle = { padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1' }
+const card = { ...inlineCardStyle, padding: '1.25rem' }
+const th = { textAlign: 'left', padding: '0.85rem 1rem', fontWeight: 600, color: 'var(--upshd-text-muted, #374151)', borderBottom: '1px solid var(--upshd-border, #e5e7eb)' }
+const td = { padding: '0.85rem 1rem', borderBottom: '1px solid var(--upshd-border, #f1f5f9)', verticalAlign: 'top', color: 'var(--upshd-text, #1f2937)' }
+const selectStyle = { ...fieldInputStyle, padding: '0.5rem 0.75rem' }

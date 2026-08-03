@@ -21,7 +21,7 @@ export const authCardStyle = {
 
 export const authHeadingStyle = {
   marginTop: 0,
-  color: 'var(--upshd-maroon, #7a0019)'
+  color: 'var(--upshd-page-heading, var(--upshd-maroon, #7a0019))'
 }
 
 export const authPrimaryButtonStyle = {
@@ -61,12 +61,12 @@ export const authInputStyle = {
 
 export const pageTitleStyle = {
   margin: '0 0 0.25rem',
-  color: 'var(--upshd-maroon, #7a0019)'
+  color: 'var(--upshd-page-heading, var(--upshd-maroon, #7a0019))'
 }
 
 export const sectionTitleStyle = {
   marginTop: 0,
-  color: 'var(--upshd-maroon, #7a0019)'
+  color: 'var(--upshd-page-heading, var(--upshd-maroon, #7a0019))'
 }
 
 export const tableHeadRowStyle = {
@@ -138,7 +138,7 @@ export const bodyTextStyle = {
 }
 
 export const accentTextStyle = {
-  color: 'var(--upshd-maroon, #7a0019)'
+  color: 'var(--upshd-page-heading, var(--upshd-maroon, #7a0019))'
 }
 
 export const pageSubtitleStyle = {
@@ -147,7 +147,7 @@ export const pageSubtitleStyle = {
 }
 
 export const accentLinkStyle = {
-  color: 'var(--upshd-maroon, #7a0019)',
+  color: 'var(--upshd-page-link, var(--upshd-maroon, #7a0019))',
   fontWeight: 600,
   textDecoration: 'none'
 }
@@ -155,5 +155,19 @@ export const accentLinkStyle = {
 export const sectionHeadingStyle = {
   margin: '0 0 0.75rem',
   fontSize: '1.05rem',
-  color: 'var(--upshd-maroon, #7a0019)'
+  color: 'var(--upshd-page-heading, var(--upshd-maroon, #7a0019))'
+}
+
+export const labelStyle = {
+  display: 'block',
+  marginTop: '0.65rem',
+  marginBottom: 4,
+  fontWeight: 600,
+  fontSize: '0.85rem',
+  color: 'var(--upshd-text-muted, #475569)'
+}
+
+export const inlineCardStyle = {
+  ...surfaceCardStyle,
+  boxShadow: '0 2px 8px rgba(0,0,0,.06)'
 }

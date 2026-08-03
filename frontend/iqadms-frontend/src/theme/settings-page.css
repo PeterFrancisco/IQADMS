@@ -4,7 +4,7 @@
 
 .settings-page-header h1 {
   margin: 0;
-  color: var(--upshd-maroon, #7a0019);
+  color: var(--upshd-page-heading, var(--upshd-maroon, #7a0019));
   font-size: 1.75rem;
 }
 
@@ -55,7 +55,7 @@
 
 .settings-card h3 {
   margin: 0 0 0.35rem;
-  color: var(--upshd-maroon, #7a0019);
+  color: var(--upshd-page-heading, var(--upshd-maroon, #7a0019));
   font-size: 1.05rem;
 }
 
@@ -134,9 +134,9 @@
 }
 
 .settings-link-btn {
-  background: #fdf2f4;
-  color: var(--upshd-maroon, #7a0019);
-  border: 1px solid #fecaca;
+  background: var(--upshd-maroon-muted, #fdf2f4);
+  color: var(--upshd-page-link, var(--upshd-maroon, #7a0019));
+  border: 1px solid var(--upshd-maroon-light, #fecaca);
 }
 
 .settings-hint {
@@ -361,18 +361,18 @@
 
 .settings-storage__metric-detail {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--upshd-text-muted, #94a3b8);
   line-height: 1.35;
 }
 
 .settings-storage__path {
   margin: 0.85rem 0 0;
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--upshd-text-muted, #94a3b8);
 }
 
 .settings-storage__path code {
   font-size: 0.76rem;
-  color: #475569;
+  color: var(--upshd-text-muted, #475569);
   word-break: break-all;
 }

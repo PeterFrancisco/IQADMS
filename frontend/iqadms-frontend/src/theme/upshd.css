@@ -186,11 +186,11 @@ html[data-theme='dark'] .dashboard-hub-events {
 
 html[data-theme='dark'] .dashboard-hub-events-head h2,
 html[data-theme='dark'] .dashboard-hub-events-head a {
-  color: var(--upshd-heading-accent);
+  color: var(--upshd-page-heading);
 }
 
 html[data-theme='dark'] .dashboard-hub-events-head a:hover {
-  color: var(--upshd-gold);
+  color: var(--upshd-page-link);
 }
 
 /* Theme variants */
@@ -208,11 +208,6 @@ html[data-theme='dark'] {
   --upshd-border: #2f3a4a;
   --upshd-text: #e8edf4;
   --upshd-text-muted: #9aa8bc;
-  --upshd-maroon-muted: rgba(226, 168, 181, 0.14);
-  --upshd-maroon-light: #e2a8b5;
-  --upshd-heading-accent: #f0c4cf;
-  --upshd-link-accent: #d4b896;
-  --upshd-gold: #d4b896;
 }
 
 html[data-theme='dark'] .sidebar,
@@ -223,24 +218,24 @@ html[data-theme='dark'] .main-header {
 html[data-theme='dark'] .main-title,
 html[data-theme='dark'] .dashboard-hub-header h1,
 html[data-theme='dark'] .placeholder-page h1 {
-  color: var(--upshd-heading-accent);
+  color: var(--upshd-page-heading);
 }
 
 html[data-theme='dark'] .dashboard-hub-campus {
-  color: var(--upshd-gold);
+  color: var(--upshd-gold, var(--upshd-link-accent));
 }
 
 html[data-theme='dark'] .dashboard-tile-title {
-  color: var(--upshd-heading-accent);
+  color: var(--upshd-page-heading);
 }
 
 html[data-theme='dark'] .dashboard-tile:hover {
-  border-color: rgba(226, 168, 181, 0.45);
+  border-color: var(--upshd-hover-border, var(--upshd-maroon-light));
 }
 
 html[data-theme='dark'] .nav-item:hover,
 html[data-theme='dark'] .nav-item.active {
-  background: rgba(122, 0, 25, 0.25);
+  background: var(--upshd-maroon-muted);
 }
 
 html[data-font-size='small'] {

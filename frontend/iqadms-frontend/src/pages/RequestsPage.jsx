@@ -2,8 +2,20 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import {
+  accentLinkStyle,
+  bodyTextStyle,
+  fieldInputStyle,
+  ghostButtonStyle,
+  inlineCardStyle,
+  labelStyle,
+  mutedTextStyle,
+  pageSubtitleStyle,
+  pageTitleStyle,
+  primaryButtonStyle,
+  sectionHeadingStyle
+} from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
 export default function RequestsPage() {
@@ -146,7 +158,7 @@ export default function RequestsPage() {
   return (
     <DashboardLayout>
       <h1 style={pageTitleStyle}>Requests</h1>
-      <p style={{ color: '#64748b', marginBottom: '1.25rem' }}>
+      <p style={pageSubtitleStyle}>
         Account access, deadline extensions, and future PQAD request types.
       </p>
 
@@ -156,18 +168,18 @@ export default function RequestsPage() {
         <>
           <section style={card}>
             <h2 style={sectionTitle}>Your account</h2>
-            <p style={{ margin: '0 0 0.75rem', color: '#475569' }}>
+            <p style={{ margin: '0 0 0.75rem', ...bodyTextStyle }}>
               Signed in as <strong>{overview?.email}</strong>
               {overview?.isOnAllowList ? ' · on allow list' : ''}
             </p>
             {overview?.latestAccountRequest ? (
-              <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+              <p style={{ margin: 0, ...mutedTextStyle, fontSize: '0.9rem' }}>
                 Latest access request: <strong>{overview.latestAccountRequest.status}</strong>
                 {' · submitted '}
                 {new Date(overview.latestAccountRequest.requestedAt).toLocaleString()}
               </p>
             ) : (
-              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>
+              <p style={{ margin: 0, ...mutedTextStyle, fontSize: '0.9rem', opacity: 0.85 }}>
                 No access request on file for this email.
               </p>
             )}
@@ -175,11 +187,11 @@ export default function RequestsPage() {
 
           <section style={{ ...card, marginTop: '1rem' }}>
             <h2 style={sectionTitle}>Task deadline extension</h2>
-            <p style={{ margin: '0 0 1rem', color: '#475569', fontSize: '0.9rem' }}>
+            <p style={{ margin: '0 0 1rem', ...bodyTextStyle, fontSize: '0.9rem' }}>
               Request a later due date for a task you own or are assigned to. An administrator must approve.
             </p>
             {eligibleTasks.length === 0 ? (
-              <p style={{ color: '#94a3b8', margin: 0 }}>No eligible tasks with due dates.</p>
+              <p style={{ ...mutedTextStyle, margin: 0 }}>No eligible tasks with due dates.</p>
             ) : (
               <form onSubmit={submitExtension}>
                 <label style={label}>Task</label>
@@ -239,16 +251,16 @@ export default function RequestsPage() {
           </section>
 
           {isAdmin && pendingExtensions.length > 0 && (
-            <section style={{ ...card, marginTop: '1rem', borderLeft: `4px solid ${upshd.maroon}` }}>
+            <section style={{ ...card, marginTop: '1rem', borderLeft: '4px solid var(--upshd-maroon, #7a0019)' }}>
               <h2 style={sectionTitle}>Pending extensions ({pendingExtensions.length})</h2>
               <ul style={{ ...list, padding: 0, listStyle: 'none' }}>
                 {pendingExtensions.map(ext => (
                   <li key={ext.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ fontWeight: 600, color: upshd.maroon }}>{ext.taskTitle}</div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.25rem 0' }}>
+                    <div style={{ fontWeight: 600, ...accentTextStyle }}>{ext.taskTitle}</div>
+                    <div style={{ fontSize: '0.85rem', ...mutedTextStyle, margin: '0.25rem 0' }}>
                       {ext.requestedByName} · {ext.currentDueDate || 'no due'} → {ext.requestedDueDate}
                     </div>
-                    <p style={{ margin: '0.35rem 0 0.5rem', color: '#475569', fontSize: '0.9rem' }}>{ext.reason}</p>
+                    <p style={{ margin: '0.35rem 0 0.5rem', ...bodyTextStyle, fontSize: '0.9rem' }}>{ext.reason}</p>
                     <button type="button" style={{ ...primaryBtn, marginRight: 8 }} onClick={() => reviewExtension(ext.id, true)}>
                       Approve
                     </button>
@@ -263,7 +275,7 @@ export default function RequestsPage() {
 
           <section style={{ ...card, marginTop: '1rem' }}>
             <h2 style={sectionTitle}>Document request (department)</h2>
-            <p style={{ margin: '0 0 1rem', color: '#475569', fontSize: '0.9rem' }}>
+            <p style={{ margin: '0 0 1rem', ...bodyTextStyle, fontSize: '0.9rem' }}>
               Track documents PQAD needs from an office or college. Departments remain metadata, not system users.
             </p>
             <form onSubmit={submitDocument}>
@@ -326,15 +338,15 @@ export default function RequestsPage() {
                 <ul style={{ ...list, padding: 0, listStyle: 'none' }}>
                   {documentRequests.map(doc => (
                     <li key={doc.id} style={{ padding: '0.65rem 0', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ fontWeight: 600, color: upshd.maroon }}>{doc.title}</div>
-                      <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                      <div style={{ fontWeight: 600, ...accentTextStyle }}>{doc.title}</div>
+                      <div style={{ fontSize: '0.85rem', ...mutedTextStyle }}>
                         {doc.departmentName}
                         {doc.projectTitle ? ` · ${doc.projectTitle}` : ''}
                         {' · '}
                         <StatusBadge status={doc.status} />
                       </div>
                       {doc.dueDate && (
-                        <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Needed by {doc.dueDate}</div>
+                        <div style={{ fontSize: '0.8rem', ...mutedTextStyle, opacity: 0.85 }}>Needed by {doc.dueDate}</div>
                       )}
                       {(isAdmin || doc.requestedByName) && (
                         <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -364,7 +376,7 @@ export default function RequestsPage() {
 
           <section style={{ ...card, marginTop: '1rem' }}>
             <h2 style={sectionTitle}>Account access (colleague)</h2>
-            <p style={{ margin: '0 0 1rem', color: '#475569' }}>
+            <p style={{ margin: '0 0 1rem', ...bodyTextStyle }}>
               Send a new user through the public access request form.
             </p>
             <button type="button" style={primaryBtn} onClick={() => navigate('/request-access')}>
@@ -375,7 +387,7 @@ export default function RequestsPage() {
           {isAdmin && (
             <section style={{ ...card, marginTop: '1rem' }}>
               <h2 style={sectionTitle}>Administrator</h2>
-              <p style={{ margin: '0 0 1rem', color: '#475569' }}>
+              <p style={{ margin: '0 0 1rem', ...bodyTextStyle }}>
                 {overview?.pendingAccountRequestsForAdmin ?? 0} pending account request(s).
                 {overview?.pendingExtensionRequestsForAdmin
                   ? ` ${overview.pendingExtensionRequestsForAdmin} pending extension(s).`
@@ -399,17 +411,17 @@ function StatusBadge({ status }) {
     Rejected: '#dc2626'
   }
   return (
-    <span style={{ fontWeight: 700, color: colors[status] || '#64748b', fontSize: '0.85rem' }}>
+    <span style={{ fontWeight: 700, color: colors[status] || 'var(--upshd-text-muted, #64748b)', fontSize: '0.85rem' }}>
       {status}
     </span>
   )
 }
 
-const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1.15rem 1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
-const sectionTitle = { margin: '0 0 0.75rem', fontSize: '1.05rem', color: upshd.maroon }
-const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600, cursor: 'pointer' }
-const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
-const label = { display: 'block', marginTop: '0.65rem', marginBottom: 4, fontWeight: 600, fontSize: '0.85rem', color: '#475569' }
-const input = { width: '100%', padding: '0.55rem 0.7rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }
-const list = { margin: 0, paddingLeft: '1.1rem', color: '#334155' }
-const anchor = { color: upshd.maroon, fontWeight: 600, textDecoration: 'none' }
+const card = { ...inlineCardStyle, padding: '1.15rem 1.25rem' }
+const sectionTitle = sectionHeadingStyle
+const primaryBtn = { ...primaryButtonStyle, padding: '0.6rem 1rem', borderRadius: 8 }
+const ghostBtn = { ...ghostButtonStyle, padding: '0.6rem 1rem', borderRadius: 8 }
+const label = labelStyle
+const input = { ...fieldInputStyle, padding: '0.55rem 0.7rem', borderRadius: 8 }
+const list = { margin: 0, paddingLeft: '1.1rem', color: 'var(--upshd-text, #334155)' }
+const anchor = accentLinkStyle

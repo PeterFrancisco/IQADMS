@@ -2,8 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import {
+  accentLinkStyle,
+  accentTextStyle,
+  ghostButtonStyle,
+  inlineCardStyle,
+  mutedTextStyle,
+  pageSubtitleStyle,
+  pageTitleStyle,
+  fieldInputStyle
+} from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
 const TYPE_COLORS = {
@@ -97,14 +106,14 @@ export default function CalendarPage() {
   return (
     <DashboardLayout>
       <h1 style={pageTitleStyle}>Calendar</h1>
-      <p style={{ color: '#64748b', marginBottom: '1.25rem' }}>
+      <p style={pageSubtitleStyle}>
         Task due dates, project milestones, and accreditation schedules.
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button type="button" onClick={() => shiftMonth(-1)} style={navBtn} aria-label="Previous month">‹</button>
-          <strong style={{ color: upshd.maroon, minWidth: 180, textAlign: 'center' }}>{monthLabel(year, month)}</strong>
+          <strong style={{ ...accentTextStyle, minWidth: 180, textAlign: 'center' }}>{monthLabel(year, month)}</strong>
           <button type="button" onClick={() => shiftMonth(1)} style={navBtn} aria-label="Next month">›</button>
         </div>
         <button
@@ -151,11 +160,11 @@ export default function CalendarPage() {
                   onClick={() => setSelectedDay(day)}
                   style={{
                     ...dayCell,
-                    borderColor: isSelected ? upshd.maroon : isToday ? '#fbbf24' : '#e2e8f0',
-                    background: isSelected ? '#fff5f7' : '#fff'
+                    borderColor: isSelected ? 'var(--upshd-maroon, #7a0019)' : isToday ? '#fbbf24' : 'var(--upshd-border, #e2e8f0)',
+                    background: isSelected ? 'var(--upshd-maroon-muted, #fff5f7)' : 'var(--upshd-surface, #fff)'
                   }}
                 >
-                  <div style={{ fontWeight: 700, color: isToday ? upshd.maroon : '#334155', marginBottom: 4 }}>
+                  <div style={{ fontWeight: 700, color: isToday ? 'var(--upshd-page-heading, var(--upshd-maroon, #7a0019))' : 'var(--upshd-text, #334155)', marginBottom: 4 }}>
                     {day.getDate()}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
@@ -179,7 +188,7 @@ export default function CalendarPage() {
                       </span>
                     ))}
                     {dayEvents.length > 3 && (
-                      <span style={{ fontSize: '0.65rem', color: '#64748b' }}>+{dayEvents.length - 3} more</span>
+                      <span style={{ fontSize: '0.65rem', ...mutedTextStyle }}>+{dayEvents.length - 3} more</span>
                     )}
                   </div>
                 </button>
@@ -189,21 +198,21 @@ export default function CalendarPage() {
 
           {selectedDay && (
             <section style={{ ...card, marginTop: '1.25rem' }}>
-              <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.05rem', color: upshd.maroon }}>
+              <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.05rem', ...accentTextStyle }}>
                 {selectedDay.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
               </h2>
               {selectedEvents.length === 0 ? (
-                <p style={{ margin: 0, color: '#94a3b8' }}>No events on this day.</p>
+                <p style={{ margin: 0, ...mutedTextStyle, opacity: 0.85 }}>No events on this day.</p>
               ) : (
                 <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.5rem' }}>
                   {selectedEvents.map(ev => (
                     <li key={`${ev.itemType}-${ev.id}-${ev.eventKind}`} style={listRow}>
                       <span style={{ ...dot, background: TYPE_COLORS[ev.itemType] }} />
                       <div style={{ flex: 1 }}>
-                        <Link to={eventLink(ev)} style={{ color: upshd.maroon, fontWeight: 600, textDecoration: 'none' }}>
+                        <Link to={eventLink(ev)} style={accentLinkStyle}>
                           {ev.title}
                         </Link>
-                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                        <div style={{ fontSize: '0.85rem', ...mutedTextStyle }}>
                             {ev.itemType} · {ev.eventKind}
                             {ev.location ? ` · ${ev.location}` : ''}
                             {ev.status && ev.itemType !== 'announcement' ? ` · ${ev.status}` : ''}
@@ -240,21 +249,22 @@ const gridWrap = {
   boxShadow: '0 2px 8px rgba(0,0,0,.06)'
 }
 
-const weekdayHead = { textAlign: 'center', fontWeight: 700, fontSize: '0.8rem', color: '#64748b', padding: '0.35rem' }
-const emptyCell = { minHeight: 72, background: '#f8fafc', borderRadius: 8 }
+const weekdayHead = { textAlign: 'center', fontWeight: 700, fontSize: '0.8rem', color: 'var(--upshd-text-muted, #64748b)', padding: '0.35rem' }
+const emptyCell = { minHeight: 72, background: 'var(--upshd-surface-raised, #f8fafc)', borderRadius: 8 }
 const dayCell = {
   minHeight: 72,
   padding: '0.35rem',
   borderRadius: 8,
-  border: '2px solid #e2e8f0',
+  border: '2px solid var(--upshd-border, #e2e8f0)',
   cursor: 'pointer',
   textAlign: 'left',
   display: 'block',
-  width: '100%'
+  width: '100%',
+  color: 'var(--upshd-text, #1f2937)'
 }
 
-const card = { background: 'var(--upshd-surface, #fff)', borderRadius: 12, padding: '1rem 1.15rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }
+const card = inlineCardStyle
 const listRow = { display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }
 const dot = { width: 8, height: 8, borderRadius: 999, marginTop: 6, flexShrink: 0 }
-const navBtn = { width: 36, height: 36, borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1 }
-const ghostBtn = { padding: '0.45rem 0.85rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
+const navBtn = { width: 36, height: 36, borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', background: 'var(--upshd-surface, #fff)', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1, color: 'var(--upshd-text, #1f2937)' }
+const ghostBtn = { ...ghostButtonStyle, padding: '0.45rem 0.85rem', borderRadius: 8 }

@@ -112,7 +112,7 @@ export default function SettingsGeneral() {
 
       <section className="settings-card">
         <h3>Color theme</h3>
-        <p className="settings-card-desc">Accent colors for buttons, headings, and the sidebar — tuned for light and night modes.</p>
+        <p className="settings-card-desc">Accent colors for buttons, headings, and the sidebar, tuned for light and night modes.</p>
         <div className="settings-accent-row">
           {ACCENTS.map(a => (
             <button
