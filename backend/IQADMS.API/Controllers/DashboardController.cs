@@ -34,7 +34,12 @@ public class DashboardController : ControllerBase
         var items = new List<DeadlineItemResponse>();
 
         var openTasks = await _context.WorkspaceTasks
-            .Where(t => !t.IsDeleted && t.DueDate != null && !IsClosedStatus(t.Status))
+            .AsNoTracking()
+            .Where(t => !t.IsDeleted
+                && t.DueDate != null
+                && t.Status != "Completed"
+                && t.Status != "Done"
+                && t.Status != "Cancelled")
             .Include(t => t.Project)
             .Include(t => t.AssignedToUser)
             .ToListAsync();
@@ -62,6 +67,7 @@ public class DashboardController : ControllerBase
         }
 
         var projects = await _context.Projects
+            .AsNoTracking()
             .Where(p => !p.IsDeleted && p.DueDate != null && p.Status != "Completed" && p.Status != "Cancelled")
             .ToListAsync();
 
@@ -87,6 +93,7 @@ public class DashboardController : ControllerBase
         }
 
         var activities = await _context.AccreditationActivities
+            .AsNoTracking()
             .Where(a => !a.IsDeleted && a.Status != "Completed" && a.Status != "Closed")
             .ToListAsync();
 
@@ -109,7 +116,10 @@ public class DashboardController : ControllerBase
             });
         }
 
-        var pqadEvents = await _context.PqadAnnouncements.Where(a => !a.IsDeleted).ToListAsync();
+        var pqadEvents = await _context.PqadAnnouncements
+            .AsNoTracking()
+            .Where(a => !a.IsDeleted)
+            .ToListAsync();
         foreach (var ev in pqadEvents)
         {
             var due = ev.StartDate;
