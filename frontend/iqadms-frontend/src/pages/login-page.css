@@ -1,21 +1,53 @@
+@import '../theme/campus-bg.css';
+
 .login-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--upshd-bg, #f7f4f5);
   font-family: Arial, sans-serif;
   padding: 1rem;
+  background-image: var(--iqadms-campus-bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (min-width: 768px) {
+  .login-page {
+    background-attachment: fixed;
+  }
+}
+
+.login-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.86) 45%,
+    rgba(122, 0, 25, 0.18) 100%
+  );
+  pointer-events: none;
+}
+
+.login-page > * {
+  position: relative;
+  z-index: 1;
 }
 
 .login-card {
   width: 100%;
   max-width: 420px;
-  background: var(--upshd-surface, #fff);
+  background: rgba(255, 255, 255, 0.97);
   border-radius: 16px;
   padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
 }
 
 .login-header {
@@ -233,8 +265,18 @@
   font-weight: 700;
 }
 
+html[data-theme='dark'] .login-page::before {
+  background: linear-gradient(
+    145deg,
+    rgba(15, 23, 42, 0.88) 0%,
+    rgba(30, 41, 59, 0.82) 50%,
+    rgba(92, 0, 18, 0.45) 100%
+  );
+}
+
 html[data-theme='dark'] .login-card {
-  background: var(--upshd-surface, #1e293b);
+  background: rgba(30, 41, 59, 0.94);
+  border-color: rgba(51, 65, 85, 0.9);
 }
 
 html[data-theme='dark'] .login-saved-account {

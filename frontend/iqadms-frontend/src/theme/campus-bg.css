@@ -1,0 +1,16 @@
+:root {
+  --iqadms-campus-bg: url('/images/uphsd-molino-campus.png');
+}
+
+.iqadms-campus-bg {
+  background-image: var(--iqadms-campus-bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (min-width: 768px) {
+  .iqadms-campus-bg {
+    background-attachment: fixed;
+  }
+}
