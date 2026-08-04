@@ -127,6 +127,15 @@ public class AnnouncementsController : ControllerBase
         await _context.SaveChangesAsync();
         await _context.Entry(entity).Reference(e => e.CreatedByUser).LoadAsync();
 
+        var authorEmail = entity.CreatedByUser?.Email ?? "A team member";
+        await _notifications.NotifyAnnouncementPublishedAsync(
+            entity.Id,
+            entity.Category,
+            entity.Title,
+            entity.Description,
+            entity.CreatedByUserId,
+            authorEmail);
+
         return Ok(Map(entity));
     }
 

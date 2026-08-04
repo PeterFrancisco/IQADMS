@@ -1,6 +1,8 @@
 using IQADMS.API.Data;
 using IQADMS.API.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace IQADMS.API.Services;
 
@@ -177,53 +179,93 @@ public class NotificationService
         if (author == null) return;
 
         var tokens = MentionParser.ExtractTokens(title, description);
-        var recipientIds = new HashSet<Guid>();
+        if (tokens.Count == 0) return;
 
-        if (tokens.Count == 0 || MentionParser.ContainsEveryone(tokens))
-        {
-            var all = await _context.Users
-                .Where(u => u.IsActive && u.Id != authorUserId)
-                .Select(u => u.Id)
-                .ToListAsync();
-            foreach (var id in all) recipientIds.Add(id);
-        }
-        else
-        {
-            var activeUsers = await _context.Users
-                .Where(u => u.IsActive && u.Id != authorUserId)
-                .Select(u => new { u.Id, u.Username, u.Email })
-                .ToListAsync();
+        var authorLabel = string.IsNullOrWhiteSpace(author.DisplayName)
+            ? authorEmail
+            : author.DisplayName.Trim();
+        var preview = TruncatePreview(title, 96);
+        var kind = category.Equals("Meeting", StringComparison.OrdinalIgnoreCase) ? "meeting" : "announcement";
+        var linkPath = $"/announcements?id={announcementId}";
+        var dedupSuffix = BuildMentionDedupSuffix(title, description, tokens);
 
-            foreach (var token in tokens)
+        var activeUsers = await _context.Users
+            .Where(u => u.IsActive && u.Id != authorUserId)
+            .Select(u => new MentionCandidate(u.Id, u.Username, u.Email, u.DisplayName))
+            .ToListAsync();
+
+        if (MentionParser.ContainsEveryone(tokens))
+        {
+            foreach (var user in activeUsers)
             {
-                if (token.Equals("everyone", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                var match = activeUsers.FirstOrDefault(u =>
-                    u.Username.Equals(token, StringComparison.OrdinalIgnoreCase)
-                    || u.Email.Equals(token, StringComparison.OrdinalIgnoreCase)
-                    || u.Email.StartsWith(token + "@", StringComparison.OrdinalIgnoreCase));
-
-                if (match != null)
-                    recipientIds.Add(match.Id);
+                await NotifyAsync(
+                    user.Id,
+                    "announcement",
+                    $"{authorLabel} posted a {kind} for @everyone",
+                    preview,
+                    linkPath,
+                    dedupKey: $"announcement-broadcast-{announcementId}-{user.Id}{dedupSuffix}");
             }
         }
 
-        var preview = TruncatePreview(title, 96);
-        var kind = category.Equals("Meeting", StringComparison.OrdinalIgnoreCase) ? "meeting" : "announcement";
-        var notifyTitle = $"{authorEmail} published a {kind}";
+        var mentionedIds = new HashSet<Guid>();
+        foreach (var token in MentionParser.SpecificMentionTokens(tokens))
+        {
+            var match = activeUsers.FirstOrDefault(u => UserMatchesMentionToken(u, token));
+            if (match != null)
+                mentionedIds.Add(match.Id);
+        }
 
-        foreach (var userId in recipientIds)
+        foreach (var userId in mentionedIds)
         {
             await NotifyAsync(
                 userId,
-                "announcement",
-                notifyTitle,
+                "mention",
+                $"{authorLabel} mentioned you in an announcement",
                 preview,
-                "/announcements",
-                dedupKey: $"announcement-{announcementId}-{userId}");
+                linkPath,
+                dedupKey: $"announcement-mention-{announcementId}-{userId}{dedupSuffix}");
         }
     }
+
+    private static bool UserMatchesMentionToken(MentionCandidate user, string token)
+    {
+        if (user.Username.Equals(token, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (user.Email.Equals(token, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (user.Email.StartsWith(token + "@", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrWhiteSpace(user.DisplayName))
+        {
+            if (user.DisplayName.Equals(token, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var compactDisplay = user.DisplayName.Replace(" ", string.Empty, StringComparison.Ordinal);
+            if (compactDisplay.Equals(token, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var firstName = user.DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .FirstOrDefault();
+            if (firstName != null && firstName.Equals(token, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static string BuildMentionDedupSuffix(string title, string? description, IEnumerable<string> tokens)
+    {
+        var tokenPart = string.Join(',', tokens.OrderBy(t => t, StringComparer.OrdinalIgnoreCase));
+        var payload = $"{tokenPart}\n{title.Trim()}\n{(description ?? string.Empty).Trim()}";
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload)))[..16];
+        return $"-{hash}";
+    }
+
+    private sealed record MentionCandidate(Guid Id, string Username, string Email, string DisplayName);
 
     private static string TruncatePreview(string text, int maxLen)
     {

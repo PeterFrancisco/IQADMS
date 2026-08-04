@@ -403,7 +403,7 @@ export default function AnnouncementsPage() {
 
             <label htmlFor="ann-details">Details</label>
             <p style={{ margin: '0 0 0.35rem', fontSize: '0.78rem', color: 'var(--upshd-text-muted, #64748b)' }}>
-              Use @everyone or @username in the text to notify specific members.
+              Add <strong>@everyone</strong> to notify all members, or <strong>@username</strong> to mention someone (also works in the title).
             </p>
             <textarea
               id="ann-details"

@@ -9,7 +9,8 @@ const CATEGORY_LABEL = {
   task: 'Task',
   reminder: 'Due date',
   admin: 'Admin',
-  announcement: 'Announcement'
+  announcement: 'Announcement',
+  mention: 'Mention'
 }
 
 function previewText(n) {

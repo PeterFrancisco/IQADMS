@@ -19,7 +19,8 @@ const CATEGORY_LABELS = {
   task: 'Task',
   reminder: 'Reminder',
   admin: 'Admin',
-  announcement: 'Announcement'
+  announcement: 'Announcement',
+  mention: 'Mention'
 }
 
 export default function NotificationsPage() {
