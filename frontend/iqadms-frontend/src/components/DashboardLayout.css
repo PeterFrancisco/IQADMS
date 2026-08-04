@@ -365,10 +365,12 @@
   top: calc(100% + 8px);
   right: 0;
   width: min(300px, calc(100vw - 24px));
+  max-height: min(70vh, calc(100dvh - 96px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: white;
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
-  overflow: hidden;
   z-index: 1000;
   border: 1px solid #e5e7eb;
   opacity: 0;
@@ -379,11 +381,21 @@
   pointer-events: none;
 }
 
+.profile-menu.flip-up {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform-origin: bottom right;
+}
+
 .profile-menu.open {
   opacity: 1;
   visibility: visible;
   transform: translateY(0) scale(1);
   pointer-events: auto;
+}
+
+.profile-menu.flip-up.open {
+  transform: translateY(0) scale(1);
 }
 
 .profile-header {

@@ -370,35 +370,85 @@ public class SubmissionService
         oldPath = SanitizeFolderPath(oldPath);
         newPath = SanitizeFolderPath(newPath);
 
+        if (string.Equals(oldPath, newPath, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var folderRow = await _context.DocumentLibraryFolders
+            .FirstOrDefaultAsync(f => f.Path == oldPath && !f.IsDeleted);
+
+        var nameTaken = await _context.DocumentLibraryFolders
+            .AnyAsync(f => !f.IsDeleted && f.Path == newPath);
+        if (nameTaken)
+            throw new InvalidOperationException("A folder with that name already exists.");
+
+        var trashedAtTarget = await _context.DocumentLibraryFolders
+            .Where(f => f.IsDeleted && f.Path == newPath)
+            .ToListAsync();
+        foreach (var ghost in trashedAtTarget)
+        {
+            ghost.Path = $"{newPath}__deleted__{ghost.Id:N}";
+            ghost.UpdatedAt = DateTime.UtcNow;
+        }
+
         var oldPhysical = Path.Combine(_env.ContentRootPath, "Uploads", "documents", oldPath.Replace('/', Path.DirectorySeparatorChar));
         var newPhysical = Path.Combine(_env.ContentRootPath, "Uploads", "documents", newPath.Replace('/', Path.DirectorySeparatorChar));
 
         if (Directory.Exists(oldPhysical))
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(newPhysical)!);
             if (Directory.Exists(newPhysical))
                 throw new InvalidOperationException("A folder with that name already exists.");
+
+            var parentDir = Path.GetDirectoryName(newPhysical);
+            if (!string.IsNullOrEmpty(parentDir))
+                Directory.CreateDirectory(parentDir);
             Directory.Move(oldPhysical, newPhysical);
         }
 
         var submissions = await _context.Submissions
-            .Where(s => !s.IsDeleted && s.AutoFolderPath == oldPath)
+            .Where(s => !s.IsDeleted && s.AutoFolderPath != null &&
+                        (s.AutoFolderPath == oldPath || s.AutoFolderPath.StartsWith(oldPath + "/")))
             .ToListAsync();
 
         foreach (var s in submissions)
         {
-            s.AutoFolderPath = newPath;
-            if (s.StoredRelativePath != null && s.StoredRelativePath.Contains(oldPath))
-                s.StoredRelativePath = s.StoredRelativePath.Replace(oldPath, newPath);
+            var suffix = s.AutoFolderPath!.Length > oldPath.Length
+                ? s.AutoFolderPath.Substring(oldPath.Length)
+                : string.Empty;
+            s.AutoFolderPath = newPath + suffix;
+
+            if (s.StoredRelativePath != null)
+            {
+                var docsPrefix = "documents/" + oldPath;
+                if (s.StoredRelativePath.StartsWith(docsPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    s.StoredRelativePath = "documents/" + newPath +
+                        s.StoredRelativePath.Substring(docsPrefix.Length);
+                }
+            }
+
             s.UpdatedAt = DateTime.UtcNow;
         }
 
-        var folderRow = await _context.DocumentLibraryFolders
-            .FirstOrDefaultAsync(f => f.Path == oldPath && !f.IsDeleted);
-        if (folderRow != null)
-            folderRow.Path = newPath;
+        var childFolders = await _context.DocumentLibraryFolders
+            .Where(f => !f.IsDeleted && f.Path.StartsWith(oldPath + "/"))
+            .ToListAsync();
 
-        await EnsureFolderRegisteredAsync(newPath);
+        foreach (var child in childFolders)
+        {
+            child.Path = newPath + child.Path.Substring(oldPath.Length);
+            child.UpdatedAt = DateTime.UtcNow;
+        }
+
+        if (folderRow != null)
+        {
+            folderRow.Path = newPath;
+            folderRow.UpdatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            await EnsureFolderRegisteredAsync(newPath);
+        }
+
         await _context.SaveChangesAsync();
     }
 

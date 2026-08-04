@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import AppIcon from '../components/AppIcon'
@@ -6,6 +6,7 @@ import AppModal from '../components/AppModal'
 import { useAppDialog } from '../components/AppDialogProvider'
 import api from '../services/api'
 import { getApiOrigin } from '../utils/apiOrigin'
+import { floatingMenuPosition } from '../utils/floatingMenuPosition'
 import { pageTitleStyle } from '../theme/pageStyles'
 import '../theme/documents.css'
 
@@ -29,7 +30,8 @@ export default function DocumentsPage() {
   const [createFolderParent, setCreateFolderParent] = useState(null)
   const [folderMenu, setFolderMenu] = useState(null)
   const [fileMenu, setFileMenu] = useState(null)
-  const [menuAnchor, setMenuAnchor] = useState(null)
+  const [menuTriggerRect, setMenuTriggerRect] = useState(null)
+  const [menuStyle, setMenuStyle] = useState(null)
   const [viewMode, setViewMode] = useState('library')
   const [trashInfo, setTrashInfo] = useState({ retentionDays: 30, items: [] })
   const menuRef = useRef(null)
@@ -50,6 +52,21 @@ export default function DocumentsPage() {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [])
+
+  useLayoutEffect(() => {
+    if (!menuTriggerRect || (!folderMenu && !fileMenu)) {
+      setMenuStyle(null)
+      return
+    }
+    const el = folderMenu ? menuRef.current : fileMenuRef.current
+    if (!el) return
+    setMenuStyle(
+      floatingMenuPosition(menuTriggerRect, {
+        width: el.offsetWidth || 180,
+        height: el.offsetHeight || 200
+      })
+    )
+  }, [folderMenu, fileMenu, menuTriggerRect])
 
   async function loadData() {
     setLoading(true)
@@ -181,14 +198,16 @@ export default function DocumentsPage() {
 
   function openFolderMenu(path, el) {
     const rect = el.getBoundingClientRect()
-    setMenuAnchor({ top: rect.bottom + 4, left: Math.max(8, rect.right - 180) })
+    setMenuTriggerRect(rect)
+    setMenuStyle(floatingMenuPosition(rect))
     setFolderMenu(path)
     setFileMenu(null)
   }
 
   function openFileMenu(docId, el) {
     const rect = el.getBoundingClientRect()
-    setMenuAnchor({ top: rect.bottom + 4, left: Math.max(8, rect.right - 160) })
+    setMenuTriggerRect(rect)
+    setMenuStyle(floatingMenuPosition(rect, { width: 160 }))
     setFileMenu(docId)
     setFolderMenu(null)
   }
@@ -582,9 +601,13 @@ export default function DocumentsPage() {
         </AppModal>
 
         {folderMenu &&
-          menuAnchor &&
+          menuTriggerRect &&
           createPortal(
-            <div ref={menuRef} className="docs-folder-menu" style={{ top: menuAnchor.top, left: menuAnchor.left }}>
+            <div
+              ref={menuRef}
+              className="docs-folder-menu"
+              style={menuStyle ?? floatingMenuPosition(menuTriggerRect)}
+            >
               <button
                 type="button"
                 onClick={() => {
@@ -608,9 +631,13 @@ export default function DocumentsPage() {
           )}
 
         {fileMenu &&
-          menuAnchor &&
+          menuTriggerRect &&
           createPortal(
-            <div ref={fileMenuRef} className="docs-folder-menu" style={{ top: menuAnchor.top, left: menuAnchor.left }}>
+            <div
+              ref={fileMenuRef}
+              className="docs-folder-menu"
+              style={menuStyle ?? floatingMenuPosition(menuTriggerRect, { width: 160 })}
+            >
               <button type="button" className="danger" onClick={() => moveFileToTrash(fileMenu)}>
                 Move to trash
               </button>

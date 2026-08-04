@@ -103,14 +103,16 @@
 
 .workspace-col-menu {
   min-width: 200px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--upshd-surface, #fff);
+  border: 1px solid var(--upshd-border, #e5e7eb);
   border-radius: 10px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
   z-index: 20;
   padding: 0.35rem 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .workspace-col-menu-fixed {

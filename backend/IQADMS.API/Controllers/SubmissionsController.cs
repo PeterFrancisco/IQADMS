@@ -95,6 +95,10 @@ public class SubmissionsController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+        catch (DbUpdateException ex)
+        {
+            return BadRequest(new { message = "Could not rename folder. A folder with that name may already exist." });
+        }
     }
 
     [HttpGet("folders/export")]

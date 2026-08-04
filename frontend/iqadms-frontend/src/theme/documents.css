@@ -144,11 +144,13 @@
   position: fixed;
   z-index: 2000;
   min-width: 180px;
-  background: #fff;
-  border: 1px solid var(--docs-border);
+  background: var(--upshd-surface, #fff);
+  border: 1px solid var(--docs-border, var(--upshd-border, #e5e7eb));
   border-radius: 12px;
   box-shadow: var(--docs-shadow);
   padding: 0.35rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .docs-folder-menu button {

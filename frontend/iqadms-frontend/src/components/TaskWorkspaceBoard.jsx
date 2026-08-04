@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import UserAvatar from './UserAvatar'
 import { appDialog } from '../utils/appDialog'
+import { floatingMenuPosition } from '../utils/floatingMenuPosition'
 import '../theme/workspace-board.css'
 
 const STATUS_OPTIONS_ADMIN = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
@@ -89,7 +90,8 @@ export default function TaskWorkspaceBoard({
   onDeleteTask
 }) {
   const [headerMenu, setHeaderMenu] = useState(null)
-  const [menuAnchor, setMenuAnchor] = useState(null)
+  const [menuTriggerRect, setMenuTriggerRect] = useState(null)
+  const [menuStyle, setMenuStyle] = useState(null)
   const [renamingId, setRenamingId] = useState(null)
   const [renameDraft, setRenameDraft] = useState('')
   const menuRef = useRef(null)
@@ -98,7 +100,8 @@ export default function TaskWorkspaceBoard({
 
   const closeHeaderMenu = () => {
     setHeaderMenu(null)
-    setMenuAnchor(null)
+    setMenuTriggerRect(null)
+    setMenuStyle(null)
   }
 
   const openHeaderMenu = (colId, triggerEl) => {
@@ -108,12 +111,23 @@ export default function TaskWorkspaceBoard({
     }
     menuTriggerRef.current = triggerEl
     const rect = triggerEl.getBoundingClientRect()
-    setMenuAnchor({
-      top: rect.bottom + 4,
-      left: Math.max(8, rect.right - 208)
-    })
+    setMenuTriggerRect(rect)
+    setMenuStyle(floatingMenuPosition(rect, { width: 200, height: 260 }))
     setHeaderMenu(colId)
   }
+
+  useLayoutEffect(() => {
+    if (!menuTriggerRect || !headerMenu || !menuRef.current) {
+      setMenuStyle(null)
+      return
+    }
+    setMenuStyle(
+      floatingMenuPosition(menuTriggerRect, {
+        width: menuRef.current.offsetWidth || 200,
+        height: menuRef.current.offsetHeight || 260
+      })
+    )
+  }, [headerMenu, menuTriggerRect])
 
   useEffect(() => {
     const close = e => {
@@ -308,12 +322,12 @@ export default function TaskWorkspaceBoard({
       </div>
 
       {menuColumn &&
-        menuAnchor &&
+        menuTriggerRect &&
         createPortal(
           <div
             ref={menuRef}
             className="workspace-col-menu workspace-col-menu-fixed"
-            style={{ top: menuAnchor.top, left: menuAnchor.left }}
+            style={menuStyle ?? floatingMenuPosition(menuTriggerRect, { width: 200, height: 260 })}
             role="menu"
           >
             <button

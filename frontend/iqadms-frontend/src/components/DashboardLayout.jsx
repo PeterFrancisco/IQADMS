@@ -1,5 +1,5 @@
 import './DashboardLayout.css'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useLayoutEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import AppIcon from './AppIcon'
@@ -244,10 +244,12 @@ function TeamMembersDropdown({ label, icon, onNavigate }) {
 function ProfileMenu() {
   const navigate = useNavigate()
   const [open, setOpen] = React.useState(false)
+  const [flipUp, setFlipUp] = React.useState(false)
   const [me, setMe] = React.useState(null)
   const [avatarKey, setAvatarKey] = React.useState(0)
   const [, setActivityTick] = React.useState(0)
   const ref = useRef(null)
+  const menuRef = useRef(null)
   const username = localStorage.getItem('username') || 'admin'
   const isAdmin = localStorage.getItem('isAdmin') === 'true'
   const displayName = me?.displayName || username
@@ -290,6 +292,18 @@ function ProfileMenu() {
     const id = window.setInterval(() => setActivityTick(t => t + 1), 30000)
     return () => clearInterval(id)
   }, [])
+
+  useLayoutEffect(() => {
+    if (!open || !ref.current || !menuRef.current) {
+      setFlipUp(false)
+      return
+    }
+    const btn = ref.current.querySelector('.avatar-btn')
+    if (!btn) return
+    const btnRect = btn.getBoundingClientRect()
+    const menuHeight = menuRef.current.offsetHeight
+    setFlipUp(btnRect.bottom + menuHeight + 12 > window.innerHeight)
+  }, [open, me])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -354,7 +368,7 @@ function ProfileMenu() {
         )}
       </button>
 
-      <div className={`profile-menu ${open ? 'open' : ''}`}>
+      <div ref={menuRef} className={`profile-menu ${flipUp ? 'flip-up' : ''} ${open ? 'open' : ''}`}>
         <div className="profile-header">
           <strong>{displayName}</strong>
           {email ? (
