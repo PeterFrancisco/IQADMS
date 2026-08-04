@@ -2,15 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
-import {
-  authPageStyle,
-  authCardStyle,
-  authHeadingStyle,
-  authPrimaryButtonStyle,
-  authOutlineButtonStyle,
-  authInputStyle
-} from '../theme/pageStyles'
 import IqadmsLogo from '../components/IqadmsLogo'
+import './login-page.css'
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -19,16 +12,14 @@ export default function RegisterPage() {
 
   const navigate = useNavigate()
 
-  const handleContinue = async (e) => {
+  const handleContinue = async e => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
       const normalized = email.trim().toLowerCase()
-      const res = await api.get(
-        `/Auth/check-email?email=${encodeURIComponent(normalized)}`
-      )
+      const res = await api.get(`/Auth/check-email?email=${encodeURIComponent(normalized)}`)
 
       if (!res.data.allowed) {
         setError('This email is not yet authorized.')
@@ -56,87 +47,46 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={pageStyle}>
-      <form onSubmit={handleContinue} style={cardStyle}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-          <IqadmsLogo size={48} className="iqadms-logo--center" />
+    <div className="login-page">
+      <form onSubmit={handleContinue} className="login-card">
+        <div className="login-header">
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <IqadmsLogo size={48} className="iqadms-logo--center" />
+          </div>
+          <h1 style={{ margin: 0, color: 'var(--upshd-page-heading, var(--upshd-maroon))' }}>Register</h1>
+          <p className="auth-text" style={{ marginTop: '0.65rem', marginBottom: 0 }}>
+            Enter the institutional email address that PQAD approved for IQADMS access.
+          </p>
         </div>
-        <h1 style={authHeadingStyle}>Register</h1>
-        <p style={{ color: '#64748b' }}>
-          Enter your institutional email address.
-        </p>
 
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="yourname@school.edu"
-          required
-          style={inputStyle}
-        />
+        <div className="login-field">
+          <label>
+            Email
+            <input
+              type="email"
+              className="login-input"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="yourname@school.edu"
+              required
+            />
+          </label>
+        </div>
 
-        {error && (
-          <div style={errorStyle}>{error}</div>
-        )}
+        {error && <div className="login-alert login-alert--error">{error}</div>}
 
-        <button type="submit" disabled={loading} style={buttonStyle}>
-          {loading ? 'Checking...' : 'Continue'}
+        <button type="submit" disabled={loading} className="login-submit">
+          {loading ? 'Checking…' : 'Continue'}
         </button>
 
-        <button
-          type="button"
-          onClick={() => navigate('/request-access')}
-          style={secondaryButtonStyle}
-        >
-          Request Access
+        <button type="button" onClick={() => navigate('/request-access')} className="auth-secondary-btn">
+          Request access
         </button>
 
-        <button
-          type="button"
-          onClick={() => navigate('/login')}
-          style={linkButtonStyle}
-        >
-          Back to Login
+        <button type="button" onClick={() => navigate('/login')} className="auth-text-btn">
+          Back to sign in
         </button>
       </form>
     </div>
   )
-}
-
-const pageStyle = authPageStyle
-
-const cardStyle = {
-  ...authCardStyle,
-  maxWidth: '420px'
-}
-
-const inputStyle = {
-  ...authInputStyle,
-  marginTop: '0.5rem'
-}
-
-const buttonStyle = {
-  ...authPrimaryButtonStyle,
-  marginTop: '1rem'
-}
-
-const secondaryButtonStyle = {
-  ...authOutlineButtonStyle
-}
-
-const linkButtonStyle = {
-  width: '100%',
-  marginTop: '0.5rem',
-  background: 'none',
-  border: 'none',
-  color: '#64748b',
-  cursor: 'pointer'
-}
-
-const errorStyle = {
-  marginTop: '1rem',
-  background: '#fee2e2',
-  color: '#991b1b',
-  padding: '0.75rem',
-  borderRadius: '8px'
 }

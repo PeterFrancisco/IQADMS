@@ -1,4 +1,5 @@
 import AppIcon from './AppIcon'
+import HintButton from './HintButton'
 
 const SORT_OPTIONS = [
   { value: 'title-asc', label: 'Project name (A–Z)' },
@@ -66,7 +67,12 @@ export default function TasksMemberToolbar({
 
       <div className="tasks-admin-toolbar__row">
         <label className="tasks-admin-toolbar__field">
-          <span>Project</span>
+          <span>
+            Project
+            <HintButton title="Project filter" className="tasks-toolbar-hint" align="right">
+              <p>Show tasks from one project board only, or choose No project for unassigned tasks.</p>
+            </HintButton>
+          </span>
           <select value={projectFilter} onChange={e => onProjectFilterChange(e.target.value)}>
             <option value="">All projects</option>
             <option value="__none__">No project</option>
@@ -78,7 +84,18 @@ export default function TasksMemberToolbar({
           </select>
         </label>
         <label className="tasks-admin-toolbar__field">
-          <span>Status</span>
+          <span>
+            Status
+            <HintButton title="Task status" className="tasks-toolbar-hint" align="right">
+              <ul>
+                <li><strong>To Do</strong> — ready to start</li>
+                <li><strong>In Progress</strong> — you are working on it</li>
+                <li><strong>Submitted</strong> — waiting for PQAD review</li>
+                <li><strong>Returned</strong> — needs revision</li>
+                <li><strong>Completed</strong> — approved</li>
+              </ul>
+            </HintButton>
+          </span>
           <select value={statusFilter} onChange={e => onStatusFilterChange(e.target.value)}>
             <option value="all">All statuses</option>
             <option value="To Do">To Do</option>

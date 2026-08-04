@@ -1,0 +1,108 @@
+.hint-button-wrap {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.hint-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--upshd-maroon-muted, #f3e8eb);
+  color: var(--upshd-maroon, #7a0019);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.hint-button:hover {
+  background: var(--upshd-maroon-light, #9e1b32);
+  color: #fff;
+}
+
+.hint-button:focus-visible {
+  outline: 2px solid var(--upshd-maroon-light, #9e1b32);
+  outline-offset: 2px;
+}
+
+.hint-popover {
+  position: absolute;
+  z-index: 1200;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(320px, calc(100vw - 2rem));
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: var(--upshd-surface, #fff);
+  border: 1px solid var(--upshd-border, #e2e8f0);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--upshd-text, #334155);
+  text-align: left;
+}
+
+.hint-popover--align-right {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.hint-popover__title {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--upshd-page-heading, var(--upshd-maroon));
+  font-size: 0.92rem;
+}
+
+.hint-popover__body ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.hint-popover__body p {
+  margin: 0.35rem 0 0;
+}
+
+.hint-popover__body p:first-child {
+  margin-top: 0;
+}
+
+.field-with-hint {
+  margin-bottom: 1rem;
+}
+
+.field-with-hint__label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.field-with-hint__label-row label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--upshd-text-muted, #374151);
+}
+
+.tasks-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tasks-toolbar-hint {
+  margin-left: 0.15rem;
+}
+
+html[data-theme='dark'] .hint-popover {
+  background: var(--upshd-surface, #1e293b);
+  border-color: #334155;
+}

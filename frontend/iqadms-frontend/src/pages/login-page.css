@@ -284,6 +284,102 @@
   font-weight: 700;
 }
 
+.auth-text {
+  color: #64748b;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.auth-text-center {
+  text-align: center;
+}
+
+.auth-link {
+  color: var(--upshd-page-link, var(--upshd-maroon));
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.auth-link:hover {
+  color: var(--upshd-maroon-dark);
+  border-bottom-color: var(--upshd-nav-underline, var(--upshd-maroon-light));
+}
+
+.auth-secondary-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--upshd-maroon);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--upshd-maroon);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-text-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: none;
+  background: none;
+  color: #64748b;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.login-notice {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.login-notice strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--upshd-page-heading, var(--upshd-maroon));
+}
+
+.login-notice p {
+  margin: 0;
+}
+
+.login-notice--info {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+}
+
+.login-notice--success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  text-align: center;
+}
+
+.login-notice--success h1 {
+  margin: 0 0 0.5rem;
+  color: #166534;
+  font-size: 1.35rem;
+}
+
+.auth-success-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #dcfce7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 2rem;
+  color: #166534;
+}
+
 html[data-theme='dark'] .login-page::before {
   background: linear-gradient(
     145deg,

@@ -1,4 +1,5 @@
 import AppIcon from './AppIcon'
+import HintButton from './HintButton'
 
 const SORT_OPTIONS = [
   { value: 'title-asc', label: 'Project name (A–Z)' },
@@ -100,7 +101,12 @@ export default function TasksAdminToolbar({
           </select>
         </label>
         <label className="tasks-admin-toolbar__field">
-          <span>Status</span>
+          <span>
+            Status
+            <HintButton title="Task workflow" className="tasks-toolbar-hint" align="right">
+              <p>Filter by workflow stage: To Do, Waiting, In Progress, Submitted, Returned, Completed, or Cancelled.</p>
+            </HintButton>
+          </span>
           <select value={statusFilter} onChange={e => onStatusFilterChange(e.target.value)}>
             <option value="all">All statuses</option>
             <option value="To Do">To Do</option>

@@ -18,7 +18,8 @@ import {
   buildTaskBoardLink,
   effectiveTaskSectionId
 } from '../utils/notificationLink'
-import { dispatchNotificationsChanged, dispatchTasksChanged } from '../utils/appEvents'
+import HintButton from '../components/HintButton'
+import LabelWithHint from '../components/LabelWithHint'
 
 const TASK_POLL_MS = 10000
 
@@ -988,7 +989,27 @@ export default function DashboardPage() {
         <header className="tasks-page-header">
         <div className="tasks-page-header-row">
           <div>
-        <h1 className="tasks-page-title">{isAdmin ? 'Tasks' : 'My Tasks'}</h1>
+        <div className="tasks-page-title-row">
+          <h1 className="tasks-page-title">{isAdmin ? 'Tasks' : 'My Tasks'}</h1>
+          {!isAdmin ? (
+            <HintButton title="How to work on tasks">
+              <ul>
+                <li>Click a task <strong>title</strong> to open details and download the document to modify.</li>
+                <li>Change status from <strong>To Do</strong> to <strong>In Progress</strong> when you start (you cannot go back to To Do).</li>
+                <li>While in progress, upload finished work to Google Drive and submit the link for PQAD review.</li>
+                <li>If a task is <strong>Returned</strong>, read admin feedback, revise your work, and submit again.</li>
+              </ul>
+            </HintButton>
+          ) : (
+            <HintButton title="Managing tasks">
+              <ul>
+                <li>Each project has its own board. Open <strong>Focus</strong> to work on one project at a time.</li>
+                <li>Use <strong>Add task</strong> on a project board to create assignments.</li>
+                <li>Review <strong>Submitted</strong> tasks from the task detail panel — approve or return with feedback.</li>
+              </ul>
+            </HintButton>
+          )}
+        </div>
         <p className="tasks-page-sub">
           {isAdmin
             ? 'One board per project: filter, sort, and scroll each table—or open Focus for a single project.'
@@ -1091,17 +1112,6 @@ export default function DashboardPage() {
 
         {(showAllBoardsView || showFocusView) && (
         <>
-        {!isAdmin && (
-          <div className="tasks-member-hint">
-            <strong>How to work on tasks</strong>
-            <ul>
-              <li>Click a task <strong>title</strong> to open details and the document to modify.</li>
-              <li>Move status from <strong>To Do</strong> → <strong>In Progress</strong> (you cannot go back to To Do).</li>
-              <li>When in progress, submit your Google Drive link for PQAD review.</li>
-            </ul>
-          </div>
-        )}
-
         <div className="tasks-stats-grid">
           <MiniStat label={isAdmin ? 'Total Tasks' : 'My tasks'} value={statsTasks.length} color="var(--upshd-maroon-light)" />
           {statsTasks.length > 0 && (
@@ -1198,8 +1208,27 @@ export default function DashboardPage() {
         >
           {selectedTask && (
             <>
-              <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem' }}>
+              <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
                 Status: <strong style={{ color: statusColor(selectedTask.status) }}>{selectedTask.status}</strong>
+                {!isAdmin && isTaskAssignee(selectedTask, currentUserId) && !isCompletedStatus(selectedTask.status) && (
+                  <HintButton title="Your next steps" align="right">
+                    {(selectedTask.status === 'To Do' || selectedTask.status === 'Planning') && (
+                      <p>Change status to <strong>In Progress</strong>, download the document, upload to Google Drive, then submit your link.</p>
+                    )}
+                    {selectedTask.status === 'Waiting' && (
+                      <p>This task is waiting in the project workflow. PQAD will activate it when the prior step is done.</p>
+                    )}
+                    {selectedTask.status === 'In Progress' && (
+                      <p>Submit your finished work using the Google Drive link field below or the Submit action on the board.</p>
+                    )}
+                    {selectedTask.status === 'Submitted' && (
+                      <p>Your task is with PQAD for review. You will be notified when it is approved or returned.</p>
+                    )}
+                    {selectedTask.status === 'Returned' && (
+                      <p>Read admin feedback, set status back to <strong>In Progress</strong>, fix your work, and submit again.</p>
+                    )}
+                  </HintButton>
+                )}
                 {selectedTask.dueDate && <> · Due {selectedTask.dueDate}</>}
                 {selectedTask.projectTitle && <> · {selectedTask.projectTitle}</>}
                 {(selectedTask.relatedDepartmentOrOrg || selectedTask.relatedDepartmentName) && (
@@ -1309,61 +1338,21 @@ export default function DashboardPage() {
                 </>
               )}
 
-              {!isAdmin && isTaskAssignee(selectedTask, currentUserId) && (
-                <div
-                  style={{
-                    background: '#eff6ff',
-                    border: '1px solid #93c5fd',
-                    borderRadius: 10,
-                    padding: '1rem',
-                    marginBottom: '1rem',
-                    fontSize: '0.92rem',
-                    color: '#1e3a5f'
-                  }}
-                >
-                  <strong style={{ display: 'block', marginBottom: 6 }}>Your steps</strong>
-                  {(selectedTask.status === 'To Do' || selectedTask.status === 'Planning') && (
-                    <p style={{ margin: 0 }}>
-                      Change <strong>Status</strong> to <strong>In Progress</strong> when you start. You cannot move back to To Do after that. Download the document from the work package, upload to Google Drive, then use <strong>Submit</strong>.
-                    </p>
-                  )}
-                  {selectedTask.status === 'Waiting' && (
-                    <p style={{ margin: 0 }}>
-                      This task is <strong>Waiting</strong> in the project workflow. An admin will activate it when the prior step is done.
-                    </p>
-                  )}
-                  {selectedTask.status === 'In Progress' && (
-                    <p style={{ margin: 0 }}>
-                      Status stays <strong>In Progress</strong> until you submit. Use <strong>Submit</strong> on the board or paste your Google Drive link below — you cannot revert to To Do.
-                    </p>
-                  )}
-                  {selectedTask.status === 'Submitted' && (
-                    <p style={{ margin: 0 }}>
-                      <strong>Submitted</strong> — waiting for admin review. This is not completed yet. You will get a notification when it is approved or returned.
-                    </p>
-                  )}
-                  {selectedTask.status === 'Returned' && (
-                    <p style={{ margin: 0 }}>
-                      Read <strong>Feedback from admin</strong> above. Set status to <strong>In Progress</strong>, fix your work, then submit again.
-                    </p>
-                  )}
-                  {isCompletedStatus(selectedTask.status) && (
-                    <p style={{ margin: 0 }}>This task is completed.</p>
-                  )}
-                </div>
-              )}
-
               {isTaskAssignee(selectedTask, currentUserId) &&
                 !isAdmin &&
                 !isCompletedStatus(selectedTask.status) &&
                 selectedTask.status !== 'Submitted' && (
                   <>
-                    <label style={labelStyle}>Upload supporting document</label>
-                    <input
-                      type="file"
-                      style={{ marginBottom: '0.5rem', display: 'block' }}
-                      onChange={e => setMemberAttachment(e.target.files?.[0] || null)}
-                    />
+                    <LabelWithHint
+                      label="Upload supporting document"
+                      hint="Optional extra file for PQAD reference. The main document to edit is listed under Work package."
+                    >
+                      <input
+                        type="file"
+                        style={{ display: 'block' }}
+                        onChange={e => setMemberAttachment(e.target.files?.[0] || null)}
+                      />
+                    </LabelWithHint>
                     {memberAttachment && (
                       <button type="button" onClick={uploadMemberAttachment} style={{ ...primaryBtn, marginBottom: '1rem' }}>
                         Upload file
@@ -1374,18 +1363,22 @@ export default function DashboardPage() {
 
               {isTaskAssignee(selectedTask, currentUserId) && selectedTask.status === 'In Progress' && (
                   <>
-                    <label style={labelStyle}>Your finished work (Google Drive link)</label>
-                    <input
-                      style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-                      placeholder="https://drive.google.com/..."
-                      value={deliverableLink}
-                      onChange={e => setDeliverableLink(e.target.value)}
-                    />
+                    <LabelWithHint
+                      label="Your finished work (Google Drive link)"
+                      hint="Paste the share link to your completed file or folder in the PQAD Google Drive location."
+                    >
+                      <input
+                        style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+                        placeholder="https://drive.google.com/..."
+                        value={deliverableLink}
+                        onChange={e => setDeliverableLink(e.target.value)}
+                      />
+                    </LabelWithHint>
                     <button
                       type="button"
                       onClick={submitDeliverable}
                       disabled={submittingDeliverable || !deliverableLink.trim()}
-                      style={{ ...primaryBtn, width: '100%', maxWidth: 320, padding: '0.75rem 1.25rem', fontSize: '1rem' }}
+                      style={{ ...primaryBtn, width: '100%', maxWidth: 320, padding: '0.75rem 1.25rem', fontSize: '1rem', marginTop: '0.75rem', marginBottom: '1rem' }}
                     >
                       {submittingDeliverable ? 'Submitting...' : 'Submit for admin review'}
                     </button>
@@ -1565,64 +1558,82 @@ export default function DashboardPage() {
             </div>
           }
         >
-          <label style={labelStyle}>Task name</label>
-          <input
-            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-            placeholder="Enter task name..."
-            value={createForm.title}
-            onChange={e => setCreateForm({ ...createForm, title: e.target.value })}
-          />
+          <LabelWithHint label="Task name" hint="Short title shown on the project board.">
+            <input
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+              placeholder="Enter task name..."
+              value={createForm.title}
+              onChange={e => setCreateForm({ ...createForm, title: e.target.value })}
+            />
+          </LabelWithHint>
 
-          <label style={labelStyle}>Project (required)</label>
-          <select
-            required
-            style={{ ...selectStyle, marginBottom: '1rem' }}
-            value={createForm.projectId}
-            onChange={e => setCreateForm({ ...createForm, projectId: e.target.value })}
+          <LabelWithHint
+            label="Project (required)"
+            hint="Every task belongs to one project board. Open Tasks from a project to pre-select it."
           >
-            <option value="">Select project…</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.title}</option>
-            ))}
-          </select>
+            <select
+              required
+              style={{ ...selectStyle, width: '100%' }}
+              value={createForm.projectId}
+              onChange={e => setCreateForm({ ...createForm, projectId: e.target.value })}
+            >
+              <option value="">Select project…</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
+          </LabelWithHint>
 
-          <label style={labelStyle}>Related department or organization</label>
-          <input
-            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-            placeholder="e.g. College of Engineering, PACUCOA"
-            value={createForm.relatedDepartmentOrOrg}
-            onChange={e => setCreateForm({ ...createForm, relatedDepartmentOrOrg: e.target.value })}
-          />
-
-          <label style={labelStyle}>Due date</label>
-          <input
-            type="date"
-            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-            value={createForm.dueDate}
-            onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })}
-          />
-
-          <label style={labelStyle}>Notes</label>
-          <textarea
-            style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, marginBottom: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
-            placeholder="Status, urgency, or other notes for this task"
-            value={createForm.notes}
-            onChange={e => setCreateForm({ ...createForm, notes: e.target.value })}
-          />
-
-          <label style={labelStyle}>Assign to</label>
-          <select
-            style={{ ...selectStyle, marginBottom: '1rem' }}
-            value={createForm.assignedToUserId}
-            onChange={e => setCreateForm({ ...createForm, assignedToUserId: e.target.value })}
+          <LabelWithHint
+            label="Related department or organization"
+            hint="Free text for the external office, accreditor, or unit this task supports (optional)."
           >
-            <option value="">Assign to me</option>
-            {members.map(m => (
-              <option key={m.id} value={m.id}>
-                {m.displayName || m.username} ({m.email})
-              </option>
-            ))}
-          </select>
+            <input
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+              placeholder="e.g. College of Engineering, PACUCOA"
+              value={createForm.relatedDepartmentOrOrg}
+              onChange={e => setCreateForm({ ...createForm, relatedDepartmentOrOrg: e.target.value })}
+            />
+          </LabelWithHint>
+
+          <LabelWithHint label="Due date" hint="Optional deadline for the assignee.">
+            <input
+              type="date"
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+              value={createForm.dueDate}
+              onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })}
+            />
+          </LabelWithHint>
+
+          <LabelWithHint
+            label="Notes"
+            hint="Use for urgency, context, or informal status — visible in the task detail panel."
+          >
+            <textarea
+              style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, boxSizing: 'border-box', resize: 'vertical' }}
+              placeholder="Status, urgency, or other notes for this task"
+              value={createForm.notes}
+              onChange={e => setCreateForm({ ...createForm, notes: e.target.value })}
+            />
+          </LabelWithHint>
+
+          <LabelWithHint
+            label="Assign to"
+            hint="Leave as Assign to me for your own tasks, or pick a PQAD member to notify by email."
+          >
+            <select
+              style={{ ...selectStyle, width: '100%' }}
+              value={createForm.assignedToUserId}
+              onChange={e => setCreateForm({ ...createForm, assignedToUserId: e.target.value })}
+            >
+              <option value="">Assign to me</option>
+              {members.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.displayName || m.username} ({m.email})
+                </option>
+              ))}
+            </select>
+          </LabelWithHint>
 
           {!createForm.showDescription ? (
             <button
@@ -1633,14 +1644,13 @@ export default function DashboardPage() {
               + Add description (optional)
             </button>
           ) : (
-            <>
-              <label style={labelStyle}>Description (optional)</label>
+            <LabelWithHint label="Description (optional)" hint="Longer instructions for the assignee, shown in the work package.">
               <textarea
-                style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, marginBottom: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+                style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, boxSizing: 'border-box', resize: 'vertical' }}
                 value={createForm.description}
                 onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
               />
-            </>
+            </LabelWithHint>
           )}
 
           {!createForm.showGoogleDrive ? (
@@ -1652,15 +1662,17 @@ export default function DashboardPage() {
               + Add Google Drive folder (optional)
             </button>
           ) : (
-            <>
-              <label style={labelStyle}>Google Drive folder (where assignee uploads finished work)</label>
+            <LabelWithHint
+              label="Google Drive folder"
+              hint="Shared folder where the assignee uploads finished work (optional)."
+            >
               <input
-                style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+                style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
                 placeholder="https://drive.google.com/..."
                 value={createForm.uploadGoogleDriveLink}
                 onChange={e => setCreateForm({ ...createForm, uploadGoogleDriveLink: e.target.value })}
               />
-            </>
+            </LabelWithHint>
           )}
 
           {!createForm.showDocument ? (
@@ -1672,14 +1684,16 @@ export default function DashboardPage() {
               + Add document (optional)
             </button>
           ) : (
-            <>
-              <label style={labelStyle}>Document (file to modify)</label>
+            <LabelWithHint
+              label="Document"
+              hint="The file the assignee will download, edit, and re-upload (optional)."
+            >
               <input
                 type="file"
-                style={{ marginBottom: '0.25rem', display: 'block' }}
+                style={{ display: 'block' }}
                 onChange={e => setCreateForm({ ...createForm, attachment: e.target.files[0] })}
               />
-            </>
+            </LabelWithHint>
           )}
         </AppModal>
       </div>

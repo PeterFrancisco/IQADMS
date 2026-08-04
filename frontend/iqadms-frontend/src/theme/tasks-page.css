@@ -275,11 +275,25 @@
 }
 
 .tasks-admin-toolbar__field span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #64748b;
+}
+
+.tasks-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tasks-page-title-row .tasks-page-title {
+  margin: 0;
 }
 
 .tasks-admin-toolbar__field select {
