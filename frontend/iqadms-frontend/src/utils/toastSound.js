@@ -1,7 +1,10 @@
 import { getNotificationVolume, isNotificationsMuted } from './userPreferences'
 
+const NOTIFICATION_SOUND_URL = `${import.meta.env.BASE_URL}sounds/notification.mp3`
+
 let audioCtx = null
 let primed = false
+let notificationAudio = null
 
 function getContext() {
   if (typeof window === 'undefined') return null
@@ -13,18 +16,37 @@ function getContext() {
   return audioCtx
 }
 
+function getNotificationAudio() {
+  if (typeof window === 'undefined') return null
+  if (!notificationAudio) {
+    notificationAudio = new Audio(NOTIFICATION_SOUND_URL)
+    notificationAudio.preload = 'auto'
+  }
+  return notificationAudio
+}
+
 /** Call once after login / first click so later toasts can play (browser autoplay policy). */
 export async function unlockAudioContext() {
   const ctx = getContext()
-  if (!ctx) return false
-  if (ctx.state === 'suspended') {
+  if (ctx?.state === 'suspended') {
     try {
       await ctx.resume()
     } catch {
-      return false
+      // fall through — HTML5 audio may still work
     }
   }
-  primed = ctx.state === 'running'
+  if (ctx?.state === 'running') primed = true
+
+  const audio = getNotificationAudio()
+  if (audio) {
+    try {
+      audio.load()
+      primed = true
+    } catch {
+      // ignore preload errors
+    }
+  }
+
   return primed
 }
 
@@ -56,10 +78,22 @@ function scheduleTone(ctx, { frequency, start, duration, peakGain, type = 'sine'
   osc.stop(start + duration + 0.02)
 }
 
-/** Two-tone chime — easier to notice than a single short sine blip. */
-export async function playToastSound(kind = 'info') {
-  if (isNotificationsMuted()) return
+async function playNotificationMp3(level) {
+  const audio = getNotificationAudio()
+  if (!audio) return false
 
+  audio.volume = Math.min(1, Math.max(0, level))
+  audio.currentTime = 0
+
+  try {
+    await audio.play()
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function playFallbackTone(kind, level) {
   const ctx = getContext()
   if (!ctx) return
 
@@ -69,18 +103,8 @@ export async function playToastSound(kind = 'info') {
     return
   }
 
-  const level = getNotificationVolume()
-  if (level <= 0) return
-
   const now = ctx.currentTime
   const peak = 0.55 * level
-
-  if (kind === 'notification') {
-    scheduleTone(ctx, { frequency: 784, start: now, duration: 0.14, peakGain: peak, type: 'triangle' })
-    scheduleTone(ctx, { frequency: 988, start: now + 0.13, duration: 0.18, peakGain: peak * 0.92, type: 'triangle' })
-    scheduleTone(ctx, { frequency: 1175, start: now + 0.28, duration: 0.22, peakGain: peak * 0.85, type: 'sine' })
-    return
-  }
 
   if (kind === 'error') {
     scheduleTone(ctx, { frequency: 220, start: now, duration: 0.2, peakGain: peak, type: 'square' })
@@ -95,4 +119,18 @@ export async function playToastSound(kind = 'info') {
   }
 
   scheduleTone(ctx, { frequency: 440, start: now, duration: 0.16, peakGain: peak * 0.85, type: 'sine' })
+}
+
+export async function playToastSound(kind = 'info') {
+  if (isNotificationsMuted()) return
+
+  const level = getNotificationVolume()
+  if (level <= 0) return
+
+  if (kind === 'notification') {
+    const played = await playNotificationMp3(level)
+    if (played) return
+  }
+
+  await playFallbackTone(kind, level)
 }
