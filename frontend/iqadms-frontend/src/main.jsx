@@ -17,9 +17,11 @@ import { startSessionKeepAlive } from './services/api'
 import { isSignedIn } from './utils/authSession'
 import { ensureLatestAppShell } from './utils/appBuildCache'
 import { applyUserPreferences, loadUserPreferencesFromServer } from './utils/userPreferences'
+import { primeAudioOnInteraction } from './utils/toastSound'
 
 applyUserPreferences()
 ensureLatestAppShell()
+primeAudioOnInteraction()
 
 if (isSignedIn()) {
   startSessionKeepAlive()

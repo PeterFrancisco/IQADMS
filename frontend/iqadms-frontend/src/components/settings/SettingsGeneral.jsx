@@ -5,13 +5,16 @@ import {
   THEMES,
   getAccent,
   getFontSize,
+  getNotificationVolumePercent,
   getTheme,
   isNotificationsMuted,
   setAccent,
   setFontSize,
+  setNotificationVolume,
   setNotificationsMuted,
   setTheme
 } from '../../utils/userPreferences'
+import { playToastSound, unlockAudioContext } from '../../utils/toastSound'
 
 const THEME_LABELS = {
   original: 'Original (PQAD)',
@@ -44,6 +47,7 @@ export default function SettingsGeneral() {
   const [accent, setAccentState] = useState(getAccent)
   const [fontSize, setFontSizeState] = useState(getFontSize)
   const [muted, setMuted] = useState(isNotificationsMuted)
+  const [volume, setVolumeState] = useState(getNotificationVolumePercent)
 
   useEffect(() => {
     const sync = () => {
@@ -51,6 +55,7 @@ export default function SettingsGeneral() {
       setAccentState(getAccent())
       setFontSizeState(getFontSize())
       setMuted(isNotificationsMuted())
+      setVolumeState(getNotificationVolumePercent())
     }
     window.addEventListener('iqadms-preferences-changed', sync)
     return () => window.removeEventListener('iqadms-preferences-changed', sync)
@@ -76,15 +81,44 @@ export default function SettingsGeneral() {
     setMuted(next)
   }
 
+  function onVolume(next) {
+    const value = Number(next)
+    setNotificationVolume(value)
+    setVolumeState(value)
+  }
+
+  async function testNotificationSound() {
+    await unlockAudioContext()
+    void playToastSound('notification')
+  }
+
   return (
     <div className="settings-stack">
       <section className="settings-card">
         <h3>Notification sounds</h3>
-        <p className="settings-card-desc">Mute or unmute sounds for pop-up notifications and alerts.</p>
+        <p className="settings-card-desc">Adjust volume for pop-up notification chimes, or mute them entirely.</p>
         <label className="settings-toggle">
           <input type="checkbox" checked={!muted} onChange={e => onMute(!e.target.checked)} />
           <span>{muted ? 'Muted' : 'Sounds enabled'}</span>
         </label>
+        {!muted && (
+          <div className="settings-volume-row">
+            <label htmlFor="notification-volume">Volume</label>
+            <input
+              id="notification-volume"
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={volume}
+              onChange={e => onVolume(e.target.value)}
+            />
+            <span className="settings-volume-value">{volume}%</span>
+            <button type="button" className="settings-option-btn" onClick={testNotificationSound}>
+              Test sound
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="settings-card">

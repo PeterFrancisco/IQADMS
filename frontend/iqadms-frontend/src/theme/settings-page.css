@@ -274,6 +274,34 @@
   cursor: pointer;
 }
 
+.settings-volume-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.settings-volume-row label {
+  font-weight: 600;
+  color: var(--upshd-text-muted, #475569);
+  font-size: 0.9rem;
+}
+
+.settings-volume-row input[type='range'] {
+  flex: 1;
+  min-width: 140px;
+  max-width: 220px;
+  accent-color: var(--upshd-maroon, #7a0019);
+}
+
+.settings-volume-value {
+  min-width: 2.75rem;
+  font-weight: 600;
+  color: var(--upshd-text-muted, #64748b);
+  font-size: 0.9rem;
+}
+
 .settings-option-row {
   display: flex;
   flex-wrap: wrap;

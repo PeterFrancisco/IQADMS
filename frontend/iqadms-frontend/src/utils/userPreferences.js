@@ -5,8 +5,11 @@ const STORAGE = {
   theme: 'iqadms-theme',
   accent: 'iqadms-accent',
   fontSize: 'iqadms-font-size',
-  muted: 'iqadms-notifications-muted'
+  muted: 'iqadms-notifications-muted',
+  volume: 'iqadms-notification-volume'
 }
+
+const DEFAULT_NOTIFICATION_VOLUME = 85
 
 export const THEMES = ['original', 'light', 'dark']
 export const ACCENTS = ['maroon', 'slate', 'ocean', 'forest']
@@ -40,12 +43,21 @@ function normalizeServerPrefs(data) {
   const accent = String(data.accent ?? data.Accent ?? 'maroon').toLowerCase()
   const fontSize = String(data.fontSize ?? data.FontSize ?? 'medium').toLowerCase()
   const muted = data.notificationsMuted ?? data.NotificationsMuted ?? false
+  const volumeRaw = data.notificationVolume ?? data.NotificationVolume
   return {
     theme: THEMES.includes(theme) ? theme : 'original',
     accent: ACCENTS.includes(accent) ? accent : 'maroon',
     fontSize: FONT_SIZES.includes(fontSize) ? fontSize : 'medium',
-    notificationsMuted: Boolean(muted)
+    notificationsMuted: Boolean(muted),
+    notificationVolume: normalizeNotificationVolume(volumeRaw)
   }
+}
+
+function normalizeNotificationVolume(value) {
+  if (value == null || value === '') return DEFAULT_NOTIFICATION_VOLUME
+  const n = Number(value)
+  if (Number.isNaN(n)) return DEFAULT_NOTIFICATION_VOLUME
+  return Math.min(100, Math.max(0, Math.round(n)))
 }
 
 export function getPreferencesSnapshot() {
@@ -53,7 +65,8 @@ export function getPreferencesSnapshot() {
     theme: getTheme(),
     accent: getAccent(),
     fontSize: getFontSize(),
-    notificationsMuted: isNotificationsMuted()
+    notificationsMuted: isNotificationsMuted(),
+    notificationVolume: getNotificationVolumePercent()
   }
 }
 
@@ -64,6 +77,7 @@ function applyPreferencesObject(prefs, { persistLocal = true } = {}) {
     localStorage.setItem(STORAGE.accent, prefs.accent)
     localStorage.setItem(STORAGE.fontSize, prefs.fontSize)
     localStorage.setItem(STORAGE.muted, prefs.notificationsMuted ? 'true' : 'false')
+    localStorage.setItem(STORAGE.volume, String(normalizeNotificationVolume(prefs.notificationVolume)))
   }
   applyUserPreferences()
   window.dispatchEvent(new CustomEvent('iqadms-preferences-changed', { detail: prefs }))
@@ -111,6 +125,20 @@ export function setNotificationsMuted(muted, { sync = true } = {}) {
   if (sync) scheduleSavePreferences()
 }
 
+export function getNotificationVolumePercent() {
+  return normalizeNotificationVolume(localStorage.getItem(STORAGE.volume))
+}
+
+/** 0–1 multiplier for Web Audio gain. */
+export function getNotificationVolume() {
+  return getNotificationVolumePercent() / 100
+}
+
+export function setNotificationVolume(percent, { sync = true } = {}) {
+  localStorage.setItem(STORAGE.volume, String(normalizeNotificationVolume(percent)))
+  if (sync) scheduleSavePreferences()
+}
+
 export function applyTheme() {
   const theme = getTheme()
   document.documentElement.setAttribute('data-theme', theme)
@@ -149,12 +177,14 @@ export async function loadUserPreferencesFromServer() {
         && prefs.accent === 'maroon'
         && prefs.fontSize === 'medium'
         && !prefs.notificationsMuted
+        && prefs.notificationVolume === DEFAULT_NOTIFICATION_VOLUME
       const local = getPreferencesSnapshot()
       const localDiffers =
         local.theme !== prefs.theme
         || local.accent !== prefs.accent
         || local.fontSize !== prefs.fontSize
         || local.notificationsMuted !== prefs.notificationsMuted
+        || local.notificationVolume !== prefs.notificationVolume
 
       if (!cached && isDefault && localDiffers) {
         await saveUserPreferencesToServer(local)
@@ -184,7 +214,8 @@ export async function saveUserPreferencesToServer(prefs = getPreferencesSnapshot
     theme: prefs.theme,
     accent: prefs.accent,
     fontSize: prefs.fontSize,
-    notificationsMuted: prefs.notificationsMuted
+    notificationsMuted: prefs.notificationsMuted,
+    notificationVolume: prefs.notificationVolume
   }
 
   if (saveInFlight) return saveInFlight

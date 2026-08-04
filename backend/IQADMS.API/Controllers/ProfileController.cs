@@ -372,7 +372,8 @@ public class ProfileController : ControllerBase
             Theme = ValidThemes.Contains(theme) ? theme : "original",
             Accent = ValidAccents.Contains(accent) ? accent : "maroon",
             FontSize = ValidFontSizes.Contains(fontSize) ? fontSize : "medium",
-            NotificationsMuted = prefs.NotificationsMuted
+            NotificationsMuted = prefs.NotificationsMuted,
+            NotificationVolume = Math.Clamp(prefs.NotificationVolume, 0, 100)
         };
     }
 

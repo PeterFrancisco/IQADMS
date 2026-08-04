@@ -68,7 +68,7 @@ export function AppToastProvider({ children }) {
   const show = useCallback(options => {
     const id = `toast-${++idRef.current}`
     const type = options.type || 'info'
-    if (!options.silent) playToastSound(type)
+    if (!options.silent) void playToastSound(type)
 
     setToasts(prev => [...prev.slice(-4), { ...options, id, type }])
     return id
