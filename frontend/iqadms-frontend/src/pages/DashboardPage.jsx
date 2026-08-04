@@ -992,7 +992,7 @@ export default function DashboardPage() {
         <div className="tasks-page-title-row">
           <h1 className="tasks-page-title">{isAdmin ? 'Tasks' : 'My Tasks'}</h1>
           {!isAdmin ? (
-            <HintButton title="How to work on tasks">
+            <HintButton title="How to work on tasks" compact size={15}>
               <ul>
                 <li>Click a task <strong>title</strong> to open details and download the document to modify.</li>
                 <li>Change status from <strong>To Do</strong> to <strong>In Progress</strong> when you start (you cannot go back to To Do).</li>
@@ -1001,7 +1001,7 @@ export default function DashboardPage() {
               </ul>
             </HintButton>
           ) : (
-            <HintButton title="Managing tasks">
+            <HintButton title="Managing tasks" compact size={15}>
               <ul>
                 <li>Each project has its own board. Open <strong>Focus</strong> to work on one project at a time.</li>
                 <li>Use <strong>Add task</strong> on a project board to create assignments.</li>
@@ -1211,7 +1211,7 @@ export default function DashboardPage() {
               <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
                 Status: <strong style={{ color: statusColor(selectedTask.status) }}>{selectedTask.status}</strong>
                 {!isAdmin && isTaskAssignee(selectedTask, currentUserId) && !isCompletedStatus(selectedTask.status) && (
-                  <HintButton title="Your next steps" align="right">
+                  <HintButton title="Your next steps" align="right" compact className="task-detail-status-hint">
                     {(selectedTask.status === 'To Do' || selectedTask.status === 'Planning') && (
                       <p>Change status to <strong>In Progress</strong>, download the document, upload to Google Drive, then submit your link.</p>
                     )}

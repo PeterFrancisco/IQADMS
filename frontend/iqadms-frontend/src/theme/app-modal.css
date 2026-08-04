@@ -82,6 +82,7 @@
 .app-modal-body {
   padding: 1rem 1.25rem 1.25rem;
   overflow-y: auto;
+  overflow-x: visible;
   flex: 1;
   min-height: 0;
 }

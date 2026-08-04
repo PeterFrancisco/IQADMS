@@ -69,7 +69,7 @@ export default function TasksMemberToolbar({
         <label className="tasks-admin-toolbar__field">
           <span>
             Project
-            <HintButton title="Project filter" className="tasks-toolbar-hint" align="right">
+            <HintButton title="Project filter" className="tasks-toolbar-hint" align="right" compact size={14}>
               <p>Show tasks from one project board only, or choose No project for unassigned tasks.</p>
             </HintButton>
           </span>
@@ -86,7 +86,7 @@ export default function TasksMemberToolbar({
         <label className="tasks-admin-toolbar__field">
           <span>
             Status
-            <HintButton title="Task status" className="tasks-toolbar-hint" align="right">
+            <HintButton title="Task status" className="tasks-toolbar-hint" align="right" compact size={14}>
               <ul>
                 <li><strong>To Do</strong> — ready to start</li>
                 <li><strong>In Progress</strong> — you are working on it</li>

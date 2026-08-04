@@ -103,7 +103,7 @@ export default function TasksAdminToolbar({
         <label className="tasks-admin-toolbar__field">
           <span>
             Status
-            <HintButton title="Task workflow" className="tasks-toolbar-hint" align="right">
+            <HintButton title="Task workflow" className="tasks-toolbar-hint" align="right" compact size={14}>
               <p>Filter by workflow stage: To Do, Waiting, In Progress, Submitted, Returned, Completed, or Cancelled.</p>
             </HintButton>
           </span>
