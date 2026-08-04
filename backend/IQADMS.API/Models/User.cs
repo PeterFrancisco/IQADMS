@@ -53,6 +53,8 @@ public class User : BaseEntity
 
     public DateTime? LastActiveAt { get; set; }
 
+    /// <summary>JSON blob: theme, accent, fontSize, notificationsMuted.</summary>
+    public string? PreferencesJson { get; set; }
 
     // System permission
     public bool IsAdmin { get; set; } = false;

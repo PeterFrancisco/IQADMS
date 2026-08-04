@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ACCENTS,
   FONT_SIZES,
@@ -44,6 +44,17 @@ export default function SettingsGeneral() {
   const [accent, setAccentState] = useState(getAccent)
   const [fontSize, setFontSizeState] = useState(getFontSize)
   const [muted, setMuted] = useState(isNotificationsMuted)
+
+  useEffect(() => {
+    const sync = () => {
+      setThemeState(getTheme())
+      setAccentState(getAccent())
+      setFontSizeState(getFontSize())
+      setMuted(isNotificationsMuted())
+    }
+    window.addEventListener('iqadms-preferences-changed', sync)
+    return () => window.removeEventListener('iqadms-preferences-changed', sync)
+  }, [])
 
   function onTheme(next) {
     setTheme(next)

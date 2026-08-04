@@ -931,6 +931,10 @@ namespace IQADMS.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PreferencesJson")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<string>("PresenceStatus")
                         .IsRequired()
                         .HasMaxLength(16)

@@ -11,6 +11,14 @@ import IqadmsLogo from './IqadmsLogo'
 import NotificationBellDropdown from './NotificationBellDropdown'
 import { normalizePresence } from '../config/presence'
 import { clearAuthSession } from '../utils/authSession'
+import {
+  getCurrentUserId,
+  otherSavedAccounts,
+  persistCurrentAccountSnapshot,
+  snapshotCurrentAccount,
+  upsertSavedAccount
+} from '../utils/savedAccounts'
+import { activateSavedAccountSession, prepareForAnotherAccount } from '../utils/loginSession'
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(
@@ -247,10 +255,13 @@ function ProfileMenu() {
   const [flipUp, setFlipUp] = React.useState(false)
   const [me, setMe] = React.useState(null)
   const [avatarKey, setAvatarKey] = React.useState(0)
+  const [savedAccounts, setSavedAccounts] = React.useState([])
+  const [switchingId, setSwitchingId] = React.useState('')
   const [, setActivityTick] = React.useState(0)
   const ref = useRef(null)
   const menuRef = useRef(null)
   const username = localStorage.getItem('username') || 'admin'
+  const currentUserId = getCurrentUserId()
   const isAdmin = localStorage.getItem('isAdmin') === 'true'
   const displayName = me?.displayName || username
   const email = me?.email || ''
@@ -261,6 +272,7 @@ function ProfileMenu() {
       const res = await api.get('/Profile/me')
       setMe(res.data)
       setAvatarKey(Date.now())
+      persistCurrentAccountSnapshot(res.data)
     } catch {
       setMe(null)
     }
@@ -268,7 +280,11 @@ function ProfileMenu() {
 
   React.useEffect(() => {
     loadMe()
-    const onUpdate = () => loadMe()
+    setSavedAccounts(otherSavedAccounts(currentUserId))
+    const onUpdate = () => {
+      loadMe()
+      setSavedAccounts(otherSavedAccounts(getCurrentUserId()))
+    }
     const onPresence = e => {
       setMe(prev =>
         prev
@@ -286,7 +302,7 @@ function ProfileMenu() {
       window.removeEventListener('iqadms-profile-updated', onUpdate)
       window.removeEventListener('iqadms-presence-changed', onPresence)
     }
-  }, [loadMe])
+  }, [loadMe, currentUserId])
 
   React.useEffect(() => {
     const id = window.setInterval(() => setActivityTick(t => t + 1), 30000)
@@ -321,12 +337,41 @@ function ProfileMenu() {
     return () => document.removeEventListener('keydown', onEsc)
   }, [])
 
+  const switchAccount = async account => {
+    if (!account || switchingId) return
+    setSwitchingId(account.userId)
+    setOpen(false)
+
+    try {
+      const current = snapshotCurrentAccount()
+      if (current) upsertSavedAccount(current)
+
+      await prepareForAnotherAccount()
+      await activateSavedAccountSession(account)
+      window.location.assign('/dashboard')
+    } catch {
+      window.location.assign('/login')
+    }
+  }
+
+  const addAnotherAccount = async () => {
+    setOpen(false)
+    const current = snapshotCurrentAccount()
+    if (current) upsertSavedAccount(current)
+    await prepareForAnotherAccount()
+    clearAuthSession()
+    navigate('/login?add=1')
+  }
+
   const logout = async () => {
     try {
       await setPresence('offline')
     } catch {
       // ignore
     }
+
+    persistCurrentAccountSnapshot(me)
+
     try {
       await api.post('/Auth/logout')
     } catch {
@@ -392,6 +437,40 @@ function ProfileMenu() {
 
         <button type="button" className="menu-item" onClick={() => go('/settings')}>
           <AppIcon name="account-requests" size={18} /> Settings
+        </button>
+
+        {savedAccounts.length > 0 && (
+          <>
+            <div className="menu-divider" />
+            <div className="profile-accounts-label">Switch account</div>
+            {savedAccounts.map(account => {
+              const label = account.displayName || account.username
+              const initials = (label || '?').slice(0, 2).toUpperCase()
+              const busy = switchingId === account.userId
+              return (
+                <button
+                  key={account.userId}
+                  type="button"
+                  className="menu-item profile-account-item"
+                  onClick={() => switchAccount(account)}
+                  disabled={Boolean(switchingId)}
+                >
+                  <span className="profile-account-avatar" aria-hidden>
+                    {initials}
+                  </span>
+                  <span className="profile-account-meta">
+                    <strong>{label}</strong>
+                    <small>{account.email || account.username}</small>
+                  </span>
+                  {busy ? <span className="profile-account-busy">…</span> : null}
+                </button>
+              )
+            })}
+          </>
+        )}
+
+        <button type="button" className="menu-item" onClick={addAnotherAccount}>
+          <AppIcon name="profile" size={18} /> Add another account
         </button>
 
         <div className="menu-divider" />

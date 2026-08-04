@@ -57,7 +57,7 @@ function isPublicAuthRequest(url) {
 
 let refreshInFlight = null
 
-async function refreshSessionToken() {
+export async function refreshSessionToken() {
   const token = readAuthToken()
   if (!token) return null
 

@@ -153,6 +153,10 @@ public class ApplicationDbContext : DbContext
             .Property(u => u.PresenceStatus)
             .HasMaxLength(16);
 
+        modelBuilder.Entity<User>()
+            .Property(u => u.PreferencesJson)
+            .HasMaxLength(2000);
+
         modelBuilder.Entity<WorkspaceTask>()
             .Property(t => t.Title)
             .HasMaxLength(300);

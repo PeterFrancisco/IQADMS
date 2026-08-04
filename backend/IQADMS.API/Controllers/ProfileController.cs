@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace IQADMS.API.Controllers;
 
@@ -33,6 +34,33 @@ public class ProfileController : ControllerBase
             return NotFound();
 
         return Ok(MapProfile(user));
+    }
+
+    [HttpGet("me/preferences")]
+    public async Task<IActionResult> GetPreferences()
+    {
+        var userId = GetUserId();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return NotFound();
+
+        return Ok(ParsePreferences(user.PreferencesJson));
+    }
+
+    [HttpPut("me/preferences")]
+    public async Task<IActionResult> UpdatePreferences(UserPreferencesDto request)
+    {
+        var userId = GetUserId();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return NotFound();
+
+        var normalized = NormalizePreferences(request);
+        user.PreferencesJson = JsonSerializer.Serialize(normalized);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(normalized);
     }
 
     [HttpPut("me/presence")]
@@ -305,6 +333,46 @@ public class ProfileController : ControllerBase
             "away" => "away",
             "dnd" => "dnd",
             _ => "offline"
+        };
+    }
+
+    private static readonly HashSet<string> ValidThemes = new(StringComparer.OrdinalIgnoreCase)
+        { "original", "light", "dark" };
+
+    private static readonly HashSet<string> ValidAccents = new(StringComparer.OrdinalIgnoreCase)
+        { "maroon", "slate", "ocean", "forest" };
+
+    private static readonly HashSet<string> ValidFontSizes = new(StringComparer.OrdinalIgnoreCase)
+        { "small", "medium", "large" };
+
+    private static UserPreferencesDto ParsePreferences(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return new UserPreferencesDto();
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<UserPreferencesDto>(json);
+            return parsed == null ? new UserPreferencesDto() : NormalizePreferences(parsed);
+        }
+        catch
+        {
+            return new UserPreferencesDto();
+        }
+    }
+
+    private static UserPreferencesDto NormalizePreferences(UserPreferencesDto prefs)
+    {
+        var theme = (prefs.Theme ?? "original").Trim().ToLowerInvariant();
+        var accent = (prefs.Accent ?? "maroon").Trim().ToLowerInvariant();
+        var fontSize = (prefs.FontSize ?? "medium").Trim().ToLowerInvariant();
+
+        return new UserPreferencesDto
+        {
+            Theme = ValidThemes.Contains(theme) ? theme : "original",
+            Accent = ValidAccents.Contains(accent) ? accent : "maroon",
+            FontSize = ValidFontSizes.Contains(fontSize) ? fontSize : "medium",
+            NotificationsMuted = prefs.NotificationsMuted
         };
     }
 

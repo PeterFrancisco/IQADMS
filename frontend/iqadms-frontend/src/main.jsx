@@ -15,13 +15,14 @@ import App from './App.jsx'
 import { startSessionKeepAlive } from './services/api'
 import { isSignedIn } from './utils/authSession'
 import { ensureLatestAppShell } from './utils/appBuildCache'
-import { applyUserPreferences } from './utils/userPreferences'
+import { applyUserPreferences, loadUserPreferencesFromServer } from './utils/userPreferences'
 
 applyUserPreferences()
 ensureLatestAppShell()
 
 if (isSignedIn()) {
   startSessionKeepAlive()
+  loadUserPreferencesFromServer()
 }
 
 createRoot(document.getElementById('root')).render(

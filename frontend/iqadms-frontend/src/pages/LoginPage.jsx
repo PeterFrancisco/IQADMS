@@ -1,12 +1,28 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage } from '../utils/apiError'
-import { readAuthTokenFromResponse } from '../utils/authToken'
-import { setPresence } from '../utils/presenceApi'
-import { setRememberMe, persistAuthToken } from '../utils/authSession'
-import { startSessionKeepAlive } from '../services/api'
+import { setRememberMe } from '../utils/authSession'
+import { activateSavedAccountSession, finishPasswordLogin } from '../utils/loginSession'
+import {
+  readSavedAccounts,
+  removeSavedAccount,
+  snapshotCurrentAccount,
+  upsertSavedAccount
+} from '../utils/savedAccounts'
 import IqadmsLogo from '../components/IqadmsLogo'
+import './login-page.css'
+
+function accountLabel(account) {
+  return account.displayName || account.username || 'Account'
+}
+
+function resolveAvatarUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url
+  const base = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || ''
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`
+}
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -14,13 +30,52 @@ export default function LoginPage() {
   const [rememberMe, setRememberMeChecked] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [quickUserId, setQuickUserId] = useState('')
+  const [savedAccounts, setSavedAccounts] = useState([])
   const [searchParams] = useSearchParams()
 
   const navigate = useNavigate()
   const sessionExpired = searchParams.get('session') === 'expired'
   const nextPath = searchParams.get('next')
 
-  const handleLogin = async (e) => {
+  useEffect(() => {
+    setSavedAccounts(readSavedAccounts())
+  }, [])
+
+  const safeNext =
+    nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard'
+
+  const handleQuickSignIn = async account => {
+    setError('')
+    setQuickUserId(account.userId)
+    setLoading(true)
+
+    try {
+      const current = snapshotCurrentAccount()
+      if (current && current.userId !== account.userId) {
+        upsertSavedAccount(current)
+      }
+
+      await activateSavedAccountSession(account)
+      window.location.assign(safeNext)
+    } catch (err) {
+      setUsername(account.username || '')
+      setError(getApiErrorMessage(err, 'Session expired. Sign in with your password.'))
+      removeSavedAccount(account.userId)
+      setSavedAccounts(readSavedAccounts())
+    } finally {
+      setLoading(false)
+      setQuickUserId('')
+    }
+  }
+
+  const handleRemoveSaved = (e, userId) => {
+    e.stopPropagation()
+    removeSavedAccount(userId)
+    setSavedAccounts(readSavedAccounts())
+  }
+
+  const handleLogin = async e => {
     e.preventDefault()
     setError('')
     setLoading(true)
@@ -32,122 +87,108 @@ export default function LoginPage() {
         rememberMe
       })
 
-      const token = readAuthTokenFromResponse(response.data)
-      if (!token) {
-        const hint =
-          typeof response.data === 'string' && response.data.includes('<!DOCTYPE')
-            ? ' The server returned a web page instead of JSON — check that /api is proxied to the API (port 5135), not the frontend.'
-            : ''
-        setError(
-          `Sign-in succeeded but no session token was returned.${hint} Contact your administrator.`
-        )
-        return
-      }
-
       setRememberMe(rememberMe)
-      persistAuthToken(token)
-
-      let isAdmin = response.data.isAdmin === true
-      try {
-        const meRes = await api.get('/Profile/me')
-        isAdmin = meRes.data.isAdmin === true
-        if (meRes.data.username) {
-          localStorage.setItem('username', meRes.data.username)
-        } else {
-          localStorage.setItem('username', username)
-        }
-        if (meRes.data.email) {
-          localStorage.setItem('userEmail', meRes.data.email)
-        }
-      } catch {
-        localStorage.setItem('username', username)
-      }
-
-      localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false')
-      localStorage.setItem('userId', response.data.userId)
-
-      try {
-        await setPresence('online')
-      } catch {
-        // non-blocking if presence API unavailable before migration
-      }
-
-      startSessionKeepAlive()
-
-      const safeNext =
-        nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard'
+      await finishPasswordLogin(response.data, username, rememberMe)
       navigate(safeNext)
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Invalid username/email or password'))
+      const hint =
+        typeof err?.response?.data === 'string' && err.response.data.includes('<!DOCTYPE')
+          ? ' The server returned a web page instead of JSON — check that /api is proxied to the API (port 5135), not the frontend.'
+          : ''
+      setError(getApiErrorMessage(err, `Invalid username/email or password.${hint}`))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--upshd-bg, #f7f4f5)',
-        fontFamily: 'Arial, sans-serif'
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '420px',
-          background: 'var(--upshd-surface, #fff)',
-          borderRadius: '16px',
-          padding: 'max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left))',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-header">
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
             <IqadmsLogo size={56} className="iqadms-logo--center" />
           </div>
-          <p style={{ color: '#64748b', margin: '0.5rem 0 0' }}>
-            Planning and Quality Assurance Department
-          </p>
+          <p>Planning and Quality Assurance Department</p>
         </div>
 
+        {savedAccounts.length > 0 && (
+          <section className="login-saved-section" aria-label="Saved accounts">
+            <p className="login-saved-title">Continue as</p>
+            <div className="login-saved-list">
+              {savedAccounts.map(account => {
+                const label = accountLabel(account)
+                const initials = label.slice(0, 2).toUpperCase()
+                const avatarUrl = resolveAvatarUrl(account.profilePictureUrl)
+                const busy = loading && quickUserId === account.userId
+
+                return (
+                  <button
+                    key={account.userId}
+                    type="button"
+                    className="login-saved-account"
+                    onClick={() => handleQuickSignIn(account)}
+                    disabled={loading}
+                    aria-busy={busy}
+                  >
+                    <span className="login-saved-avatar" aria-hidden>
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="" />
+                      ) : (
+                        initials
+                      )}
+                    </span>
+                    <span className="login-saved-meta">
+                      <strong>{label}</strong>
+                      <small>{account.email || account.username}</small>
+                    </span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="login-saved-remove"
+                      title="Remove from this device"
+                      aria-label={`Remove ${label} from this device`}
+                      onClick={e => handleRemoveSaved(e, account.userId)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleRemoveSaved(e, account.userId)
+                        }
+                      }}
+                    >
+                      ×
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="login-divider">or sign in</div>
+          </section>
+        )}
+
         <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: '1rem' }}>
+          <div className="login-field">
             <label>Username</label>
             <input
               type="text"
+              className="login-input"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={e => setUsername(e.target.value)}
               required
-              style={inputStyle}
             />
           </div>
 
-          <div style={{ marginBottom: '1rem' }}>
+          <div className="login-field">
             <label>Password</label>
             <input
               type="password"
+              className="login-input"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
-              style={inputStyle}
             />
           </div>
 
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '1rem',
-              fontSize: '0.9rem',
-              color: '#475569',
-              cursor: 'pointer'
-            }}
-          >
+          <label className="login-remember">
             <input
               type="checkbox"
               checked={rememberMe}
@@ -157,102 +198,27 @@ export default function LoginPage() {
           </label>
 
           {sessionExpired && !error && (
-            <div
-              style={{
-                background: '#fef3c7',
-                color: '#92400e',
-                padding: '0.75rem',
-                borderRadius: '8px',
-                marginBottom: '1rem'
-              }}
-            >
+            <div className="login-alert login-alert--warn">
               Your session expired. Please sign in again to continue.
             </div>
           )}
 
-          {error && (
-            <div
-              style={{
-                background: '#fee2e2',
-                color: '#991b1b',
-                padding: '0.75rem',
-                borderRadius: '8px',
-                marginBottom: '1rem'
-              }}
-            >
-              {error}
-            </div>
-          )}
+          {error && <div className="login-alert login-alert--error">{error}</div>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '0.85rem',
-              border: 'none',
-              borderRadius: '10px',
-              background: '#7a0019',
-              color: 'white',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
+          <button type="submit" className="login-submit" disabled={loading}>
+            {loading && !quickUserId ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <div
-          style={{
-            marginTop: '1.5rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: '0.9rem',
-            flexWrap: 'wrap',
-            gap: '0.5rem'
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => navigate('/forgot-password')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#7a0019',
-              fontWeight: '600',
-              cursor: 'pointer',
-              padding: 0
-            }}
-          >
+        <div className="login-footer">
+          <button type="button" onClick={() => navigate('/forgot-password')}>
             Forgot password?
           </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/register')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#7a0019',
-              fontWeight: '700',
-              cursor: 'pointer'
-            }}
-          >
+          <button type="button" className="login-register" onClick={() => navigate('/register')}>
             Register
           </button>
         </div>
       </div>
     </div>
   )
-}
-const inputStyle = {
-  width: '100%',
-  padding: '0.85rem',
-  marginTop: '0.4rem',
-  border: '1px solid #cbd5e1',
-  borderRadius: '10px',
-  outline: 'none',
-  fontSize: '1rem',
-  boxSizing: 'border-box'
 }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { getApiErrorMessage, validateStrongPassword } from '../utils/apiError'
 import { readAuthTokenFromResponse } from '../utils/authToken'
-import { persistAuthToken, setRememberMe } from '../utils/authSession'
+import { completeLoginSession } from '../utils/loginSession'
 import {
   authPageStyle,
   authCardStyle,
@@ -65,15 +65,15 @@ export default function CompleteRegistrationPage() {
         return
       }
 
-      setRememberMe(true)
-      persistAuthToken(token)
-      localStorage.setItem('username', username)
-      localStorage.setItem('isAdmin', response.data.isAdmin)
+      await completeLoginSession({
+        token,
+        userId: response.data.userId,
+        username,
+        isAdmin: response.data.isAdmin === true,
+        rememberMe: true
+      })
 
-      // Clear temporary email
       sessionStorage.removeItem('verifiedEmail')
-
-      // Go directly to dashboard
       navigate('/')
     } catch (err) {
       setError(getApiErrorMessage(err, 'Registration failed. Please check your details and try again.'))
