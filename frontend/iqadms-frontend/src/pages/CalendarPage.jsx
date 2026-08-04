@@ -1,31 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import {
-  accentLinkStyle,
-  accentTextStyle,
-  ghostButtonStyle,
-  inlineCardStyle,
-  mutedTextStyle,
-  pageSubtitleStyle,
-  pageTitleStyle,
-  fieldInputStyle
-} from '../theme/pageStyles'
+import { ghostButtonStyle } from '../theme/pageStyles'
+import '../theme/calendar-page.css'
 import { appDialog } from '../utils/appDialog'
-
-
-const TYPE_COLORS = {
-  task: '#7a0019',
-  project: '#0ea5e9',
-  accreditation: '#9333ea',
-  announcement: '#c2410c'
-}
+import {
+  EVENT_TYPE_COLORS,
+  EVENT_TYPE_LABELS,
+  dateKey,
+  eventLink,
+  eventTypeLabel,
+  parseDateKey
+} from '../utils/calendarEvents'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const ALL_TYPES = Object.keys(EVENT_TYPE_COLORS)
 
 function monthLabel(year, month) {
-  return new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })
+  return new Date(year, month - 1, 1).toLocaleString('en-PH', { month: 'long', year: 'numeric' })
 }
 
 function buildMonthGrid(year, month) {
@@ -43,38 +36,40 @@ function buildMonthGrid(year, month) {
   return cells
 }
 
-function dateKey(d) {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-function eventLink(event) {
-  if (event.itemType === 'task') return `/my-tasks?task=${event.id}`
-  if (event.itemType === 'project') return '/projects'
-  if (event.itemType === 'announcement') return '/announcements'
-  return '/activities'
-}
-
 export default function CalendarPage() {
   const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
+  const todayKey = dateKey(now)
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const initialDate = parseDateKey(searchParams.get('date'))
+  const [year, setYear] = useState(initialDate?.getFullYear() ?? now.getFullYear())
+  const [month, setMonth] = useState((initialDate?.getMonth() ?? now.getMonth()) + 1)
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedDay, setSelectedDay] = useState(null)
+  const [selectedDay, setSelectedDay] = useState(initialDate)
+  const [activeTypes, setActiveTypes] = useState(() => new Set(ALL_TYPES))
+  const [viewMode, setViewMode] = useState('month')
 
   useEffect(() => {
     loadEvents()
   }, [year, month])
+
+  useEffect(() => {
+    const dateParam = searchParams.get('date')
+    if (!dateParam) return
+    const parsed = parseDateKey(dateParam)
+    if (!parsed) return
+    setSelectedDay(parsed)
+    setYear(parsed.getFullYear())
+    setMonth(parsed.getMonth() + 1)
+  }, [searchParams])
 
   async function loadEvents() {
     try {
       setLoading(true)
       const res = await api.get('/Dashboard/calendar-events', { params: { year, month } })
       setEvents(res.data)
-      setSelectedDay(null)
     } catch (err) {
       console.error(err)
       await appDialog.alert(err.response?.data?.message || 'Failed to load calendar.')
@@ -83,188 +78,277 @@ export default function CalendarPage() {
     }
   }
 
+  const filteredEvents = useMemo(
+    () => events.filter(e => activeTypes.has(e.itemType)),
+    [events, activeTypes]
+  )
+
   const eventsByDate = useMemo(() => {
     const map = {}
-    events.forEach(e => {
+    filteredEvents.forEach(e => {
       const key = e.date
       if (!map[key]) map[key] = []
       map[key].push(e)
     })
     return map
-  }, [events])
+  }, [filteredEvents])
 
   const cells = useMemo(() => buildMonthGrid(year, month), [year, month])
+
+  const agendaDays = useMemo(() => {
+    const keys = Object.keys(eventsByDate).sort()
+    return keys.map(key => ({
+      key,
+      date: parseDateKey(key),
+      events: eventsByDate[key]
+    }))
+  }, [eventsByDate])
 
   function shiftMonth(delta) {
     const d = new Date(year, month - 1 + delta, 1)
     setYear(d.getFullYear())
     setMonth(d.getMonth() + 1)
+    setSelectedDay(null)
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.delete('date')
+      return next
+    }, { replace: true })
+  }
+
+  function goToday() {
+    const t = new Date()
+    setYear(t.getFullYear())
+    setMonth(t.getMonth() + 1)
+    selectDay(t)
+  }
+
+  function selectDay(day) {
+    setSelectedDay(day)
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.set('date', dateKey(day))
+      return next
+    }, { replace: true })
+  }
+
+  function toggleType(type) {
+    setActiveTypes(prev => {
+      const next = new Set(prev)
+      if (next.has(type)) {
+        if (next.size === 1) return prev
+        next.delete(type)
+      } else {
+        next.add(type)
+      }
+      return next
+    })
+  }
+
+  function openEvent(ev, e) {
+    e?.stopPropagation?.()
+    navigate(eventLink(ev))
   }
 
   const selectedEvents = selectedDay ? eventsByDate[dateKey(selectedDay)] || [] : []
+  const showAgenda = viewMode === 'agenda'
 
   return (
     <DashboardLayout>
-      <h1 style={pageTitleStyle}>Calendar</h1>
-      <p style={pageSubtitleStyle}>
-        Task due dates, project milestones, and accreditation schedules.
-      </p>
+      <header className="calendar-page-header">
+        <h1>Calendar</h1>
+        <p>Task due dates, project milestones, accreditation schedules, and PQAD announcements.</p>
+      </header>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button type="button" onClick={() => shiftMonth(-1)} style={navBtn} aria-label="Previous month">‹</button>
-          <strong style={{ ...accentTextStyle, minWidth: 180, textAlign: 'center' }}>{monthLabel(year, month)}</strong>
-          <button type="button" onClick={() => shiftMonth(1)} style={navBtn} aria-label="Next month">›</button>
+      <div className="calendar-toolbar">
+        <div className="calendar-nav">
+          <button type="button" className="calendar-nav-btn" onClick={() => shiftMonth(-1)} aria-label="Previous month">
+            ‹
+          </button>
+          <strong className="calendar-month-label">{monthLabel(year, month)}</strong>
+          <button type="button" className="calendar-nav-btn" onClick={() => shiftMonth(1)} aria-label="Next month">
+            ›
+          </button>
         </div>
-        <button
-          type="button"
-          style={ghostBtn}
-          onClick={() => {
-            const t = new Date()
-            setYear(t.getFullYear())
-            setMonth(t.getMonth() + 1)
-          }}
-        >
-          Today
-        </button>
+
+        <div className="calendar-toolbar-actions">
+          <div className="calendar-view-toggle" role="group" aria-label="Calendar view">
+            <button
+              type="button"
+              className={viewMode === 'month' ? 'is-active' : ''}
+              onClick={() => setViewMode('month')}
+            >
+              Month
+            </button>
+            <button
+              type="button"
+              className={viewMode === 'agenda' ? 'is-active' : ''}
+              onClick={() => setViewMode('agenda')}
+            >
+              Agenda
+            </button>
+          </div>
+          <button type="button" style={ghostButtonStyle} onClick={goToday}>
+            Today
+          </button>
+          <Link to="/announcements" style={{ ...ghostButtonStyle, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            Announcements
+          </Link>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
-        <Legend color={TYPE_COLORS.task} label="Task due" />
-        <Legend color={TYPE_COLORS.project} label="Project start / due" />
-        <Legend color={TYPE_COLORS.accreditation} label="Accreditation" />
-        <Legend color={TYPE_COLORS.announcement} label="PQAD announcements" />
+      <div className="calendar-legend" role="group" aria-label="Event type filters">
+        {ALL_TYPES.map(type => (
+          <button
+            key={type}
+            type="button"
+            className={`calendar-legend-item${activeTypes.has(type) ? '' : ' is-off'}`}
+            onClick={() => toggleType(type)}
+            aria-pressed={activeTypes.has(type)}
+          >
+            <span className="calendar-legend-dot" style={{ background: EVENT_TYPE_COLORS[type] }} />
+            {EVENT_TYPE_LABELS[type]}
+          </button>
+        ))}
       </div>
 
       {loading ? (
-        <p>Loading calendar…</p>
+        <div className="calendar-skeleton-grid" aria-busy="true" aria-label="Loading calendar">
+          {Array.from({ length: 35 }).map((_, i) => (
+            <div key={i} className="calendar-skeleton-cell" />
+          ))}
+        </div>
       ) : (
-        <>
-          <div style={gridWrap}>
-            {WEEKDAYS.map(w => (
-              <div key={w} style={weekdayHead}>{w}</div>
-            ))}
-            {cells.map((day, idx) => {
-              if (!day) {
-                return <div key={`empty-${idx}`} style={emptyCell} />
-              }
-              const key = dateKey(day)
-              const dayEvents = eventsByDate[key] || []
-              const isToday = dateKey(day) === dateKey(now)
-              const isSelected = selectedDay && dateKey(selectedDay) === key
+        <div className={`calendar-layout${selectedDay && !showAgenda ? ' has-selection' : ''}`}>
+          <div>
+            {!showAgenda && (
+              <div className="calendar-grid-wrap">
+                {WEEKDAYS.map(w => (
+                  <div key={w} className="calendar-weekday-head">
+                    {w}
+                  </div>
+                ))}
+                {cells.map((day, idx) => {
+                  if (!day) {
+                    return <div key={`empty-${idx}`} className="calendar-empty-cell" />
+                  }
+                  const key = dateKey(day)
+                  const dayEvents = eventsByDate[key] || []
+                  const isToday = key === todayKey
+                  const isSelected = selectedDay && dateKey(selectedDay) === key
 
-              return (
-                <button
-                  type="button"
-                  key={key}
-                  onClick={() => setSelectedDay(day)}
-                  style={{
-                    ...dayCell,
-                    borderColor: isSelected ? 'var(--upshd-maroon, #7a0019)' : isToday ? '#fbbf24' : 'var(--upshd-border, #e2e8f0)',
-                    background: isSelected ? 'var(--upshd-maroon-muted, #fff5f7)' : 'var(--upshd-surface, #fff)'
-                  }}
-                >
-                  <div style={{ fontWeight: 700, color: isToday ? 'var(--upshd-page-heading, var(--upshd-maroon, #7a0019))' : 'var(--upshd-text, #334155)', marginBottom: 4 }}>
-                    {day.getDate()}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
-                    {dayEvents.slice(0, 3).map(ev => (
-                      <span
-                        key={`${ev.itemType}-${ev.id}-${ev.eventKind}`}
-                        style={{
-                          fontSize: '0.65rem',
-                          padding: '1px 4px',
-                          borderRadius: 4,
-                          background: TYPE_COLORS[ev.itemType] || '#64748b',
-                          color: '#fff',
-                          maxWidth: '100%',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}
-                        title={`${ev.title} (${ev.eventKind || ev.itemType})${ev.location ? ` @ ${ev.location}` : ''}`}
-                      >
-                        {ev.title}
-                      </span>
-                    ))}
-                    {dayEvents.length > 3 && (
-                      <span style={{ fontSize: '0.65rem', ...mutedTextStyle }}>+{dayEvents.length - 3} more</span>
-                    )}
-                  </div>
-                </button>
-              )
-            })}
+                  return (
+                    <button
+                      type="button"
+                      key={key}
+                      onClick={() => selectDay(day)}
+                      className={`calendar-day-cell${isToday ? ' is-today' : ''}${isSelected ? ' is-selected' : ''}`}
+                      aria-pressed={isSelected}
+                      aria-label={`${day.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' })}${dayEvents.length ? `, ${dayEvents.length} events` : ''}`}
+                    >
+                      <div className="calendar-day-num">{day.getDate()}</div>
+                      <div className="calendar-day-events">
+                        {dayEvents.slice(0, 3).map(ev => (
+                          <button
+                            key={`${ev.itemType}-${ev.id}-${ev.eventKind}-${ev.date}`}
+                            type="button"
+                            className="calendar-event-chip"
+                            style={{ background: EVENT_TYPE_COLORS[ev.itemType] || '#64748b' }}
+                            title={`${ev.title} (${eventTypeLabel(ev)})${ev.location ? ` @ ${ev.location}` : ''}`}
+                            onClick={e => openEvent(ev, e)}
+                          >
+                            {ev.title}
+                          </button>
+                        ))}
+                        {dayEvents.length > 3 && (
+                          <span className="calendar-more-count">+{dayEvents.length - 3} more</span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className={`calendar-agenda${showAgenda ? ' is-visible' : ''}`}>
+              {agendaDays.length === 0 ? (
+                <div className="calendar-detail-panel">
+                  <p className="calendar-detail-empty">No events this month with the current filters.</p>
+                </div>
+              ) : (
+                agendaDays.map(({ key, date, events: dayEvents }) => (
+                  <section key={key} className="calendar-agenda-day">
+                    <div className="calendar-agenda-day-head">
+                      <strong>
+                        {date?.toLocaleDateString('en-PH', { weekday: 'long', month: 'short', day: 'numeric' })}
+                      </strong>
+                      <span>{dayEvents.length} event{dayEvents.length === 1 ? '' : 's'}</span>
+                    </div>
+                    <ul className="calendar-event-list">
+                      {dayEvents.map(ev => (
+                        <li key={`${ev.itemType}-${ev.id}-${ev.eventKind}-${ev.date}`} className="calendar-event-row">
+                          <span className="calendar-event-dot" style={{ background: EVENT_TYPE_COLORS[ev.itemType] }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Link to={eventLink(ev)} className="calendar-event-row-title">
+                              {ev.title}
+                            </Link>
+                            <div className="calendar-event-row-meta">
+                              {eventTypeLabel(ev)}
+                              {ev.location ? ` · ${ev.location}` : ''}
+                              {ev.status && ev.itemType !== 'announcement' ? ` · ${ev.status}` : ''}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))
+              )}
+            </div>
           </div>
 
-          {selectedDay && (
-            <section style={{ ...card, marginTop: '1.25rem' }}>
-              <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.05rem', ...accentTextStyle }}>
-                {selectedDay.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          {!showAgenda && selectedDay && (
+            <aside className="calendar-detail-panel">
+              <h2>
+                {selectedDay.toLocaleDateString('en-PH', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
               </h2>
               {selectedEvents.length === 0 ? (
-                <p style={{ margin: 0, ...mutedTextStyle, opacity: 0.85 }}>No events on this day.</p>
+                <p className="calendar-detail-empty">No events on this day.</p>
               ) : (
-                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.5rem' }}>
+                <ul className="calendar-event-list">
                   {selectedEvents.map(ev => (
-                    <li key={`${ev.itemType}-${ev.id}-${ev.eventKind}`} style={listRow}>
-                      <span style={{ ...dot, background: TYPE_COLORS[ev.itemType] }} />
-                      <div style={{ flex: 1 }}>
-                        <Link to={eventLink(ev)} style={accentLinkStyle}>
+                    <li key={`${ev.itemType}-${ev.id}-${ev.eventKind}-${ev.date}`} className="calendar-event-row">
+                      <span className="calendar-event-dot" style={{ background: EVENT_TYPE_COLORS[ev.itemType] }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Link to={eventLink(ev)} className="calendar-event-row-title">
                           {ev.title}
                         </Link>
-                        <div style={{ fontSize: '0.85rem', ...mutedTextStyle }}>
-                            {ev.itemType} · {ev.eventKind}
-                            {ev.location ? ` · ${ev.location}` : ''}
-                            {ev.status && ev.itemType !== 'announcement' ? ` · ${ev.status}` : ''}
+                        <div className="calendar-event-row-meta">
+                          {eventTypeLabel(ev)}
+                          {ev.location ? ` · ${ev.location}` : ''}
+                          {ev.status && ev.itemType !== 'announcement' ? ` · ${ev.status}` : ''}
                         </div>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
-            </section>
+              {selectedEvents.some(ev => ev.itemType === 'announcement') && (
+                <p style={{ margin: '0.75rem 0 0', fontSize: '0.85rem' }}>
+                  <Link to="/announcements" style={{ color: 'var(--upshd-maroon, #7a0019)', fontWeight: 600 }}>
+                    Manage announcements
+                  </Link>
+                </p>
+              )}
+            </aside>
           )}
-        </>
+        </div>
       )}
     </DashboardLayout>
   )
 }
-
-function Legend({ color, label }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ width: 10, height: 10, borderRadius: 999, background: color }} />
-      {label}
-    </span>
-  )
-}
-
-const gridWrap = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-  gap: '0.35rem',
-  background: 'var(--upshd-surface, #fff)',
-  padding: '0.75rem',
-  borderRadius: 12,
-  boxShadow: '0 2px 8px rgba(0,0,0,.06)'
-}
-
-const weekdayHead = { textAlign: 'center', fontWeight: 700, fontSize: '0.8rem', color: 'var(--upshd-text-muted, #64748b)', padding: '0.35rem' }
-const emptyCell = { minHeight: 72, background: 'var(--upshd-surface-raised, #f8fafc)', borderRadius: 8 }
-const dayCell = {
-  minHeight: 72,
-  padding: '0.35rem',
-  borderRadius: 8,
-  border: '2px solid var(--upshd-border, #e2e8f0)',
-  cursor: 'pointer',
-  textAlign: 'left',
-  display: 'block',
-  width: '100%',
-  color: 'var(--upshd-text, #1f2937)'
-}
-
-const card = inlineCardStyle
-const listRow = { display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }
-const dot = { width: 8, height: 8, borderRadius: 999, marginTop: 6, flexShrink: 0 }
-const navBtn = { width: 36, height: 36, borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', background: 'var(--upshd-surface, #fff)', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1, color: 'var(--upshd-text, #1f2937)' }
-const ghostBtn = { ...ghostButtonStyle, padding: '0.45rem 0.85rem', borderRadius: 8 }

@@ -179,6 +179,16 @@ body {
   font-size: 0.9rem;
 }
 
+.dashboard-hub-events-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.dashboard-hub-events-link:hover strong {
+  color: var(--upshd-maroon, #7a0019);
+  text-decoration: underline;
+}
+
 html[data-theme='dark'] .dashboard-hub-events {
   border-left-color: var(--upshd-heading-accent);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import AppIcon from '../components/AppIcon'
 import api from '../services/api'
+import { formatDateRange } from '../utils/calendarEvents'
 
 const TILES = [
   {
@@ -98,12 +99,13 @@ export default function DashboardHubPage() {
             <ul>
               {upcoming.map(a => (
                 <li key={a.id}>
-                  <strong>{a.title}</strong>
-                  <span className="dashboard-hub-events-meta">
-                    {' '}
-                    · {a.category} · {a.startDate}
-                    {a.endDate && a.endDate !== a.startDate ? ` to ${a.endDate}` : ''}
-                  </span>
+                  <Link to={`/announcements?id=${a.id}`} className="dashboard-hub-events-link">
+                    <strong>{a.title}</strong>
+                    <span className="dashboard-hub-events-meta">
+                      {' '}
+                      · {a.category} · {formatDateRange(a.startDate, a.endDate)}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
