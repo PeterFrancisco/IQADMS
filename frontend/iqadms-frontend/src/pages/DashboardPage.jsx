@@ -23,8 +23,7 @@ import { dispatchNotificationsChanged, dispatchTasksChanged } from '../utils/app
 const TASK_POLL_MS = 10000
 
 
-const STATUS_OPTIONS = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
-const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical']
+const STATUS_OPTIONS = ['To Do', 'Waiting', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
 const STATUS_COLORS = {
   'To Do': 'var(--upshd-maroon)',
   Planning: 'var(--upshd-maroon)',
@@ -50,7 +49,7 @@ function taskAssigneeId(task) {
   return task?.assignedToUserId ?? task?.AssignedToUserId ?? ''
 }
 
-function taskReferenceDownloads(task) {
+function taskDocumentDownloads(task) {
   const items = []
   const seen = new Set()
   for (const a of task.attachments || []) {
@@ -144,12 +143,15 @@ export default function DashboardPage() {
     description: '',
     assignedToUserId: '',
     projectId: '',
-    relatedDepartmentId: '',
+    relatedDepartmentOrOrg: '',
     dueDate: '',
-    priority: 'Medium',
+    notes: '',
     status: 'To Do',
     uploadGoogleDriveLink: '',
-    attachment: null
+    attachment: null,
+    showDescription: false,
+    showGoogleDrive: false,
+    showDocument: false
   })
   const [selectedTask, setSelectedTask] = useState(null)
   const [taskComments, setTaskComments] = useState([])
@@ -306,9 +308,9 @@ export default function DashboardPage() {
         description: createForm.description.trim() || null,
         assignedToUserId: guidOrNull(createForm.assignedToUserId),
         projectId: guidOrNull(createForm.projectId),
-        relatedDepartmentId: guidOrNull(createForm.relatedDepartmentId),
+        relatedDepartmentOrOrg: createForm.relatedDepartmentOrOrg.trim() || null,
         dueDate: createForm.dueDate || null,
-        priority: createForm.priority,
+        notes: createForm.notes.trim() || null,
         status: createForm.status,
         uploadGoogleDriveLink: createForm.uploadGoogleDriveLink || null
       })
@@ -336,12 +338,15 @@ export default function DashboardPage() {
         description: '',
         assignedToUserId: '',
         projectId: filterProjectId || '',
-        relatedDepartmentId: filterDepartmentId || '',
+        relatedDepartmentOrOrg: '',
         dueDate: '',
-        priority: 'Medium',
+        notes: '',
         status: 'To Do',
         uploadGoogleDriveLink: '',
-        attachment: null
+        attachment: null,
+        showDescription: false,
+        showGoogleDrive: false,
+        showDocument: false
       })
       setShowCreateModal(false)
       refreshAfterMutation()
@@ -427,8 +432,7 @@ export default function DashboardPage() {
     let sections = projects.map(p => ({
       id: p.id,
       title: p.title,
-      status: p.status,
-      priority: p.priority,
+      notes: p.notes,
       tasks: adminFilteredTasks.filter(
         t => effectiveTaskSectionId(t, activeProjectIds) === String(p.id)
       )
@@ -440,8 +444,7 @@ export default function DashboardPage() {
       sections.push({
         id: NO_PROJECT_SECTION,
         title: 'No project',
-        status: null,
-        priority: null,
+        notes: null,
         tasks: unassigned
       })
     }
@@ -488,8 +491,7 @@ export default function DashboardPage() {
     let sections = memberProjects.map(p => ({
       id: p.id,
       title: p.title,
-      status: null,
-      priority: null,
+      notes: null,
       tasks: memberFilteredTasks.filter(
         t => effectiveTaskSectionId(t, memberActiveProjectIds) === String(p.id)
       )
@@ -501,8 +503,7 @@ export default function DashboardPage() {
       sections.push({
         id: NO_PROJECT_SECTION,
         title: 'No project',
-        status: null,
-        priority: null,
+        notes: null,
         tasks: unassigned
       })
     }
@@ -924,13 +925,14 @@ export default function DashboardPage() {
   const updateProjectLink = (id, projectId) =>
     patchTask(id, { setProject: true, projectId: projectId || null })
 
-  const updateRelatedDept = (id, relatedDepartmentId) =>
-    patchTask(id, { setRelatedDepartment: true, relatedDepartmentId: relatedDepartmentId || null })
+  const updateRelatedOrg = (id, relatedDepartmentOrOrg) =>
+    patchTask(id, { setRelatedDepartmentOrOrg: true, relatedDepartmentOrOrg: relatedDepartmentOrOrg || null })
 
   const updateDueDate = (id, dueDate) =>
     patchTask(id, { setDueDate: true, dueDate: dueDate || null })
 
-  const updatePriority = (id, priority) => patchTask(id, { priority })
+  const updateNotes = (id, notes) =>
+    patchTask(id, { setNotes: true, notes: notes || null })
 
   const updateTitle = (id, title) => patchTask(id, { title })
 
@@ -1093,7 +1095,7 @@ export default function DashboardPage() {
           <div className="tasks-member-hint">
             <strong>How to work on tasks</strong>
             <ul>
-              <li>Click a task <strong>title</strong> to open details and reference files.</li>
+              <li>Click a task <strong>title</strong> to open details and the document to modify.</li>
               <li>Move status from <strong>To Do</strong> → <strong>In Progress</strong> (you cannot go back to To Do).</li>
               <li>When in progress, submit your Google Drive link for PQAD review.</li>
             </ul>
@@ -1143,8 +1145,7 @@ export default function DashboardPage() {
               <ProjectTaskBoardCard
                 key={section.id}
                 projectTitle={section.title}
-                projectStatus={section.status}
-                projectPriority={section.priority}
+                projectNotes={section.notes}
                 tasks={section.tasks}
                 subtitle={!isAdmin ? 'Your assignments in this project' : undefined}
                 focusLabel={isAdmin ? 'Focus board' : 'Open project'}
@@ -1199,15 +1200,23 @@ export default function DashboardPage() {
             <>
               <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem' }}>
                 Status: <strong style={{ color: statusColor(selectedTask.status) }}>{selectedTask.status}</strong>
-                {selectedTask.priority && <> · Priority: {selectedTask.priority}</>}
                 {selectedTask.dueDate && <> · Due {selectedTask.dueDate}</>}
                 {selectedTask.projectTitle && <> · {selectedTask.projectTitle}</>}
-                {selectedTask.relatedDepartmentName && <> · Dept: {selectedTask.relatedDepartmentName}</>}
+                {(selectedTask.relatedDepartmentOrOrg || selectedTask.relatedDepartmentName) && (
+                  <> · {selectedTask.relatedDepartmentOrOrg || selectedTask.relatedDepartmentName}</>
+                )}
                 {selectedTask.assignedToName && <> · Assigned to {selectedTask.assignedToName}</>}
               </p>
 
+              {selectedTask.notes && (
+                <>
+                  <label style={labelStyle}>Notes</label>
+                  <p style={{ margin: '0 0 1rem', color: '#374151', whiteSpace: 'pre-wrap' }}>{selectedTask.notes}</p>
+                </>
+              )}
+
               {(selectedTask.description ||
-                taskReferenceDownloads(selectedTask).length > 0 ||
+                taskDocumentDownloads(selectedTask).length > 0 ||
                 selectedTask.uploadGoogleDriveLink) ? (
                 <div className="task-work-package">
                   <h3>Work package</h3>
@@ -1218,15 +1227,15 @@ export default function DashboardPage() {
                   )}
                   {!isAdmin && isTaskAssignee(selectedTask, currentUserId) && (
                     <ol className="task-work-steps">
-                      <li>Download each reference file below and edit it on your computer.</li>
+                      <li>Download the document below and edit it on your computer.</li>
                       <li>Upload your finished work to the admin&apos;s Google Drive folder.</li>
                       <li>Set status to <strong>In Progress</strong>, paste your Drive link, and submit for review.</li>
                     </ol>
                   )}
-                  {taskReferenceDownloads(selectedTask).length > 0 && (
+                  {taskDocumentDownloads(selectedTask).length > 0 && (
                     <div className="task-ref-files">
-                      <label style={{ ...labelStyle, marginBottom: 0 }}>Files to edit</label>
-                      {taskReferenceDownloads(selectedTask).map(f => (
+                      <label style={{ ...labelStyle, marginBottom: 0 }}>Document</label>
+                      {taskDocumentDownloads(selectedTask).map(f => (
                         <a
                           key={f.url}
                           className="task-ref-download"
@@ -1315,7 +1324,12 @@ export default function DashboardPage() {
                   <strong style={{ display: 'block', marginBottom: 6 }}>Your steps</strong>
                   {(selectedTask.status === 'To Do' || selectedTask.status === 'Planning') && (
                     <p style={{ margin: 0 }}>
-                      Change <strong>Status</strong> to <strong>In Progress</strong> when you start. You cannot move back to To Do after that. Download files from the work package, upload to Google Drive, then use <strong>Submit</strong>.
+                      Change <strong>Status</strong> to <strong>In Progress</strong> when you start. You cannot move back to To Do after that. Download the document from the work package, upload to Google Drive, then use <strong>Submit</strong>.
+                    </p>
+                  )}
+                  {selectedTask.status === 'Waiting' && (
+                    <p style={{ margin: 0 }}>
+                      This task is <strong>Waiting</strong> in the project workflow. An admin will activate it when the prior step is done.
                     </p>
                   )}
                   {selectedTask.status === 'In Progress' && (
@@ -1559,13 +1573,6 @@ export default function DashboardPage() {
             onChange={e => setCreateForm({ ...createForm, title: e.target.value })}
           />
 
-          <label style={labelStyle}>Description (optional)</label>
-          <textarea
-            style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, marginBottom: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
-            value={createForm.description}
-            onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
-          />
-
           <label style={labelStyle}>Project (required)</label>
           <select
             required
@@ -1579,41 +1586,29 @@ export default function DashboardPage() {
             ))}
           </select>
 
-          <label style={labelStyle}>Related department (metadata)</label>
-          <select
-            style={{ ...selectStyle, marginBottom: '1rem' }}
-            value={createForm.relatedDepartmentId}
-            onChange={e => setCreateForm({ ...createForm, relatedDepartmentId: e.target.value })}
-          >
-            <option value="">None</option>
-            {departments.map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
+          <label style={labelStyle}>Related department or organization</label>
+          <input
+            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+            placeholder="e.g. College of Engineering, PACUCOA"
+            value={createForm.relatedDepartmentOrOrg}
+            onChange={e => setCreateForm({ ...createForm, relatedDepartmentOrOrg: e.target.value })}
+          />
 
-          <div className="mobile-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={labelStyle}>Due date</label>
-              <input
-                type="date"
-                style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
-                value={createForm.dueDate}
-                onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Priority</label>
-              <select
-                style={{ ...selectStyle, width: '100%' }}
-                value={createForm.priority}
-                onChange={e => setCreateForm({ ...createForm, priority: e.target.value })}
-              >
-                {PRIORITY_OPTIONS.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <label style={labelStyle}>Due date</label>
+          <input
+            type="date"
+            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+            value={createForm.dueDate}
+            onChange={e => setCreateForm({ ...createForm, dueDate: e.target.value })}
+          />
+
+          <label style={labelStyle}>Notes</label>
+          <textarea
+            style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, marginBottom: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+            placeholder="Status, urgency, or other notes for this task"
+            value={createForm.notes}
+            onChange={e => setCreateForm({ ...createForm, notes: e.target.value })}
+          />
 
           <label style={labelStyle}>Assign to</label>
           <select
@@ -1629,20 +1624,63 @@ export default function DashboardPage() {
             ))}
           </select>
 
-          <label style={labelStyle}>Google Drive link (where assignee uploads finished work)</label>
-          <input
-            style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
-            placeholder="https://drive.google.com/..."
-            value={createForm.uploadGoogleDriveLink}
-            onChange={e => setCreateForm({ ...createForm, uploadGoogleDriveLink: e.target.value })}
-          />
+          {!createForm.showDescription ? (
+            <button
+              type="button"
+              style={{ ...ghostBtn, marginBottom: '0.75rem' }}
+              onClick={() => setCreateForm({ ...createForm, showDescription: true })}
+            >
+              + Add description (optional)
+            </button>
+          ) : (
+            <>
+              <label style={labelStyle}>Description (optional)</label>
+              <textarea
+                style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, marginBottom: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+                value={createForm.description}
+                onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
+              />
+            </>
+          )}
 
-          <label style={labelStyle}>Reference attachment (optional)</label>
-          <input
-            type="file"
-            style={{ marginBottom: '0.25rem', display: 'block' }}
-            onChange={e => setCreateForm({ ...createForm, attachment: e.target.files[0] })}
-          />
+          {!createForm.showGoogleDrive ? (
+            <button
+              type="button"
+              style={{ ...ghostBtn, marginBottom: '0.75rem' }}
+              onClick={() => setCreateForm({ ...createForm, showGoogleDrive: true })}
+            >
+              + Add Google Drive folder (optional)
+            </button>
+          ) : (
+            <>
+              <label style={labelStyle}>Google Drive folder (where assignee uploads finished work)</label>
+              <input
+                style={{ ...inputStyle, width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+                placeholder="https://drive.google.com/..."
+                value={createForm.uploadGoogleDriveLink}
+                onChange={e => setCreateForm({ ...createForm, uploadGoogleDriveLink: e.target.value })}
+              />
+            </>
+          )}
+
+          {!createForm.showDocument ? (
+            <button
+              type="button"
+              style={{ ...ghostBtn, marginBottom: '0.25rem' }}
+              onClick={() => setCreateForm({ ...createForm, showDocument: true })}
+            >
+              + Add document (optional)
+            </button>
+          ) : (
+            <>
+              <label style={labelStyle}>Document (file to modify)</label>
+              <input
+                type="file"
+                style={{ marginBottom: '0.25rem', display: 'block' }}
+                onChange={e => setCreateForm({ ...createForm, attachment: e.target.files[0] })}
+              />
+            </>
+          )}
         </AppModal>
       </div>
     </DashboardLayout>

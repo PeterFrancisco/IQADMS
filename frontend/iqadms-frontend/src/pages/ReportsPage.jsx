@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
 import { upshd } from '../theme/upshd'
-import { pageTitleStyle } from '../theme/pageStyles'import { appDialog } from '../utils/appDialog'
+import { pageTitleStyle } from '../theme/pageStyles'
+import { appDialog } from '../utils/appDialog'
 
 
 const STATUS_OPTIONS = ['', 'To Do', 'In Progress', 'Waiting', 'Completed', 'Cancelled', 'Planning', 'Done', 'Review']
@@ -80,11 +81,11 @@ export default function ReportsPage() {
     const headers = [
       { label: 'Title', get: r => r.title },
       { label: 'Status', get: r => r.status },
-      { label: 'Priority', get: r => r.priority },
+      { label: 'Notes', get: r => r.notes || '' },
       { label: 'Due date', get: r => r.dueDate || '' },
       { label: 'Assignee', get: r => r.assigneeName || '' },
       { label: 'Project', get: r => r.projectTitle || '' },
-      { label: 'Related department', get: r => r.relatedDepartmentName || '' },
+      { label: 'Dept / organization', get: r => r.relatedDepartmentOrOrg || '' },
       { label: 'Completed at', get: r => r.completedAt || '' },
       { label: 'Created at', get: r => r.createdAt }
     ]
@@ -170,7 +171,7 @@ export default function ReportsPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                   <tr style={{ background: upshd.tableHeadBg }}>
-                    {['Task', 'Status', 'Priority', 'Due', 'Assignee', 'Project', 'Dept'].map(h => (
+                    {['Task', 'Status', 'Notes', 'Due', 'Assignee', 'Project', 'Dept / org'].map(h => (
                       <th key={h} style={th}>{h}</th>
                     ))}
                   </tr>
@@ -180,11 +181,11 @@ export default function ReportsPage() {
                     <tr key={row.id}>
                       <td style={td}>{row.title}</td>
                       <td style={td}>{row.status}</td>
-                      <td style={td}>{row.priority}</td>
+                      <td style={td}>{row.notes || '-'}</td>
                       <td style={td}>{row.dueDate || '-'}</td>
                       <td style={td}>{row.assigneeName || '-'}</td>
                       <td style={td}>{row.projectTitle || '-'}</td>
-                      <td style={td}>{row.relatedDepartmentName || '-'}</td>
+                      <td style={td}>{row.relatedDepartmentOrOrg || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

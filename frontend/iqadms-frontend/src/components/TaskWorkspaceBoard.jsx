@@ -5,7 +5,7 @@ import { appDialog } from '../utils/appDialog'
 import { floatingMenuPosition } from '../utils/floatingMenuPosition'
 import '../theme/workspace-board.css'
 
-const STATUS_OPTIONS_ADMIN = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
+const STATUS_OPTIONS_ADMIN = ['To Do', 'Waiting', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
 const STATUS_COLORS = {
   'To Do': 'var(--upshd-maroon)',
   Planning: 'var(--upshd-maroon)',

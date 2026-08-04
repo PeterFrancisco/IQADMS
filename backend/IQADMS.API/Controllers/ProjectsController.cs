@@ -1,3 +1,4 @@
+using System.Text.Json;
 using IQADMS.API.Data;
 using IQADMS.API.DTOs.Projects;
 using IQADMS.API.Models;
@@ -13,6 +14,12 @@ namespace IQADMS.API.Controllers;
 [Authorize]
 public class ProjectsController : ControllerBase
 {
+    private static readonly JsonSerializerOptions WorkflowJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
+
     private readonly ApplicationDbContext _context;
 
     public ProjectsController(ApplicationDbContext context)
@@ -86,25 +93,36 @@ public class ProjectsController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Title))
             return BadRequest(new { message = "Project title is required." });
 
+        var userId = GetUserId();
+        var workflowJson = SerializeWorkflow(request.TaskWorkflow);
+
         var project = new Project
         {
             Title = request.Title.Trim(),
             Description = request.Description?.Trim(),
             StartDate = request.StartDate,
             DueDate = request.DueDate,
-            Status = string.IsNullOrWhiteSpace(request.Status) ? "Planning" : request.Status.Trim(),
-            Priority = string.IsNullOrWhiteSpace(request.Priority) ? "Medium" : request.Priority.Trim(),
-            CreatedByUserId = GetUserId()
+            Notes = request.Notes?.Trim(),
+            TaskWorkflowJson = workflowJson,
+            Status = "Active",
+            Priority = "Medium",
+            CreatedByUserId = userId
         };
 
         _context.Projects.Add(project);
         await _context.SaveChangesAsync();
 
-        await SyncMembersAndDepartments(project.Id, request.MemberUserIds, request.DepartmentIds);
+        await CreateWorkflowTasks(project.Id, userId, request.TaskWorkflow);
+
         await _context.Entry(project).Collection(p => p.Members).Query().Include(m => m.User).LoadAsync();
         await _context.Entry(project).Collection(p => p.Departments).Query().Include(d => d.Department).LoadAsync();
 
-        return Ok(MapProject(project, 0, 0, 0));
+        var total = await _context.WorkspaceTasks.CountAsync(t => !t.IsDeleted && t.ProjectId == project.Id);
+        var open = await _context.WorkspaceTasks.CountAsync(t =>
+            !t.IsDeleted && t.ProjectId == project.Id &&
+            t.Status != "Completed" && t.Status != "Cancelled" && t.Status != "Done");
+
+        return Ok(MapProject(project, total, open, 0));
     }
 
     [HttpPut("{id}")]
@@ -123,16 +141,10 @@ public class ProjectsController : ControllerBase
 
         project.StartDate = request.StartDate;
         project.DueDate = request.DueDate;
-
-        if (!string.IsNullOrWhiteSpace(request.Status))
-            project.Status = request.Status.Trim();
-
-        if (!string.IsNullOrWhiteSpace(request.Priority))
-            project.Priority = request.Priority.Trim();
-
+        project.Notes = request.Notes?.Trim();
+        project.TaskWorkflowJson = SerializeWorkflow(request.TaskWorkflow);
         project.UpdatedAt = DateTime.UtcNow;
 
-        await SyncMembersAndDepartments(id, request.MemberUserIds, request.DepartmentIds);
         await _context.SaveChangesAsync();
 
         await _context.Entry(project).Collection(p => p.Members).Query().Include(m => m.User).LoadAsync();
@@ -173,32 +185,60 @@ public class ProjectsController : ControllerBase
         return NoContent();
     }
 
-    private async Task SyncMembersAndDepartments(Guid projectId, List<Guid> memberIds, List<Guid> departmentIds)
+    private async Task CreateWorkflowTasks(Guid projectId, Guid userId, List<ProjectWorkflowStepDto> workflow)
     {
-        var existingMembers = await _context.ProjectMembers.Where(m => m.ProjectId == projectId).ToListAsync();
-        _context.ProjectMembers.RemoveRange(existingMembers);
+        if (workflow == null || workflow.Count == 0) return;
 
-        var distinctMembers = memberIds.Distinct().ToList();
-        foreach (var userId in distinctMembers)
+        var order = 0;
+        foreach (var step in workflow)
         {
-            if (await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive))
+            var title = step.Title?.Trim();
+            if (string.IsNullOrWhiteSpace(title)) continue;
+
+            order++;
+            _context.WorkspaceTasks.Add(new WorkspaceTask
             {
-                _context.ProjectMembers.Add(new ProjectMember { ProjectId = projectId, UserId = userId });
-            }
+                Title = title,
+                ProjectId = projectId,
+                CreatedByUserId = userId,
+                AssignedToUserId = userId,
+                Status = order == 1 ? "To Do" : "Waiting",
+                WorkflowOrder = order,
+                Priority = "Medium"
+            });
         }
 
-        var existingDepts = await _context.ProjectDepartments.Where(d => d.ProjectId == projectId).ToListAsync();
-        _context.ProjectDepartments.RemoveRange(existingDepts);
+        if (order > 0)
+            await _context.SaveChangesAsync();
+    }
 
-        foreach (var deptId in departmentIds.Distinct())
+    private static string? SerializeWorkflow(List<ProjectWorkflowStepDto>? workflow)
+    {
+        if (workflow == null || workflow.Count == 0) return null;
+
+        var cleaned = workflow
+            .Select(s => new ProjectWorkflowStepDto { Title = s.Title?.Trim() ?? string.Empty })
+            .Where(s => !string.IsNullOrWhiteSpace(s.Title))
+            .ToList();
+
+        return cleaned.Count == 0
+            ? null
+            : JsonSerializer.Serialize(cleaned, WorkflowJsonOptions);
+    }
+
+    private static List<ProjectWorkflowStepDto> ParseWorkflow(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new List<ProjectWorkflowStepDto>();
+
+        try
         {
-            if (await _context.Departments.AnyAsync(d => d.Id == deptId))
-            {
-                _context.ProjectDepartments.Add(new ProjectDepartment { ProjectId = projectId, DepartmentId = deptId });
-            }
+            return JsonSerializer.Deserialize<List<ProjectWorkflowStepDto>>(json, WorkflowJsonOptions)
+                   ?? new List<ProjectWorkflowStepDto>();
         }
-
-        await _context.SaveChangesAsync();
+        catch
+        {
+            return new List<ProjectWorkflowStepDto>();
+        }
     }
 
     private static ProjectResponse MapProject(Project p, int taskCount, int openTaskCount, int progressDone)
@@ -214,8 +254,9 @@ public class ProjectsController : ControllerBase
             Description = p.Description,
             StartDate = p.StartDate,
             DueDate = p.DueDate,
-            Status = p.Status,
-            Priority = p.Priority,
+            Notes = p.Notes,
+            TaskWorkflowJson = p.TaskWorkflowJson,
+            TaskWorkflow = ParseWorkflow(p.TaskWorkflowJson),
             TaskCount = taskCount,
             OpenTaskCount = openTaskCount,
             TaskProgressDone = progressDone,

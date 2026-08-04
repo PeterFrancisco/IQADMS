@@ -64,11 +64,11 @@ public class ReportsController : ControllerBase
             Id = t.Id,
             Title = t.Title,
             Status = t.Status,
-            Priority = t.Priority,
+            Notes = t.Notes,
             DueDate = t.DueDate,
             AssigneeName = t.AssignedToUser?.DisplayName,
             ProjectTitle = t.Project?.Title,
-            RelatedDepartmentName = t.RelatedDepartment?.Name,
+            RelatedDepartmentOrOrg = t.RelatedDepartmentOrOrg ?? t.RelatedDepartment?.Name,
             CompletedAt = t.CompletedAt,
             CreatedAt = t.CreatedAt
         }).ToList();

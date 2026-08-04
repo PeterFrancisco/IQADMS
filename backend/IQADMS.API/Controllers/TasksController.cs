@@ -97,9 +97,9 @@ public class TasksController : ControllerBase
         if (!await _context.Projects.AnyAsync(p => p.Id == request.ProjectId && !p.IsDeleted))
             return BadRequest(new { message = "Project not found." });
 
-        if (request.RelatedDepartmentId.HasValue &&
-            !await _context.Departments.AnyAsync(d => d.Id == request.RelatedDepartmentId))
-            return BadRequest(new { message = "Department not found." });
+        if (request.RelatedDepartmentOrOrg != null &&
+            request.RelatedDepartmentOrOrg.Length > 300)
+            return BadRequest(new { message = "Related department or organization is too long." });
 
         var status = NormalizeStatus(string.IsNullOrWhiteSpace(request.Status) ? "To Do" : request.Status);
         if (status is "Completed" or "Submitted")
@@ -109,11 +109,12 @@ public class TasksController : ControllerBase
         {
             Title = request.Title.Trim(),
             Description = request.Description?.Trim(),
+            Notes = request.Notes?.Trim(),
             Status = status,
-            Priority = string.IsNullOrWhiteSpace(request.Priority) ? "Medium" : request.Priority.Trim(),
+            Priority = "Medium",
             DueDate = request.DueDate,
             ProjectId = request.ProjectId,
-            RelatedDepartmentId = request.RelatedDepartmentId,
+            RelatedDepartmentOrOrg = request.RelatedDepartmentOrOrg?.Trim(),
             CreatedByUserId = userId,
             UploadGoogleDriveLink = request.UploadGoogleDriveLink,
             AssignedToUserId = request.AssignedToUserId ?? userId
@@ -176,8 +177,8 @@ public class TasksController : ControllerBase
 
         if (!isAdmin)
         {
-            if (request.Title != null || request.Description != null || request.Priority != null
-                || request.SetDueDate || request.SetProject || request.SetRelatedDepartment
+            if (request.Title != null || request.Description != null || request.Notes != null
+                || request.SetDueDate || request.SetProject || request.SetRelatedDepartmentOrOrg
                 || request.SetAssignee || request.UploadGoogleDriveLink != null
                 || request.DeliverableGoogleDriveLink != null)
                 return Forbid();
@@ -201,6 +202,16 @@ public class TasksController : ControllerBase
         {
             task.Description = request.Description.Trim();
             changes.Add("description updated");
+        }
+
+        if (request.SetNotes)
+        {
+            var notes = request.Notes?.Trim();
+            if (notes != task.Notes)
+            {
+                changes.Add("notes updated");
+                task.Notes = notes;
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(request.Status))
@@ -227,12 +238,6 @@ public class TasksController : ControllerBase
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Priority) && request.Priority != task.Priority)
-        {
-            changes.Add($"priority: {task.Priority} → {request.Priority}");
-            task.Priority = request.Priority.Trim();
-        }
-
         if (request.SetDueDate)
         {
             if (task.DueDate != request.DueDate)
@@ -255,16 +260,13 @@ public class TasksController : ControllerBase
             }
         }
 
-        if (request.SetRelatedDepartment)
+        if (request.SetRelatedDepartmentOrOrg)
         {
-            if (request.RelatedDepartmentId.HasValue &&
-                !await _context.Departments.AnyAsync(d => d.Id == request.RelatedDepartmentId))
-                return BadRequest(new { message = "Department not found." });
-
-            if (task.RelatedDepartmentId != request.RelatedDepartmentId)
+            var org = request.RelatedDepartmentOrOrg?.Trim();
+            if (task.RelatedDepartmentOrOrg != org)
             {
-                changes.Add("related department updated");
-                task.RelatedDepartmentId = request.RelatedDepartmentId;
+                changes.Add("related department or organization updated");
+                task.RelatedDepartmentOrOrg = org;
             }
         }
 
@@ -718,12 +720,14 @@ public class TasksController : ControllerBase
             Title = t.Title,
             Description = t.Description,
             Status = t.Status,
-            Priority = t.Priority,
+            Notes = t.Notes,
+            WorkflowOrder = t.WorkflowOrder,
             DueDate = t.DueDate,
             ProjectId = t.ProjectId,
             ProjectTitle = t.Project?.Title,
             RelatedDepartmentId = t.RelatedDepartmentId,
             RelatedDepartmentName = t.RelatedDepartment?.Name,
+            RelatedDepartmentOrOrg = t.RelatedDepartmentOrOrg ?? t.RelatedDepartment?.Name,
             AssignedToUserId = t.AssignedToUserId,
             AssignedToName = t.AssignedToUser?.DisplayName,
             AssignedToUsername = t.AssignedToUser?.Username,

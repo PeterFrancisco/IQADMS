@@ -469,6 +469,10 @@ namespace IQADMS.API.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<string>("Priority")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -481,6 +485,10 @@ namespace IQADMS.API.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<string>("TaskWorkflowJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1105,6 +1113,10 @@ namespace IQADMS.API.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<string>("Priority")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1115,6 +1127,10 @@ namespace IQADMS.API.Migrations
 
                     b.Property<Guid?>("RelatedDepartmentId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("RelatedDepartmentOrOrg")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1134,6 +1150,9 @@ namespace IQADMS.API.Migrations
 
                     b.Property<string>("UploadGoogleDriveLink")
                         .HasColumnType("text");
+
+                    b.Property<int?>("WorkflowOrder")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

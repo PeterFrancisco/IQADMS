@@ -7,25 +7,19 @@ import '../theme/projects-page.css'
 import { countOrphanTasks, effectiveTaskSectionId, NO_PROJECT_SECTION } from '../utils/notificationLink'
 import { appDialog } from '../utils/appDialog'
 
-const PROJECT_STATUSES = ['Planning', 'Active', 'On Hold', 'Completed', 'Cancelled']
-const PRIORITIES = ['Low', 'Medium', 'High', 'Critical']
-
 const emptyForm = () => ({
   title: '',
   description: '',
+  showDescription: false,
   startDate: '',
   dueDate: '',
-  status: 'Planning',
-  priority: 'Medium',
-  memberUserIds: [],
-  departmentIds: []
+  notes: '',
+  taskWorkflow: [{ title: '' }]
 })
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
   const [orphanTaskCount, setOrphanTaskCount] = useState(0)
-  const [members, setMembers] = useState([])
-  const [departments, setDepartments] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -39,15 +33,11 @@ export default function ProjectsPage() {
   async function loadAll() {
     try {
       setLoading(true)
-      const [projRes, membersRes, deptRes, tasksRes] = await Promise.all([
+      const [projRes, tasksRes] = await Promise.all([
         api.get('/Projects'),
-        api.get('/Profile/members'),
-        api.get('/Departments'),
         api.get('/Tasks')
       ])
       setProjects(projRes.data)
-      setMembers(membersRes.data)
-      setDepartments(deptRes.data)
       const activeIds = new Set(projRes.data.map(p => String(p.id)))
       setOrphanTaskCount(countOrphanTasks(tasksRes.data, activeIds))
     } catch (err) {
@@ -65,41 +55,64 @@ export default function ProjectsPage() {
   }
 
   function openEdit(project) {
+    const workflow = (project.taskWorkflow?.length ? project.taskWorkflow : [{ title: '' }]).map(s => ({
+      title: s.title || ''
+    }))
     setEditingId(project.id)
     setForm({
       title: project.title,
       description: project.description || '',
+      showDescription: Boolean(project.description),
       startDate: project.startDate || '',
       dueDate: project.dueDate || '',
-      status: project.status,
-      priority: project.priority,
-      memberUserIds: project.members.map(m => m.userId),
-      departmentIds: project.departments.map(d => d.departmentId)
+      notes: project.notes || '',
+      taskWorkflow: workflow
     })
     setModalOpen(true)
   }
 
-  function toggleId(listKey, id) {
+  function addWorkflowStep() {
+    setForm(prev => ({ ...prev, taskWorkflow: [...prev.taskWorkflow, { title: '' }] }))
+  }
+
+  function updateWorkflowStep(index, title) {
+    setForm(prev => ({
+      ...prev,
+      taskWorkflow: prev.taskWorkflow.map((step, i) => (i === index ? { title } : step))
+    }))
+  }
+
+  function removeWorkflowStep(index) {
+    setForm(prev => ({
+      ...prev,
+      taskWorkflow: prev.taskWorkflow.filter((_, i) => i !== index)
+    }))
+  }
+
+  function moveWorkflowStep(index, direction) {
     setForm(prev => {
-      const set = new Set(prev[listKey])
-      if (set.has(id)) set.delete(id)
-      else set.add(id)
-      return { ...prev, [listKey]: [...set] }
+      const next = [...prev.taskWorkflow]
+      const target = index + direction
+      if (target < 0 || target >= next.length) return prev
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return { ...prev, taskWorkflow: next }
     })
   }
 
   async function saveProject() {
     if (!form.title.trim() || saving) return
 
+    const workflow = form.taskWorkflow
+      .map(s => ({ title: s.title.trim() }))
+      .filter(s => s.title)
+
     const payload = {
       title: form.title.trim(),
-      description: form.description.trim() || null,
+      description: form.showDescription ? form.description.trim() || null : null,
       startDate: form.startDate || null,
       dueDate: form.dueDate || null,
-      status: form.status,
-      priority: form.priority,
-      memberUserIds: form.memberUserIds,
-      departmentIds: form.departmentIds
+      notes: form.notes.trim() || null,
+      taskWorkflow: workflow
     }
 
     try {
@@ -182,7 +195,7 @@ export default function ProjectsPage() {
         <p>Loading projects…</p>
       ) : projects.length === 0 && orphanTaskCount === 0 ? (
         <div style={emptyCard}>
-          <p style={{ margin: 0, color: '#64748b' }}>No projects yet. Create one to group tasks and departments.</p>
+          <p style={{ margin: 0, color: '#64748b' }}>No projects yet. Create one to group tasks.</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '1rem' }}>
@@ -229,9 +242,12 @@ export default function ProjectsPage() {
                   {p.description && (
                     <p className="projects-page-card__desc">{p.description}</p>
                   )}
+                  {p.notes && (
+                    <p className="projects-page-card__desc" style={{ fontStyle: 'italic', color: '#64748b' }}>
+                      {p.notes}
+                    </p>
+                  )}
                   <div className="projects-page-card__badges">
-                    <Badge label={p.status} />
-                    <Badge label={`Priority: ${p.priority}`} muted />
                     {p.dueDate && <Badge label={`Due ${p.dueDate}`} muted />}
                     <Badge label={`${p.openTaskCount} open / ${p.taskCount} tasks`} muted />
                     {p.taskCount > 0 && (
@@ -241,6 +257,11 @@ export default function ProjectsPage() {
                       />
                     )}
                   </div>
+                  {p.taskWorkflow?.length > 0 && (
+                    <p className="projects-page-card__desc" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                      Workflow: {p.taskWorkflow.map(s => s.title).join(' → ')}
+                    </p>
+                  )}
                 </div>
                 <div className="projects-page-card__actions">
                   <Link to={`/my-tasks?project=${p.id}`} className="projects-page-card__link">
@@ -254,31 +275,6 @@ export default function ProjectsPage() {
                   </button>
                 </div>
               </div>
-
-              {(p.members.length > 0 || p.departments.length > 0) && (
-                <div className="projects-page-card__meta">
-                  {p.members.length > 0 && (
-                    <div>
-                      <div style={metaLabel}>PQAD members</div>
-                      <ul style={{ margin: 0, paddingLeft: '1.1rem', color: '#334155' }}>
-                        {p.members.map(m => (
-                          <li key={m.userId}>{m.displayName || m.username}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {p.departments.length > 0 && (
-                    <div>
-                      <div style={metaLabel}>Involved departments</div>
-                      <ul style={{ margin: 0, paddingLeft: '1.1rem', color: '#334155' }}>
-                        {p.departments.map(d => (
-                          <li key={d.departmentId}>{d.name} ({d.code})</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -286,7 +282,7 @@ export default function ProjectsPage() {
 
       {modalOpen && (
         <div style={overlay}>
-          <div style={modal}>
+          <div style={modalWide}>
             <h2 style={{ margin: '0 0 1rem', color: 'var(--upshd-page-heading, var(--upshd-maroon))' }}>
               {editingId ? 'Edit project' : 'New project'}
             </h2>
@@ -294,11 +290,31 @@ export default function ProjectsPage() {
             <label style={labelStyle}>Title</label>
             <input style={inputStyle} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
 
-            <label style={labelStyle}>Description</label>
+            {!form.showDescription ? (
+              <button
+                type="button"
+                style={{ ...ghostBtn, marginTop: '0.75rem' }}
+                onClick={() => setForm({ ...form, showDescription: true })}
+              >
+                + Add description (optional)
+              </button>
+            ) : (
+              <>
+                <label style={labelStyle}>Description (optional)</label>
+                <textarea
+                  style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
+                  value={form.description}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                />
+              </>
+            )}
+
+            <label style={labelStyle}>Notes</label>
             <textarea
-              style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
-              value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
+              style={{ ...inputStyle, minHeight: 64, resize: 'vertical' }}
+              placeholder="Status, urgency, or other free-form notes for this project"
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })}
             />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -312,54 +328,44 @@ export default function ProjectsPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div>
-                <label style={labelStyle}>Status</label>
-                <select style={inputStyle} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                  {PROJECT_STATUSES.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Priority</label>
-                <select style={inputStyle} value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}>
-                  {PRIORITIES.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <label style={labelStyle}>PQAD members</label>
-            <div style={checkList}>
-              {members.map(m => (
-                <label key={m.id} style={checkRow}>
+            <label style={labelStyle}>Task workflow</label>
+            <p style={{ margin: '0 0 0.5rem', color: '#64748b', fontSize: '0.85rem' }}>
+              List tasks in pull order. The first step is created as To Do; later steps start as Waiting.
+              {!editingId && ' Tasks are created when you save a new project.'}
+            </p>
+            <div style={workflowList}>
+              {form.taskWorkflow.map((step, index) => (
+                <div key={index} style={workflowRow}>
+                  <span style={workflowOrder}>{index + 1}</span>
                   <input
-                    type="checkbox"
-                    checked={form.memberUserIds.includes(m.id)}
-                    onChange={() => toggleId('memberUserIds', m.id)}
+                    style={{ ...inputStyle, flex: 1 }}
+                    placeholder={index === 0 ? 'First task to pull' : 'Next workflow step'}
+                    value={step.title}
+                    onChange={e => updateWorkflowStep(index, e.target.value)}
                   />
-                  {m.displayName || m.username}
-                </label>
+                  <button type="button" style={iconBtn} onClick={() => moveWorkflowStep(index, -1)} disabled={index === 0} title="Move up">
+                    ↑
+                  </button>
+                  <button type="button" style={iconBtn} onClick={() => moveWorkflowStep(index, 1)} disabled={index === form.taskWorkflow.length - 1} title="Move down">
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    style={iconBtn}
+                    onClick={() => removeWorkflowStep(index)}
+                    disabled={form.taskWorkflow.length === 1}
+                    title="Remove step"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
+            <button type="button" style={{ ...ghostBtn, marginTop: '0.5rem' }} onClick={addWorkflowStep}>
+              + Add workflow step
+            </button>
 
-            <label style={labelStyle}>Involved departments</label>
-            <div style={checkList}>
-              {departments.map(d => (
-                <label key={d.id} style={checkRow}>
-                  <input
-                    type="checkbox"
-                    checked={form.departmentIds.includes(d.id)}
-                    onChange={() => toggleId('departmentIds', d.id)}
-                  />
-                  {d.name} ({d.code})
-                </label>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.25rem' }}>
               <button type="button" onClick={() => setModalOpen(false)} style={ghostBtn}>
                 Cancel
               </button>
@@ -390,27 +396,21 @@ function Badge({ label, muted }) {
   )
 }
 
-const projectCard = {
+const emptyCard = {
   background: 'var(--upshd-surface, #fff)',
   borderRadius: 12,
-  padding: '1.25rem 1.5rem',
+  padding: '2.5rem',
+  textAlign: 'center',
   boxShadow: '0 2px 8px rgba(0,0,0,.06)'
 }
 
-const emptyCard = {
-  ...projectCard,
-  textAlign: 'center',
-  padding: '2.5rem'
-}
-
-const metaLabel = { fontWeight: 700, color: '#64748b', marginBottom: '0.35rem', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em' }
 const overlay = { position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '1rem' }
-const modal = { background: 'var(--upshd-surface, #fff)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,.25)' }
+const modalWide = { background: 'var(--upshd-surface, #fff)', borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 560, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,.25)' }
 const labelStyle = { display: 'block', marginBottom: '0.35rem', marginTop: '0.75rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }
 const inputStyle = { width: '100%', padding: '0.6rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.95rem', boxSizing: 'border-box' }
-const checkList = { maxHeight: 140, overflow: 'auto', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.5rem 0.75rem' }
-const checkRow = { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0', cursor: 'pointer', fontSize: '0.9rem' }
+const workflowList = { display: 'flex', flexDirection: 'column', gap: '0.5rem' }
+const workflowRow = { display: 'flex', alignItems: 'center', gap: '0.35rem' }
+const workflowOrder = { width: 22, textAlign: 'center', fontWeight: 700, color: '#64748b', flexShrink: 0 }
+const iconBtn = { padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', lineHeight: 1 }
 const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: 'var(--upshd-maroon)', color: '#fff', fontWeight: 600, cursor: 'pointer' }
 const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
-const dangerBtn = { ...ghostBtn, color: '#dc2626', borderColor: '#fecaca' }
-const linkBtn = { ...ghostBtn, textDecoration: 'none', color: 'var(--upshd-page-link, var(--upshd-maroon))', fontWeight: 600 }

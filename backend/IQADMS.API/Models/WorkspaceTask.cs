@@ -8,6 +8,8 @@ public class WorkspaceTask : BaseEntity
     public string? Description { get; set; }
     public string Status { get; set; } = "To Do";
     public string Priority { get; set; } = "Medium";
+    public string? Notes { get; set; }
+    public int? WorkflowOrder { get; set; }
     public DateOnly? DueDate { get; set; }
 
     public Guid? ProjectId { get; set; }
@@ -15,6 +17,7 @@ public class WorkspaceTask : BaseEntity
 
     public Guid? RelatedDepartmentId { get; set; }
     public Department? RelatedDepartment { get; set; }
+    public string? RelatedDepartmentOrOrg { get; set; }
 
     public Guid? AssignedToUserId { get; set; }
     public User? AssignedToUser { get; set; }

@@ -5,11 +5,11 @@ public class TaskReportRowResponse
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
-    public string Priority { get; set; } = string.Empty;
+    public string? Notes { get; set; }
     public DateOnly? DueDate { get; set; }
     public string? AssigneeName { get; set; }
     public string? ProjectTitle { get; set; }
-    public string? RelatedDepartmentName { get; set; }
+    public string? RelatedDepartmentOrOrg { get; set; }
     public DateTime? CompletedAt { get; set; }
     public DateTime CreatedAt { get; set; }
 }

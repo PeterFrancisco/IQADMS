@@ -6,7 +6,8 @@ public class TaskResponse
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string Status { get; set; } = string.Empty;
-    public string Priority { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+    public int? WorkflowOrder { get; set; }
     public DateOnly? DueDate { get; set; }
 
     public Guid? ProjectId { get; set; }
@@ -14,6 +15,7 @@ public class TaskResponse
 
     public Guid? RelatedDepartmentId { get; set; }
     public string? RelatedDepartmentName { get; set; }
+    public string? RelatedDepartmentOrOrg { get; set; }
 
     public Guid? AssignedToUserId { get; set; }
     public string? AssignedToName { get; set; }

@@ -17,8 +17,7 @@ function computeStats(tasks) {
 
 export default function ProjectTaskBoardCard({
   projectTitle,
-  projectStatus,
-  projectPriority,
+  projectNotes,
   tasks,
   children,
   onOpenFocus,
@@ -45,13 +44,12 @@ export default function ProjectTaskBoardCard({
           <div>
             <h2 className="project-task-board-card__title">{projectTitle}</h2>
             {subtitle && <p className="project-task-board-card__subtitle">{subtitle}</p>}
+            {projectNotes && (
+              <p className="project-task-board-card__subtitle" style={{ fontStyle: 'italic' }}>
+                {projectNotes}
+              </p>
+            )}
             <div className="project-task-board-card__badges">
-              {projectStatus && <span className="project-task-board-card__badge">{projectStatus}</span>}
-              {projectPriority && (
-                <span className="project-task-board-card__badge project-task-board-card__badge--muted">
-                  {projectPriority}
-                </span>
-              )}
               <span className="project-task-board-card__badge project-task-board-card__badge--muted">
                 {stats.done}/{stats.total} submitted or done
               </span>
@@ -87,6 +85,10 @@ export default function ProjectTaskBoardCard({
         <span className="project-task-board-card__chip">
           <span className="project-task-board-card__dot" style={{ background: 'var(--upshd-maroon)' }} />
           To do {tasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length}
+        </span>
+        <span className="project-task-board-card__chip">
+          <span className="project-task-board-card__dot" style={{ background: '#94a3b8' }} />
+          Waiting {tasks.filter(t => t.status === 'Waiting').length}
         </span>
         <span className="project-task-board-card__chip">
           <span className="project-task-board-card__dot" style={{ background: '#f59e0b' }} />

@@ -21,8 +21,9 @@ public class ProjectResponse
     public string? Description { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? DueDate { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public string Priority { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+    public string? TaskWorkflowJson { get; set; }
+    public List<ProjectWorkflowStepDto> TaskWorkflow { get; set; } = new();
     public int TaskCount { get; set; }
     public int OpenTaskCount { get; set; }
     /// <summary>Tasks in Submitted, Completed, or Done (monitoring progress).</summary>
@@ -33,16 +34,19 @@ public class ProjectResponse
     public DateTime CreatedAt { get; set; }
 }
 
+public class ProjectWorkflowStepDto
+{
+    public string Title { get; set; } = string.Empty;
+}
+
 public class CreateProjectRequest
 {
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? DueDate { get; set; }
-    public string Status { get; set; } = "Planning";
-    public string Priority { get; set; } = "Medium";
-    public List<Guid> MemberUserIds { get; set; } = new();
-    public List<Guid> DepartmentIds { get; set; } = new();
+    public string? Notes { get; set; }
+    public List<ProjectWorkflowStepDto> TaskWorkflow { get; set; } = new();
 }
 
 public class UpdateProjectRequest : CreateProjectRequest

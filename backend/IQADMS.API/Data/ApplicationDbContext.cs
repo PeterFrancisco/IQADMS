@@ -206,6 +206,22 @@ public class ApplicationDbContext : DbContext
             .HasMaxLength(20);
 
         modelBuilder.Entity<Project>()
+            .Property(p => p.Notes)
+            .HasMaxLength(2000);
+
+        modelBuilder.Entity<Project>()
+            .Property(p => p.TaskWorkflowJson)
+            .HasMaxLength(4000);
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .Property(t => t.Notes)
+            .HasMaxLength(2000);
+
+        modelBuilder.Entity<WorkspaceTask>()
+            .Property(t => t.RelatedDepartmentOrOrg)
+            .HasMaxLength(300);
+
+        modelBuilder.Entity<Project>()
             .HasOne(p => p.CreatedByUser)
             .WithMany()
             .HasForeignKey(p => p.CreatedByUserId)
