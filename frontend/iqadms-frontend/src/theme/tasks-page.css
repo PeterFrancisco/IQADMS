@@ -167,7 +167,7 @@
   gap: 0.5rem;
   padding: 0.6rem 1rem;
   border-radius: 10px;
-  background: #9e1b32;
+  background: var(--upshd-maroon);
   color: #fff;
   font-weight: 600;
   text-decoration: none;
@@ -175,7 +175,7 @@
 }
 
 .task-gdrive-cta:hover {
-  filter: brightness(1.06);
+  background: var(--upshd-maroon-dark);
 }
 
 .tasks-admin-toolbar {

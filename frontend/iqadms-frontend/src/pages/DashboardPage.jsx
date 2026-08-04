@@ -26,8 +26,8 @@ const TASK_POLL_MS = 10000
 const STATUS_OPTIONS = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
 const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical']
 const STATUS_COLORS = {
-  'To Do': '#7a0019',
-  Planning: '#7a0019',
+  'To Do': 'var(--upshd-maroon)',
+  Planning: 'var(--upshd-maroon)',
   'In Progress': '#f59e0b',
   Submitted: '#2563eb',
   Returned: '#c2410c',
@@ -992,12 +992,12 @@ export default function DashboardPage() {
             ? 'One board per project: filter, sort, and scroll each table—or open Focus for a single project.'
             : 'Your assignments grouped by project—filter, search, and open a project to focus on one board.'}
           {filterProject && (
-            <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
+            <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: 'var(--upshd-page-heading, var(--upshd-maroon))' }}>
               Filter: project · {filterProject.title}
             </span>
           )}
           {filterDepartment && (
-            <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: '#7a0019' }}>
+            <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: 'var(--upshd-page-heading, var(--upshd-maroon))' }}>
               Filter: department · {filterDepartment.name}
             </span>
           )}
@@ -1101,11 +1101,11 @@ export default function DashboardPage() {
         )}
 
         <div className="tasks-stats-grid">
-          <MiniStat label={isAdmin ? 'Total Tasks' : 'My tasks'} value={statsTasks.length} color="#9e1b32" />
+          <MiniStat label={isAdmin ? 'Total Tasks' : 'My tasks'} value={statsTasks.length} color="var(--upshd-maroon-light)" />
           {statsTasks.length > 0 && (
             <MiniStat label="Work progress" value={progressLabel} color="#0d9488" />
           )}
-          <MiniStat label="To Do" value={statsTasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length} color="#7a0019" />
+          <MiniStat label="To Do" value={statsTasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length} color="var(--upshd-maroon)" />
           <MiniStat label="In Progress" value={statsTasks.filter(t => t.status === 'In Progress').length} color="#f59e0b" />
           <MiniStat label="Submitted" value={statsTasks.filter(t => t.status === 'Submitted').length} color="#2563eb" />
           {!isAdmin && (
@@ -1128,7 +1128,7 @@ export default function DashboardPage() {
                   ) : (
                     <>
                       No projects yet.{' '}
-                      <Link to="/projects" style={{ color: '#7a0019', fontWeight: 600 }}>
+                      <Link to="/projects" style={{ color: 'var(--upshd-page-link, var(--upshd-maroon))', fontWeight: 600 }}>
                         Create a project
                       </Link>{' '}
                       to add task boards.
@@ -1427,7 +1427,7 @@ export default function DashboardPage() {
                 ) : (
                   taskComments.map(c => (
                     <div key={c.id} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                      <strong style={{ color: '#7a0019' }}>{c.authorName}</strong>
+                      <strong style={{ color: 'var(--upshd-page-heading, var(--upshd-maroon))' }}>{c.authorName}</strong>
                       <span style={{ color: '#94a3b8', marginLeft: 8, fontSize: '0.8rem' }}>
                         {new Date(c.createdAt).toLocaleString()}
                       </span>
@@ -1662,6 +1662,6 @@ function MiniStat({ label, value, color }) {
 
 const inputStyle = { flex: 1, padding: '0.6rem 0.8rem', borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', fontSize: '0.95rem', background: 'var(--upshd-input-bg, var(--upshd-surface, #fff))', color: 'var(--upshd-text, #1f2937)' }
 const selectStyle = { width: '100%', padding: '0.5rem 0.6rem', borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', fontSize: '0.9rem', background: 'var(--upshd-input-bg, var(--upshd-surface, #fff))', color: 'var(--upshd-text, #1f2937)' }
-const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: 'var(--upshd-maroon, #7a0019)', color: '#fff', fontWeight: 600, cursor: 'pointer' }
+const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: 'var(--upshd-maroon)', color: '#fff', fontWeight: 600, cursor: 'pointer' }
 const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', background: 'var(--upshd-surface, #fff)', color: 'var(--upshd-text, #1f2937)', cursor: 'pointer' }
 const labelStyle = { display: 'block', marginBottom: '0.35rem', fontWeight: 600, color: 'var(--upshd-text-muted, #374151)', fontSize: '0.9rem' }

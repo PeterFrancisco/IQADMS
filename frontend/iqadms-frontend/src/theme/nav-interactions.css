@@ -1,0 +1,196 @@
+/* Shared nav underline + theme-aware button utilities */
+
+:root,
+html[data-theme='original'],
+html[data-theme='light'] {
+  --upshd-nav-underline: var(--upshd-maroon-light, #9e1b32);
+  --upshd-nav-underline-hover: var(--upshd-maroon, #7a0019);
+  --upshd-nav-underline-active: var(--upshd-maroon-dark, #5c0012);
+  --upshd-sidebar-nav-underline: rgba(255, 255, 255, 0.5);
+  --upshd-sidebar-nav-underline-hover: rgba(255, 255, 255, 0.85);
+  --upshd-sidebar-nav-underline-active: var(--upshd-gold, #fbbf24);
+}
+
+html[data-theme='dark'] {
+  --upshd-nav-underline: var(--upshd-link-accent, var(--upshd-maroon-light));
+  --upshd-nav-underline-hover: var(--upshd-heading-accent, var(--upshd-maroon-light));
+  --upshd-nav-underline-active: var(--upshd-gold, var(--upshd-link-accent));
+  --upshd-sidebar-nav-underline: rgba(255, 255, 255, 0.35);
+  --upshd-sidebar-nav-underline-hover: var(--upshd-link-accent, rgba(255, 255, 255, 0.75));
+  --upshd-sidebar-nav-underline-active: var(--upshd-gold, #d4b896);
+}
+
+/* —— Horizontal text nav links —— */
+.iqadms-nav-link,
+.landing-nav-scroll a {
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 0.2rem;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.iqadms-nav-link:hover,
+.landing-nav-scroll a:hover {
+  color: var(--upshd-nav-underline-hover) !important;
+  border-bottom-color: var(--upshd-nav-underline);
+}
+
+.iqadms-nav-link:active,
+.landing-nav-scroll a:active,
+.iqadms-nav-link.active,
+.landing-nav-scroll a.active {
+  color: var(--upshd-nav-underline-active) !important;
+  border-bottom-color: var(--upshd-nav-underline-active);
+  font-weight: 600;
+}
+
+.iqadms-nav-link:focus-visible,
+.landing-nav-scroll a:focus-visible {
+  outline: 2px solid var(--upshd-nav-underline);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Settings section / sub tab nav */
+.settings-section-btn,
+.settings-subtab {
+  border-radius: 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding-bottom: 0.45rem;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.settings-section-btn:hover,
+.settings-subtab:hover {
+  color: var(--upshd-nav-underline-hover);
+  border-bottom-color: var(--upshd-nav-underline);
+  background: var(--upshd-maroon-muted, rgba(243, 232, 235, 0.45));
+}
+
+.settings-section-btn:active,
+.settings-subtab:active {
+  color: var(--upshd-nav-underline-active);
+  border-bottom-color: var(--upshd-nav-underline-active);
+}
+
+.settings-section-btn.active,
+.settings-subtab.active {
+  color: var(--upshd-page-heading, var(--upshd-maroon));
+  border-bottom-color: var(--upshd-nav-underline-active);
+  background: var(--upshd-maroon-muted, #f3e8eb);
+  font-weight: 700;
+}
+
+html[data-theme='dark'] .settings-section-btn.active,
+html[data-theme='dark'] .settings-subtab.active {
+  background: var(--upshd-maroon-muted);
+  color: var(--upshd-heading-accent);
+}
+
+/* —— Sidebar nav —— */
+.sidebar .nav-item {
+  border-bottom: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.sidebar .nav-item:hover {
+  border-bottom-color: var(--upshd-sidebar-nav-underline-hover);
+}
+
+.sidebar .nav-item:active {
+  border-bottom-color: var(--upshd-sidebar-nav-underline-active);
+  transform: translateY(1px);
+}
+
+.sidebar .nav-item.active {
+  border-bottom-color: var(--upshd-sidebar-nav-underline-active);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+/* —— Theme-aware primary / ghost buttons (class or shared patterns) —— */
+.settings-primary-btn,
+.docs-btn-primary,
+.login-submit {
+  background: var(--upshd-maroon) !important;
+  border-color: var(--upshd-maroon) !important;
+  color: #fff !important;
+}
+
+.upshd-btn-primary:hover:not(:disabled),
+.settings-primary-btn:hover:not(:disabled),
+.docs-btn-primary:hover:not(:disabled),
+.login-submit:hover:not(:disabled) {
+  background: var(--upshd-maroon-dark) !important;
+  border-color: var(--upshd-maroon-dark) !important;
+}
+
+.upshd-btn-primary:active:not(:disabled),
+.settings-primary-btn:active:not(:disabled),
+.docs-btn-primary:active:not(:disabled),
+.login-submit:active:not(:disabled) {
+  background: var(--upshd-maroon-dark) !important;
+  transform: translateY(1px);
+}
+
+.settings-accent-btn.active {
+  box-shadow: inset 0 -2px 0 var(--upshd-nav-underline-active);
+}
+
+.upshd-btn-outline {
+  background: var(--upshd-surface);
+  color: var(--upshd-maroon);
+  border: 1px solid var(--upshd-maroon);
+}
+
+.upshd-btn-outline:hover {
+  background: var(--upshd-maroon-muted);
+  border-color: var(--upshd-maroon-dark);
+  color: var(--upshd-maroon-dark);
+}
+
+.upshd-btn-ghost {
+  background: var(--upshd-surface);
+  color: var(--upshd-text);
+  border: 1px solid var(--upshd-border);
+}
+
+.upshd-btn-ghost:hover {
+  border-color: var(--upshd-maroon-light);
+  color: var(--upshd-page-link, var(--upshd-maroon));
+}
+
+/* Docs folder active state */
+.docs-folder-row.active .docs-folder-btn {
+  background: var(--upshd-maroon-muted);
+  color: var(--upshd-maroon);
+  box-shadow: inset 0 -2px 0 var(--upshd-nav-underline-active);
+}
+
+.docs-btn-sm.primary {
+  background: var(--upshd-maroon-muted);
+  color: var(--upshd-maroon);
+}
+
+.docs-btn-sm.primary:hover {
+  background: var(--upshd-maroon-muted);
+  color: var(--upshd-maroon-dark);
+  box-shadow: inset 0 -2px 0 var(--upshd-nav-underline);
+}
+
+.task-gdrive-cta {
+  background: var(--upshd-maroon) !important;
+}
+
+.task-gdrive-cta:hover {
+  background: var(--upshd-maroon-dark) !important;
+}

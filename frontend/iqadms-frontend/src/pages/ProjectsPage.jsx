@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import api from '../services/api'
-import { upshd } from '../theme/upshd'
 import { pageTitleStyle } from '../theme/pageStyles'
 import '../theme/projects-page.css'
 import { countOrphanTasks, effectiveTaskSectionId, NO_PROJECT_SECTION } from '../utils/notificationLink'
@@ -288,7 +287,7 @@ export default function ProjectsPage() {
       {modalOpen && (
         <div style={overlay}>
           <div style={modal}>
-            <h2 style={{ margin: '0 0 1rem', color: upshd.maroon }}>
+            <h2 style={{ margin: '0 0 1rem', color: 'var(--upshd-page-heading, var(--upshd-maroon))' }}>
               {editingId ? 'Edit project' : 'New project'}
             </h2>
 
@@ -382,7 +381,7 @@ function Badge({ label, muted }) {
         padding: '0.2rem 0.55rem',
         borderRadius: 999,
         background: muted ? '#f1f5f9' : '#fde8ec',
-        color: muted ? '#475569' : upshd.maroon,
+        color: muted ? '#475569' : 'var(--upshd-page-heading, var(--upshd-maroon))',
         fontWeight: 600
       }}
     >
@@ -411,7 +410,7 @@ const labelStyle = { display: 'block', marginBottom: '0.35rem', marginTop: '0.75
 const inputStyle = { width: '100%', padding: '0.6rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.95rem', boxSizing: 'border-box' }
 const checkList = { maxHeight: 140, overflow: 'auto', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.5rem 0.75rem' }
 const checkRow = { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0', cursor: 'pointer', fontSize: '0.9rem' }
-const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: upshd.maroon, color: '#fff', fontWeight: 600, cursor: 'pointer' }
-const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid #cbd5e1', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
+const primaryBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: 'none', background: 'var(--upshd-maroon)', color: '#fff', fontWeight: 600, cursor: 'pointer' }
+const ghostBtn = { padding: '0.6rem 1rem', borderRadius: 8, border: '1px solid var(--upshd-border, #cbd5e1)', background: 'var(--upshd-surface, #fff)', cursor: 'pointer' }
 const dangerBtn = { ...ghostBtn, color: '#dc2626', borderColor: '#fecaca' }
-const linkBtn = { ...ghostBtn, textDecoration: 'none', color: upshd.maroon, fontWeight: 600 }
+const linkBtn = { ...ghostBtn, textDecoration: 'none', color: 'var(--upshd-page-link, var(--upshd-maroon))', fontWeight: 600 }

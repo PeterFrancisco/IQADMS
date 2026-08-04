@@ -62,7 +62,7 @@
 .docs-btn-primary {
   border: none;
   border-radius: 10px;
-  background: #9e1b32;
+  background: var(--upshd-maroon);
   color: #fff;
   font-weight: 600;
   font-size: 0.85rem;
@@ -71,7 +71,7 @@
 }
 
 .docs-btn-primary:hover {
-  filter: brightness(1.05);
+  background: var(--upshd-maroon-dark);
 }
 
 .docs-folder-list {
@@ -88,8 +88,8 @@
 }
 
 .docs-folder-row.active .docs-folder-btn {
-  background: #fef2f2;
-  color: #7a0019;
+  background: var(--upshd-maroon-muted);
+  color: var(--upshd-maroon);
 }
 
 .docs-folder-btn {
@@ -185,8 +185,8 @@
 }
 
 .docs-dropzone.drag-over {
-  border-color: #9e1b32;
-  background: #fef2f2;
+  border-color: var(--upshd-maroon-light);
+  background: var(--upshd-maroon-muted);
 }
 
 .docs-dropzone-title {
@@ -228,7 +228,7 @@
 .docs-file-name {
   flex: 1;
   font-weight: 600;
-  color: #7a0019;
+  color: var(--upshd-page-link, var(--upshd-maroon));
   text-decoration: none;
   word-break: break-word;
 }
@@ -291,9 +291,9 @@
 }
 
 .docs-sidebar-trash.active {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #9e1b32;
+  background: var(--upshd-maroon-muted);
+  border-color: var(--upshd-maroon-light);
+  color: var(--upshd-maroon);
 }
 
 .docs-file-row-actions {

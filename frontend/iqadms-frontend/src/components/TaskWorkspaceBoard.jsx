@@ -7,8 +7,8 @@ import '../theme/workspace-board.css'
 
 const STATUS_OPTIONS_ADMIN = ['To Do', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
 const STATUS_COLORS = {
-  'To Do': '#7a0019',
-  Planning: '#7a0019',
+  'To Do': 'var(--upshd-maroon)',
+  Planning: 'var(--upshd-maroon)',
   'In Progress': '#f59e0b',
   Submitted: '#2563eb',
   Returned: '#c2410c',

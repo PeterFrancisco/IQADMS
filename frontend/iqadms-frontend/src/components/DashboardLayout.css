@@ -113,8 +113,8 @@
 }
 
 .nav-item.active {
-  background: var(--upshd-maroon-light, #9e1b32);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
 }
 
 .nav-item-icon {
@@ -477,7 +477,7 @@
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: #7a0019;
+  background: var(--upshd-maroon);
   color: #fff;
   display: inline-flex;
   align-items: center;

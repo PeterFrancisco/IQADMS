@@ -108,7 +108,7 @@
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: #7a0019;
+  background: var(--upshd-maroon);
   color: #fff;
   display: inline-flex;
   align-items: center;
@@ -231,10 +231,18 @@
   padding: 0.85rem;
   border: none;
   border-radius: 10px;
-  background: #7a0019;
+  background: var(--upshd-maroon);
   color: white;
   font-weight: 600;
   cursor: pointer;
+}
+
+.login-submit:hover:not(:disabled) {
+  background: var(--upshd-maroon-dark);
+}
+
+.login-submit:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .login-submit:disabled {
@@ -255,10 +263,21 @@
 .login-footer button {
   background: none;
   border: none;
-  color: #7a0019;
+  color: var(--upshd-page-link, var(--upshd-maroon));
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.login-footer button:hover {
+  color: var(--upshd-maroon-dark);
+  border-bottom-color: var(--upshd-nav-underline, var(--upshd-maroon-light));
+}
+
+.login-footer button:active {
+  border-bottom-color: var(--upshd-nav-underline-active, var(--upshd-maroon-dark));
 }
 
 .login-footer .login-register {

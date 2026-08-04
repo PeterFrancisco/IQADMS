@@ -385,7 +385,7 @@ export default function DocumentsPage() {
                   {' · '}
                   <button
                     type="button"
-                    style={{ border: 'none', background: 'none', color: '#9e1b32', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    style={{ border: 'none', background: 'none', color: 'var(--upshd-page-link, var(--upshd-maroon))', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                     onClick={() => openCreateFolder(selectedFolder)}
                   >
                     Add subfolder

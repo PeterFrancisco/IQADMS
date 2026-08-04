@@ -102,9 +102,27 @@
   background: var(--upshd-maroon-dark);
 }
 
+.landing-nav a:hover {
+  color: var(--upshd-nav-underline-hover, var(--upshd-maroon));
+}
+
 .landing-btn-ghost {
   background: transparent;
   color: var(--upshd-maroon);
+  border-bottom: 2px solid transparent;
+  border-radius: 8px;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.15s;
+}
+
+.landing-btn-ghost:hover {
+  border-bottom-color: var(--upshd-nav-underline, var(--upshd-maroon-light));
+}
+
+.landing-btn-ghost:active {
+  border-bottom-color: var(--upshd-nav-underline-active, var(--upshd-maroon));
 }
 
 .landing-btn-outline {

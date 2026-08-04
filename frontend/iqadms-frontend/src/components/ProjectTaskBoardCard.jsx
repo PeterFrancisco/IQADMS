@@ -85,7 +85,7 @@ export default function ProjectTaskBoardCard({
 
       <div className="project-task-board-card__chips">
         <span className="project-task-board-card__chip">
-          <span className="project-task-board-card__dot" style={{ background: '#7a0019' }} />
+          <span className="project-task-board-card__dot" style={{ background: 'var(--upshd-maroon)' }} />
           To do {tasks.filter(t => t.status === 'To Do' || t.status === 'Planning').length}
         </span>
         <span className="project-task-board-card__chip">
