@@ -86,7 +86,8 @@ export default function CalendarPage() {
   const eventsByDate = useMemo(() => {
     const map = {}
     filteredEvents.forEach(e => {
-      const key = e.date
+      const key = typeof e.date === 'string' ? e.date.slice(0, 10) : dateKey(e.date)
+      if (!key) return
       if (!map[key]) map[key] = []
       map[key].push(e)
     })

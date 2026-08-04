@@ -86,7 +86,7 @@ export default function AnnouncementsPage() {
     })
   }, [items, timeFilter, categoryFilter, search])
 
-  const upcomingCount = useMemo(() => items.filter(isAnnouncementUpcoming).length, [items])
+  const upcomingCount = useMemo(() => items.filter(a => isAnnouncementUpcoming(a)).length, [items])
 
   function openCreate() {
     setEditingId(null)

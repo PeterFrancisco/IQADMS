@@ -20,10 +20,16 @@ export const ANNOUNCEMENT_CATEGORY_COLORS = {
 }
 
 export function dateKey(d) {
+  if (typeof d === 'string') return d.slice(0, 10)
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return ''
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+export function todayDateKey() {
+  return dateKey(new Date())
 }
 
 export function parseDateKey(key) {
@@ -71,12 +77,13 @@ export function eventTypeLabel(event) {
   return event.eventKind || event.itemType
 }
 
-export function isAnnouncementPast(announcement, today = new Date()) {
-  const todayKey = dateKey(today)
+export function isAnnouncementPast(announcement, today) {
+  const todayKey = today instanceof Date ? dateKey(today) : todayDateKey()
   const end = announcement.endDate || announcement.startDate
-  return end < todayKey
+  if (!end) return false
+  return String(end).slice(0, 10) < todayKey
 }
 
-export function isAnnouncementUpcoming(announcement, today = new Date()) {
+export function isAnnouncementUpcoming(announcement, today) {
   return !isAnnouncementPast(announcement, today)
 }
