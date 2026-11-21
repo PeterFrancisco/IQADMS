@@ -53,7 +53,7 @@ export function formatDateOnly(iso) {
 export function formatDateRange(startDate, endDate) {
   if (!startDate) return ''
   if (endDate && endDate !== startDate) {
-    return `${formatDateOnly(startDate)} – ${formatDateOnly(endDate)}`
+    return `${formatDateOnly(startDate)} to ${formatDateOnly(endDate)}`
   }
   return formatDateOnly(startDate)
 }

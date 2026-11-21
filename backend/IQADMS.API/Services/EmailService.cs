@@ -181,7 +181,7 @@ How to register:
 
 If you did not expect this invitation, you can safely ignore this email.
 
-— IQADMS
+IQADMS
 """;
 
         var htmlBody = BuildRegistrationInviteHtml(
@@ -224,7 +224,7 @@ Open this link to choose a new password (valid for 24 hours):
 
 If you did not request a reset, contact your administrator.
 
-— IQADMS · PQAD · UPSHD Molino
+IQADMS, PQAD, UPSHD Molino
 """;
 
         var htmlBody = BuildBrandedEmailHtml(
@@ -673,7 +673,7 @@ If you did not request a reset, contact your administrator.
         var to = assigneeEmail.Trim();
 
         var dueLine = dueDate.HasValue ? dueDate.Value.ToString("yyyy-MM-dd") : "Not set";
-        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "—" : projectTitle.Trim();
+        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "None" : projectTitle.Trim();
         var details = string.IsNullOrWhiteSpace(taskDescription)
             ? "(No additional details.)"
             : taskDescription.Trim();
@@ -683,7 +683,7 @@ If you did not request a reset, contact your administrator.
         var body = $"""
 Hello {assigneeGreetingName},
 
-{actorName} has assigned a task to you. Please review and comply.
+{actorName} assigned you a task. Open it in IQADMS when you can.
 
 Task: {taskTitle}
 Project: {projectLine}
@@ -701,7 +701,7 @@ IQADMS
 
         var htmlBody = BuildTaskActionHtml(
             $"Hello {System.Net.WebUtility.HtmlEncode(assigneeGreetingName)},",
-            $"<p><strong>{System.Net.WebUtility.HtmlEncode(actorName)}</strong> has assigned a task to you. Please review and comply.</p>" +
+            $"<p><strong>{System.Net.WebUtility.HtmlEncode(actorName)}</strong> assigned you a task. Open it in IQADMS when you can.</p>" +
             $"<p><strong>Task:</strong> {System.Net.WebUtility.HtmlEncode(taskTitle)}<br />" +
             $"<strong>Project:</strong> {System.Net.WebUtility.HtmlEncode(projectLine)}<br />" +
             $"<strong>Due date:</strong> {System.Net.WebUtility.HtmlEncode(dueLine)}</p>" +
@@ -716,7 +716,7 @@ IQADMS
             await SendAsync(
                 from,
                 to,
-                "IQADMS — New task assigned",
+                "IQADMS: New task assigned",
                 body,
                 htmlBody,
                 GetFromDisplayName());
@@ -758,7 +758,7 @@ IQADMS
 
         var to = adminEmail.Trim();
 
-        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "—" : projectTitle.Trim();
+        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "None" : projectTitle.Trim();
 
         var body = $"""
 Hello {adminGreetingName},
@@ -791,7 +791,7 @@ IQADMS
             await SendAsync(
                 from,
                 to,
-                "IQADMS — Task submitted for review",
+                "IQADMS: Task submitted for review",
                 body,
                 htmlBody,
                 GetFromDisplayName());
@@ -826,10 +826,10 @@ IQADMS
             return (false, "Recipient has no email address.");
 
         var to = recipientEmail.Trim();
-        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "—" : projectTitle.Trim();
+        var projectLine = string.IsNullOrWhiteSpace(projectTitle) ? "None" : projectTitle.Trim();
         var subject = notifyAdmins
-            ? "IQADMS — Task file uploaded"
-            : "IQADMS — Reference file on your task";
+            ? "IQADMS: Task file uploaded"
+            : "IQADMS: Reference file on your task";
         var intro = notifyAdmins
             ? $"<strong>{System.Net.WebUtility.HtmlEncode(actorName)}</strong> uploaded a file on a task assigned to them."
             : $"<strong>{System.Net.WebUtility.HtmlEncode(actorName)}</strong> added a reference file to your task.";
@@ -921,7 +921,7 @@ Message:
 
 Review in IQADMS under Settings → Account settings → Submitted reports (admin).
 
-— IQADMS
+IQADMS
 """;
 
         var settingsUrl = $"{GetPublicSiteUrl().TrimEnd('/')}/settings?section=account&tab=feedback";

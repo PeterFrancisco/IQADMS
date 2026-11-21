@@ -120,7 +120,7 @@ export function AdminManageUsersContent() {
   }
 
   function inviteLabel(item) {
-    if (item.isRegistered) return '—'
+    if (item.isRegistered) return 'Registered'
     if (item.lastInviteError) return 'Failed'
     if (item.lastInviteSentAt) return 'Sent'
     return 'Not sent'
@@ -248,7 +248,7 @@ export function AdminManageUsersContent() {
                             <Badge label={inviteLabel(item)} color={inviteColor(item)} />
                           </span>
                         ) : (
-                          <span style={{ color: '#94a3b8' }}>—</span>
+                          <span style={{ color: '#94a3b8' }}>None</span>
                         )}
                       </td>
                       <td style={tdStyle}>

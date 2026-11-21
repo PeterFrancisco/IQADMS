@@ -12,7 +12,7 @@ export default function IqadmsLogo({
   return (
     <div
       className={`iqadms-logo iqadms-logo--${wordmarkLayout} ${className}`.trim()}
-      aria-label="IQADMS — PQAD UPSHD Molino"
+      aria-label="IQADMS, PQAD UPSHD Molino"
     >
       <img
         className="iqadms-logo-mark"

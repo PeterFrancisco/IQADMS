@@ -12,7 +12,9 @@ body,
 }
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: var(--iq-font-sans, system-ui, sans-serif);
   background: var(--upshd-bg, #f7f4f5);
   color: var(--upshd-text, #1f2937);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }

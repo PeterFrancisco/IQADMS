@@ -1005,15 +1005,15 @@ export default function DashboardPage() {
               <ul>
                 <li>Each project has its own board. Open <strong>Focus</strong> to work on one project at a time.</li>
                 <li>Use <strong>Add task</strong> on a project board to create assignments.</li>
-                <li>Review <strong>Submitted</strong> tasks from the task detail panel — approve or return with feedback.</li>
+                <li>Review <strong>Submitted</strong> tasks in the detail panel. Approve or return with feedback.</li>
               </ul>
             </HintButton>
           )}
         </div>
         <p className="tasks-page-sub">
           {isAdmin
-            ? 'One board per project: filter, sort, and scroll each table—or open Focus for a single project.'
-            : 'Your assignments grouped by project—filter, search, and open a project to focus on one board.'}
+            ? 'One board per project: filter, sort, and scroll each table, or open Focus for one project.'
+            : 'Your work grouped by project. Filter, search, and open a project to focus on one board.'}
           {filterProject && (
             <span style={{ display: 'block', marginTop: '0.35rem', fontWeight: 600, color: 'var(--upshd-page-heading, var(--upshd-maroon))' }}>
               Filter: project · {filterProject.title}
@@ -1388,7 +1388,7 @@ export default function DashboardPage() {
               {isAdmin && selectedTask.status === 'Submitted' && (
                 <>
                   <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.9rem' }}>
-                    This task is <strong>submitted for review</strong> — not completed. Send the assignee a personal message; they are notified in-app and by email when you return or approve.
+                    This task is <strong>submitted for review</strong>, not completed. Message the assignee if you need more detail. They get an in-app alert and email when you return or approve.
                   </p>
                   <label style={labelStyle}>Message when approving (optional)</label>
                   <textarea
@@ -1607,7 +1607,7 @@ export default function DashboardPage() {
 
           <LabelWithHint
             label="Notes"
-            hint="Use for urgency, context, or informal status — visible in the task detail panel."
+            hint="Urgency, context, or informal status. Shown in the task detail panel."
           >
             <textarea
               style={{ ...inputStyle, width: '100%', minHeight: 56, maxHeight: 120, boxSizing: 'border-box', resize: 'vertical' }}

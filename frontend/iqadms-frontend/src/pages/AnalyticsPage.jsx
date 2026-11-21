@@ -4,6 +4,7 @@ import api from '../services/api'
 import { downloadCsv, formatBytes } from '../utils/csvExport'
 import { appDialog } from '../utils/appDialog'
 import '../theme/analytics-page.css'
+import { EMPTY_CELL, EMPTY_DATE } from '../utils/emptyDisplay'
 
 function monthInputValue(year, month) {
   return `${year}-${String(month).padStart(2, '0')}`
@@ -15,7 +16,7 @@ function parseMonthInput(value) {
 }
 
 function formatDateTime(iso) {
-  if (!iso) return '—'
+  if (!iso) return EMPTY_DATE
   try {
     return new Date(iso).toLocaleString(undefined, {
       dateStyle: 'medium',
@@ -149,7 +150,7 @@ export default function AnalyticsPage() {
           <div>
             <h1 className="analytics-page__title">Analytics</h1>
             <p className="analytics-page__sub">
-              Monthly reports and live monitoring for tasks and documents — system-wide view for PQAD administrators.
+              Task and document counts for PQAD admins. Pick a month, review the tables, export CSV if needed.
             </p>
           </div>
           <button
@@ -303,8 +304,8 @@ export default function AnalyticsPage() {
                       {data.tasksCompletedInPeriod.map(row => (
                         <tr key={row.id}>
                           <td>{row.title}</td>
-                          <td>{row.assigneeName || '—'}</td>
-                          <td>{row.projectTitle || '—'}</td>
+                          <td>{row.assigneeName || EMPTY_CELL}</td>
+                          <td>{row.projectTitle || EMPTY_CELL}</td>
                           <td>{formatDateTime(row.completedAt)}</td>
                         </tr>
                       ))}
@@ -336,8 +337,8 @@ export default function AnalyticsPage() {
                         {data.documentsUploadedInPeriod.map(row => (
                           <tr key={row.id}>
                             <td>{row.fileName}</td>
-                            <td>{row.folderPath || '—'}</td>
-                            <td>{row.uploadedByName || '—'}</td>
+                            <td>{row.folderPath || EMPTY_CELL}</td>
+                            <td>{row.uploadedByName || EMPTY_CELL}</td>
                             <td>{formatDateTime(row.uploadedAt)}</td>
                           </tr>
                         ))}
@@ -388,7 +389,7 @@ function KpiCard({ label, value, accent }) {
   return (
     <div className="analytics-kpi" style={{ '--kpi-accent': accent }}>
       <div className="analytics-kpi__label">{label}</div>
-      <div className="analytics-kpi__value">{value ?? '—'}</div>
+      <div className="analytics-kpi__value">{value ?? '-'}</div>
     </div>
   )
 }
@@ -397,7 +398,7 @@ function MetricRow({ label, value, highlight }) {
   return (
     <div className="analytics-metric-row">
       <span>{label}</span>
-      <span style={highlight ? { color: '#dc2626' } : undefined}>{value ?? '—'}</span>
+      <span style={highlight ? { color: '#dc2626' } : undefined}>{value ?? '-'}</span>
     </div>
   )
 }

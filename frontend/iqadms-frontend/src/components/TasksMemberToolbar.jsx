@@ -2,8 +2,8 @@ import AppIcon from './AppIcon'
 import HintButton from './HintButton'
 
 const SORT_OPTIONS = [
-  { value: 'title-asc', label: 'Project name (A–Z)' },
-  { value: 'title-desc', label: 'Project name (Z–A)' },
+  { value: 'title-asc', label: 'Project name (A to Z)' },
+  { value: 'title-desc', label: 'Project name (Z to A)' },
   { value: 'progress-desc', label: 'Progress (high first)' },
   { value: 'progress-asc', label: 'Progress (low first)' },
   { value: 'tasks-desc', label: 'Most tasks' },
@@ -88,11 +88,11 @@ export default function TasksMemberToolbar({
             Status
             <HintButton title="Task status" className="tasks-toolbar-hint" align="right" compact size={14}>
               <ul>
-                <li><strong>To Do</strong> — ready to start</li>
-                <li><strong>In Progress</strong> — you are working on it</li>
-                <li><strong>Submitted</strong> — waiting for PQAD review</li>
-                <li><strong>Returned</strong> — needs revision</li>
-                <li><strong>Completed</strong> — approved</li>
+                <li><strong>To Do</strong>: not started yet</li>
+                <li><strong>In Progress</strong>: you are working on it</li>
+                <li><strong>Submitted</strong>: waiting on PQAD review</li>
+                <li><strong>Returned</strong>: needs changes</li>
+                <li><strong>Completed</strong>: approved</li>
               </ul>
             </HintButton>
           </span>

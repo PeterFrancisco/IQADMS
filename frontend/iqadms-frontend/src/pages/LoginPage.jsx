@@ -93,7 +93,7 @@ export default function LoginPage() {
     } catch (err) {
       const hint =
         typeof err?.response?.data === 'string' && err.response.data.includes('<!DOCTYPE')
-          ? ' The server returned a web page instead of JSON — check that /api is proxied to the API (port 5135), not the frontend.'
+          ? ' The server returned a web page instead of JSON. Check that /api is proxied to the API (port 5135), not the frontend.'
           : ''
       setError(getApiErrorMessage(err, `Invalid username/email or password.${hint}`))
     } finally {

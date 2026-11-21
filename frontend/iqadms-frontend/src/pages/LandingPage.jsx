@@ -72,8 +72,7 @@ export default function LandingPage() {
           <p className="landing-eyebrow">University of Perpetual Help System DALTA</p>
           <h1>Integrated Quality Assurance Document Management System</h1>
           <p className="landing-hero-lead">
-            IQADMS supports the Planning and Quality Assurance Department (PQAD) at the Molino campus by
-            coordinating accreditation work, documents, tasks, and reporting in one workspace.
+            IQADMS is the PQAD Molino site for accreditation work: tasks, documents, deadlines, and reports in one place.
           </p>
           <div className="landing-hero-actions">
             {signedIn ? (
@@ -98,10 +97,8 @@ export default function LandingPage() {
         <section id="overview" className="landing-section">
           <h2>Overview</h2>
           <p>
-            IQADMS is the internal platform for PQAD Molino to plan, execute, and document quality assurance
-            and accreditation activities. It connects people, deadlines, evidence files, and monitoring views so
-            teams can see what is due, who is responsible, and what has been submitted, instead of relying on
-            scattered spreadsheets and ad hoc folders.
+            Staff use it to plan PQAD work, track who owns each task, store evidence files, and see what is still open.
+            It replaces scattered spreadsheets and one-off shared folders for day-to-day accreditation prep.
           </p>
           <div className="landing-highlight-grid">
             <article className="landing-highlight">
@@ -195,9 +192,7 @@ export default function LandingPage() {
             institutional goals, and works with schools and offices to complete required documents.
           </p>
           <p>
-            IQADMS gives PQAD a dedicated workspace on campus that follows UPSHD branding and day-to-day
-            workflows. It stays linked to broader campus resources through the official websites and tools listed
-            below.
+            The app follows UPSHD branding and matches how PQAD already works. Campus websites and tools listed below stay the official references.
           </p>
         </section>
 

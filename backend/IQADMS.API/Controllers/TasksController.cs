@@ -613,7 +613,7 @@ public class TasksController : ControllerBase
             await _notifications.NotifyAsync(
                 task.AssignedToUserId.Value,
                 "task",
-                "Task returned — incomplete",
+                "Task returned (incomplete)",
                 notice,
                 NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                 task.Id,
@@ -654,7 +654,7 @@ public class TasksController : ControllerBase
             await _notifications.NotifyAsync(
                 task.AssignedToUserId.Value,
                 "task",
-                "Task approved — completed",
+                "Task approved (completed)",
                 notice,
                 NotificationService.BuildTaskLinkPath(task.Id, task.ProjectId),
                 task.Id,
@@ -819,7 +819,7 @@ public class TasksController : ControllerBase
             name = "there";
 
         var intro = returned
-            ? $"Hi {name}, your task \"{taskTitle}\" is incomplete or needs more work. It has been returned to you — not completed."
+            ? $"Hi {name}, your task \"{taskTitle}\" is incomplete or needs more work. It was returned to you (not completed)."
             : $"Hi {name}, good job finishing \"{taskTitle}\"!";
 
         return $"{intro}\n\n{adminMessage.Trim()}";

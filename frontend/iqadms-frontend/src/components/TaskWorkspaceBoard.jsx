@@ -4,6 +4,7 @@ import UserAvatar from './UserAvatar'
 import { appDialog } from '../utils/appDialog'
 import { floatingMenuPosition } from '../utils/floatingMenuPosition'
 import '../theme/workspace-board.css'
+import { EMPTY_CELL, EMPTY_DATE, UNASSIGNED } from '../utils/emptyDisplay'
 
 const STATUS_OPTIONS_ADMIN = ['To Do', 'Waiting', 'In Progress', 'Submitted', 'Returned', 'Completed', 'Cancelled']
 const STATUS_COLORS = {
@@ -418,7 +419,7 @@ function BoardCell({
 
   if (binding === 'owner') {
     if (!isAdmin) {
-      return <span>{task.assignedToName || '—'}</span>
+      return <span>{task.assignedToName || UNASSIGNED}</span>
     }
     return <OwnerCell task={task} members={members} onAssign={onAssign} />
   }
@@ -436,7 +437,7 @@ function BoardCell({
 
   if (binding === 'due_date') {
     if (!isAdmin) {
-      return <span>{task.dueDate || '—'}</span>
+      return <span>{task.dueDate || EMPTY_DATE}</span>
     }
     return (
       <input
@@ -637,7 +638,7 @@ function OwnerCell({ task, members, onAssign }) {
               />
             </div>
             <button type="button" className="workspace-owner-option" onClick={() => pick(null)}>
-              <span className="workspace-owner-option-unassigned">—</span>
+              <span className="workspace-owner-option-unassigned">{UNASSIGNED}</span>
               <span>Unassigned</span>
             </button>
             <div className="workspace-owner-picker-list">
@@ -766,7 +767,7 @@ function CustomCell({ column, taskId, value, onSave, readOnly }) {
   }
 
   if (readOnly) {
-    return <span>{local || '—'}</span>
+    return <span>{local || EMPTY_CELL}</span>
   }
 
   if (column.columnType === 'link') {

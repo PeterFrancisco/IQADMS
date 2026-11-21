@@ -423,7 +423,7 @@ public class AdminController : ControllerBase
             greeting,
             actorName,
             "Sample task (SMTP test)",
-            "If you received this, task assignment emails are working. Subject line: IQADMS — New task assigned.",
+            "If you received this, task assignment emails are working. Subject line: IQADMS: New task assigned.",
             "PQAD test project",
             DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7)),
             link,

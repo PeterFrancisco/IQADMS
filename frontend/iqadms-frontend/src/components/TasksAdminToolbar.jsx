@@ -2,8 +2,8 @@ import AppIcon from './AppIcon'
 import HintButton from './HintButton'
 
 const SORT_OPTIONS = [
-  { value: 'title-asc', label: 'Project name (A–Z)' },
-  { value: 'title-desc', label: 'Project name (Z–A)' },
+  { value: 'title-asc', label: 'Project name (A to Z)' },
+  { value: 'title-desc', label: 'Project name (Z to A)' },
   { value: 'progress-desc', label: 'Progress (high first)' },
   { value: 'progress-asc', label: 'Progress (low first)' },
   { value: 'tasks-desc', label: 'Most tasks' },

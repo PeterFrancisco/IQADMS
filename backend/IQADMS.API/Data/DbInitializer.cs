@@ -181,7 +181,7 @@ public static class DbInitializer
                     new PqadAnnouncement
                     {
                         Title = "PQAD Staff Orientation",
-                        Description = "Welcome session for PQAD members — roles, tools, and accreditation calendar.",
+                        Description = "Welcome session for PQAD members: roles, tools, and accreditation calendar.",
                         Category = "Orientation",
                         StartDate = new DateOnly(2026, 8, 15),
                         Location = "PQAD Office, Molino Campus",
@@ -199,7 +199,7 @@ public static class DbInitializer
                     new PqadAnnouncement
                     {
                         Title = "PACUCOA Virtual Visit",
-                        Description = "Scheduled PACUCOA virtual accreditation visit — ensure evidence folders are ready.",
+                        Description = "Scheduled PACUCOA virtual accreditation visit. Have evidence folders ready.",
                         Category = "PACUCOA Visit",
                         StartDate = new DateOnly(2026, 9, 8),
                         EndDate = new DateOnly(2026, 9, 10),

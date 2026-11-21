@@ -85,8 +85,7 @@ export default function DashboardHubPage() {
             University of Perpetual Help System DALTA, Molino Campus
           </p>
           <p>
-            Planning and Quality Assurance Department workspace. Tasks are assigned to
-            PQAD staff; departments are tracked as related offices, not assignees.
+            PQAD Molino hub. Tasks go to PQAD staff. Other departments appear as related offices, not assignees.
           </p>
         </header>
 

@@ -1,0 +1,24 @@
+/* Shared layout, type, and motion tokens for IQADMS app shell */
+:root {
+  --iq-font-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+
+  --iq-radius-sm: 8px;
+  --iq-radius-md: 12px;
+  --iq-radius-lg: 16px;
+  --iq-radius-xl: 20px;
+
+  --iq-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --iq-shadow-md: 0 4px 16px rgba(92, 0, 18, 0.08);
+  --iq-shadow-lg: 0 12px 32px rgba(92, 0, 18, 0.12);
+
+  --iq-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --iq-duration-fast: 0.15s;
+  --iq-duration-normal: 0.28s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --iq-duration-fast: 0.01ms;
+    --iq-duration-normal: 0.01ms;
+  }
+}

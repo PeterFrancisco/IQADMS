@@ -99,7 +99,7 @@ export function AdminAddAccountContent() {
     const to = await appDialog.prompt({
       title: 'Test task notification',
       message:
-        'Enter the Outlook (or other) address that should receive a task assignment email. Subject: IQADMS — New task assigned.',
+        'Enter the Outlook (or other) address that should receive a task assignment email. Subject: IQADMS: New task assigned.',
       defaultValue: ''
     })
     if (!to?.trim()) return
@@ -181,7 +181,7 @@ export function AdminAddAccountContent() {
                 fontSize: '0.9rem'
               }}
             >
-              SMTP is not fully configured on the server — no task or invite emails will send until pqad{' '}
+              SMTP is not fully configured on the server. Task and invite emails will not send until pqad{' '}
               <code style={{ fontSize: '0.85em' }}>appsettings.json</code> has SmtpSettings (Host, Port, Username,
               Password, From) and the API is restarted.
             </div>
@@ -287,7 +287,7 @@ export function AdminAddAccountContent() {
           </button>
 
           <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#64748b' }}>
-            Task emails are sent when you assign someone else on a task — not when you use the registration invite buttons above.
+            Task emails go out when you assign someone on a task, not when you use the registration invite buttons above.
           </p>
         </div>
 
@@ -376,7 +376,7 @@ export function AdminAddAccountContent() {
 
                   <td style={tdStyle}>
                     {user.isRegistered ? (
-                      '—'
+                      'Registered'
                     ) : (
                       <span
                         title={user.lastInviteError || ''}

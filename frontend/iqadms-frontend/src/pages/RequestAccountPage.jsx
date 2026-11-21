@@ -54,7 +54,7 @@ export default function RequestAccountPage() {
         </div>
 
         <div className="login-notice login-notice--info">
-          <strong>Important — safe senders</strong>
+          <strong>Important: safe senders</strong>
           <p>
             Approval and invitation emails come from <strong>iqadms.pqad@gmail.com</strong>. Add this address to your safe senders, contacts, or allowed list in Gmail/Outlook so messages are not blocked or sent to spam.
           </p>

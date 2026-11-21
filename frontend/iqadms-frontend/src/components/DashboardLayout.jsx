@@ -104,7 +104,7 @@ export default function DashboardLayout({ children }) {
             <ProfileMenu />
           </div>
         </header>
-        {children}
+        <div className="app-page-content">{children}</div>
       </main>
     </div>
   )

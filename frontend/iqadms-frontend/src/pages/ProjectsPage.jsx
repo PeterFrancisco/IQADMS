@@ -203,7 +203,7 @@ export default function ProjectsPage() {
             <div key={NO_PROJECT_SECTION} className="projects-page-card projects-page-card--orphan">
               <div className="projects-page-card__top">
                 <div className="projects-page-card__progress" style={{ background: 'conic-gradient(#64748b 0deg, #e2e8f0 0)' }} aria-hidden>
-                  <span>—</span>
+                  <span aria-hidden />
                 </div>
                 <div className="projects-page-card__main">
                   <h2 className="projects-page-card__title">No project</h2>

@@ -71,7 +71,7 @@ public class FeedbackController : ControllerBase
                 _logger.LogWarning("Feedback saved but email not sent for user {UserId}: {Error}", userId, err);
         }
 
-        return Ok(new { message = "Thank you — your report was received." });
+        return Ok(new { message = "Thank you. Your report was received." });
     }
 
     private Guid GetUserId()

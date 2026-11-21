@@ -9,6 +9,7 @@ import { getApiOrigin } from '../utils/apiOrigin'
 import { floatingMenuPosition } from '../utils/floatingMenuPosition'
 import { pageTitleStyle } from '../theme/pageStyles'
 import '../theme/documents.css'
+import { EMPTY_DATE } from '../utils/emptyDisplay'
 
 function folderDepth(path) {
   if (!path) return 0
@@ -504,7 +505,7 @@ export default function DocumentsPage() {
                             </div>
                             <span className="docs-file-meta">
                               From {doc.trashedFromFolderPath || doc.autoFolderPath} · auto-delete{' '}
-                              {doc.purgeAfter ? new Date(doc.purgeAfter).toLocaleDateString() : '—'}
+                              {doc.purgeAfter ? new Date(doc.purgeAfter).toLocaleDateString() : EMPTY_DATE}
                             </span>
                           </div>
                           <div className="docs-file-row-actions">
