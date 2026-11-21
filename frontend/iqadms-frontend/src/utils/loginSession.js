@@ -37,7 +37,9 @@ export async function completeLoginSession({
   if (me) {
     if (me.username) localStorage.setItem('username', me.username)
     if (me.email) localStorage.setItem('userEmail', me.email)
-    localStorage.setItem('isAdmin', me.isAdmin === true ? 'true' : 'false')
+    if (typeof me.isAdmin === 'boolean') {
+      localStorage.setItem('isAdmin', me.isAdmin ? 'true' : 'false')
+    }
   }
 
   persistCurrentAccountSnapshot(me)
@@ -67,7 +69,9 @@ export async function activateSavedAccountSession(account) {
     me = meRes.data
     if (me?.username) localStorage.setItem('username', me.username)
     if (me?.email) localStorage.setItem('userEmail', me.email)
-    localStorage.setItem('isAdmin', me.isAdmin === true ? 'true' : 'false')
+    if (typeof me?.isAdmin === 'boolean') {
+      localStorage.setItem('isAdmin', me.isAdmin ? 'true' : 'false')
+    }
   } catch {
     // keep saved account metadata
   }

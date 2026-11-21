@@ -301,6 +301,7 @@ public class ProfileController : ControllerBase
 
     private static ProfileResponse MapProfile(Models.User user) => new()
     {
+        IsAdmin = user.IsAdmin,
         DisplayName = user.DisplayName,
         Username = user.Username ?? string.Empty,
         Email = user.Email,
