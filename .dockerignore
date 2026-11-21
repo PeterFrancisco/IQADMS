@@ -1,0 +1,16 @@
+**/.git
+**/.cursor
+**/node_modules
+**/dist
+**/bin
+**/obj
+**/.env
+**/.env.*
+!**/.env.example
+**/appsettings.json
+!**/appsettings.example.json
+!**/appsettings.Development.json
+case-study-extract.txt
+decano-extract-*.txt
+frontend/iqadms-frontend/scripts
+backend/IQADMS.API.old

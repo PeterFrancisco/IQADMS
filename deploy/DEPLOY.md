@@ -102,6 +102,16 @@ ss -tlnp | grep -E '5173|5135'
 
 No extra git step. Same pqad stack; public URL must reach **pqad:5173** (nginx with `/api` → 5135). Coordinate with IoT Lab if 502 or HTML on `/api`.
 
+### Docker deploy (recommended for pqad / IoT Lab)
+
+For a monitored, restart-friendly stack (same public port **5173**), see **[docker/README.md](docker/README.md)**:
+
+```bash
+cd ~/IQADMS/deploy/docker
+cp .env.example .env   # set secrets on server only
+docker compose up -d --build
+```
+
 ---
 
 ## Quick “every time” script (mental)

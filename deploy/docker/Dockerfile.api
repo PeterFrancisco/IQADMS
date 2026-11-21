@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY backend/IQADMS.API/IQADMS.API.csproj backend/IQADMS.API/
+RUN dotnet restore backend/IQADMS.API/IQADMS.API.csproj
+COPY backend/IQADMS.API/ backend/IQADMS.API/
+RUN dotnet publish backend/IQADMS.API/IQADMS.API.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/publish .
+RUN mkdir -p /app/Uploads
+ENV ASPNETCORE_URLS=http://+:5135
+EXPOSE 5135
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:5135/api/Auth/check-email?email=health@docker.local" || exit 1
+ENTRYPOINT ["dotnet", "IQADMS.API.dll"]

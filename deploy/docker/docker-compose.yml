@@ -1,0 +1,82 @@
+name: iqadms
+
+# IQADMS — one command deploy for pqad / IoT Lab (port 5173 = same as legacy nginx).
+# Copy .env.example → .env before first start. Do not commit .env.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-iqadms}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - iqadms_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-iqadms}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - iqadms
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: >-
+        Host=${DB_HOST:-postgres};Port=${DB_PORT:-5432};Database=${POSTGRES_DB:-iqadms};
+        Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
+      Jwt__Issuer: ${JWT_ISSUER:-IQADMS}
+      Jwt__Audience: ${JWT_AUDIENCE:-IQADMS}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-480}
+      App__PublicUrl: ${APP_PUBLIC_URL:-http://127.0.0.1:5173}
+      Cors__AllowedOrigins__0: ${APP_PUBLIC_URL:-http://127.0.0.1:5173}
+      SmtpSettings__Host: ${SMTP_HOST:-}
+      SmtpSettings__Port: ${SMTP_PORT:-587}
+      SmtpSettings__Security: ${SMTP_SECURITY:-StartTls}
+      SmtpSettings__Username: ${SMTP_USERNAME:-}
+      SmtpSettings__Password: ${SMTP_PASSWORD:-}
+      SmtpSettings__From: ${SMTP_FROM:-}
+      SmtpSettings__FromName: ${SMTP_FROM_NAME:-IQADMS · PQAD}
+      SmtpSettings__AdminEmail: ${SMTP_ADMIN_EMAIL:-}
+      SmtpSettings__FeedbackEmail: ${SMTP_FEEDBACK_EMAIL:-iqadms.pqad@gmail.com}
+    volumes:
+      - iqadms_uploads:/app/Uploads
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5135/api/Auth/check-email?email=health@docker.local"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
+    networks:
+      - iqadms
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-5173}:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - iqadms
+
+networks:
+  iqadms:
+    driver: bridge
+
+volumes:
+  iqadms_pgdata:
+  iqadms_uploads:

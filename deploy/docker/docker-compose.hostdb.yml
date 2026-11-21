@@ -1,0 +1,67 @@
+name: iqadms
+
+# Optional: use existing Postgres on the host (no DB container).
+# Usage:
+#   cd deploy/docker
+#   docker compose -f docker-compose.hostdb.yml up -d --build
+#
+# .env must set DB_HOST=host.docker.internal and real POSTGRES_PASSWORD.
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.api
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: >-
+        Host=${DB_HOST:-host.docker.internal};Port=${DB_PORT:-5432};Database=${POSTGRES_DB:-iqadms};
+        Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
+      Jwt__Issuer: ${JWT_ISSUER:-IQADMS}
+      Jwt__Audience: ${JWT_AUDIENCE:-IQADMS}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-480}
+      App__PublicUrl: ${APP_PUBLIC_URL:-http://127.0.0.1:5173}
+      Cors__AllowedOrigins__0: ${APP_PUBLIC_URL:-http://127.0.0.1:5173}
+      SmtpSettings__Host: ${SMTP_HOST:-}
+      SmtpSettings__Port: ${SMTP_PORT:-587}
+      SmtpSettings__Security: ${SMTP_SECURITY:-StartTls}
+      SmtpSettings__Username: ${SMTP_USERNAME:-}
+      SmtpSettings__Password: ${SMTP_PASSWORD:-}
+      SmtpSettings__From: ${SMTP_FROM:-}
+      SmtpSettings__FromName: ${SMTP_FROM_NAME:-IQADMS · PQAD}
+      SmtpSettings__AdminEmail: ${SMTP_ADMIN_EMAIL:-}
+      SmtpSettings__FeedbackEmail: ${SMTP_FEEDBACK_EMAIL:-iqadms.pqad@gmail.com}
+    volumes:
+      - iqadms_uploads:/app/Uploads
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5135/api/Auth/check-email?email=health@docker.local"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
+    networks:
+      - iqadms
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-5173}:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - iqadms
+
+networks:
+  iqadms:
+    driver: bridge
+
+volumes:
+  iqadms_uploads:
