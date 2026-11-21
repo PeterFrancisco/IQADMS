@@ -321,8 +321,7 @@ public class ProfileController : ControllerBase
         LinkedInDisplayName = user.LinkedInDisplayName,
         GitHubDisplayName = user.GitHubDisplayName,
         Presence = NormalizePresence(user.PresenceStatus),
-        LastActiveAt = user.LastActiveAt,
-        IsAdmin = user.IsAdmin
+        LastActiveAt = user.LastActiveAt
     };
 
     private static string NormalizePresence(string? presence)
