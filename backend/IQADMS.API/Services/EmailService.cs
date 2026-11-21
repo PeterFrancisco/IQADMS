@@ -68,6 +68,73 @@ Please review this request in the admin panel.";
         await SendAsync(from, adminEmail, "IQADMS Access Request", body, htmlBody, GetFromDisplayName(), replyToEmail: email);
     }
 
+    public async Task<(bool Sent, string? Error)> TrySendPasswordResetRequestToAdminAsync(
+        string userEmail,
+        string? displayName,
+        string? username)
+    {
+        if (!IsSmtpConfigured(out var configError))
+        {
+            _logger.LogWarning("Password reset admin notice not sent: {Reason}", configError);
+            return (false, configError);
+        }
+
+        var smtp = _config.GetSection("SmtpSettings");
+        var from = RequireFromAddress(smtp);
+        var adminEmail = smtp["AdminEmail"]?.Trim();
+        if (string.IsNullOrWhiteSpace(adminEmail))
+            return (false, "Set SmtpSettings:AdminEmail.");
+
+        var who = string.IsNullOrWhiteSpace(displayName) ? username : displayName;
+        if (string.IsNullOrWhiteSpace(who))
+            who = userEmail;
+
+        var body = $"""
+An IQADMS user requested a password reset.
+
+User: {who}
+Account email: {userEmail}
+{(string.IsNullOrWhiteSpace(username) ? "" : $"Username: {username}\n")}
+
+Approve or reject in the admin panel under Settings → Password resets.
+""";
+
+        var settingsUrl = $"{GetPublicSiteUrl().TrimEnd('/')}/settings?section=account&tab=password-resets";
+        var htmlBody = BuildBrandedEmailHtml(
+            $"""
+<p style="margin:0 0 16px;line-height:1.5;">An IQADMS user requested a <strong>password reset</strong>.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 16px;font-size:14px;line-height:1.6;">
+  <tr><td style="padding:4px 0;color:#64748b;width:110px;vertical-align:top;">User</td><td style="padding:4px 0;"><strong>{System.Net.WebUtility.HtmlEncode(who)}</strong></td></tr>
+  <tr><td style="padding:4px 0;color:#64748b;vertical-align:top;">Email</td><td style="padding:4px 0;">{System.Net.WebUtility.HtmlEncode(userEmail)}</td></tr>
+  {(string.IsNullOrWhiteSpace(username) ? "" : $"<tr><td style=\"padding:4px 0;color:#64748b;vertical-align:top;\">Username</td><td style=\"padding:4px 0;\">{System.Net.WebUtility.HtmlEncode(username)}</td></tr>")}
+</table>
+<p style="margin:0 0 20px;">
+  <a href="{settingsUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Review password resets</a>
+</p>
+<p style="margin:0;font-size:12px;color:#94a3b8;">IQADMS → Settings → Account settings → Password resets.</p>
+""");
+
+        try
+        {
+            await SendAsync(
+                from,
+                adminEmail,
+                "IQADMS password reset request",
+                body,
+                htmlBody,
+                GetFromDisplayName(),
+                replyToEmail: userEmail);
+            _logger.LogInformation("Password reset request notice sent to admin {AdminEmail} for {UserEmail}", adminEmail, userEmail);
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            var detail = DescribeSendFailure(ex);
+            _logger.LogError(ex, "Failed to send password reset request notice to admin for {UserEmail}", userEmail);
+            return (false, detail);
+        }
+    }
+
     public async Task<(bool Sent, string? Error)> TrySendRegistrationInviteAsync(
         string recipientEmail,
         string? recipientDisplayName = null)

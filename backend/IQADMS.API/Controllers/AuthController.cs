@@ -161,6 +161,11 @@ public class AuthController : ControllerBase
             "/settings?tab=password-resets",
             dedupKey: $"pwd-reset-{user.Id}-{DateTime.UtcNow:yyyyMMdd}");
 
+        await _emailService.TrySendPasswordResetRequestToAdminAsync(
+            user.Email,
+            user.DisplayName,
+            user.Username);
+
         return Ok(new
         {
             message = "Your request was sent to an administrator. You will receive email when it is approved."

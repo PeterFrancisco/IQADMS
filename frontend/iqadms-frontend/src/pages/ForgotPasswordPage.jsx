@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
             Forgot password
           </h1>
           <p className="auth-text" style={{ marginTop: '0.65rem', marginBottom: 0 }}>
-            Enter your email or username. An administrator will review your request and email you a reset link if approved.
+            Enter your email or username. Administrators are notified by email and in the app; you will receive a reset link after approval.
           </p>
         </div>
 
