@@ -65,7 +65,7 @@ export default function SettingsMemberAccount() {
     setResetMsg('')
     try {
       const res = await api.post('/Auth/forgot-password', { emailOrUsername: username })
-      setResetMsg(res.data?.message || 'Request submitted. An admin will review it.')
+      setResetMsg(res.data?.message || 'Check your email for a reset link.')
     } catch (err) {
       setResetMsg(err.response?.data?.message || 'Could not submit request.')
     }

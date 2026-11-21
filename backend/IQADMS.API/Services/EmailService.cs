@@ -217,7 +217,7 @@ If you did not expect this invitation, you can safely ignore this email.
             return (false, "Invalid recipient email.");
 
         var body = $"""
-An IQADMS administrator approved your password reset request.
+You requested an IQADMS password reset.
 
 Open this link to choose a new password (valid for 24 hours):
   {resetUrl}
@@ -229,7 +229,7 @@ If you did not request a reset, contact your administrator.
 
         var htmlBody = BuildBrandedEmailHtml(
             $"""
-<p style="margin:0 0 16px;line-height:1.5;">An IQADMS administrator approved your password reset request.</p>
+<p style="margin:0 0 16px;line-height:1.5;">You requested an IQADMS password reset.</p>
 <p style="margin:0 0 20px;">
   <a href="{resetUrl}" style="display:inline-block;background:#7a0019;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Set a new password</a>
 </p>

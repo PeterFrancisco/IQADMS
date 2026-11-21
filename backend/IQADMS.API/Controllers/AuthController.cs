@@ -135,24 +135,34 @@ public class AuthController : ControllerBase
         {
             return Ok(new
             {
-                message = "If an account exists, administrators were notified to review your reset request."
+                message = "If an account exists, a reset link was sent to the email on file."
             });
         }
 
-        var hasPending = await _context.PasswordResetRequests
-            .AnyAsync(r => r.UserId == user.Id && r.Status == "Pending" && !r.IsDeleted);
+        var superseded = await _context.PasswordResetRequests
+            .Where(r => r.UserId == user.Id && !r.IsDeleted &&
+                        r.Status != "Completed" && r.Status != "Rejected" && r.Status != "Superseded")
+            .ToListAsync();
 
-        if (!hasPending)
+        foreach (var r in superseded)
         {
-            _context.PasswordResetRequests.Add(new PasswordResetRequest
-            {
-                UserId = user.Id,
-                Email = user.Email,
-                Status = "Pending",
-                RequestedAt = DateTime.UtcNow
-            });
-            await _context.SaveChangesAsync();
+            r.Status = "Superseded";
+            r.UpdatedAt = DateTime.UtcNow;
         }
+
+        var token = PasswordResetTokenGenerator.Generate();
+        var resetReq = new PasswordResetRequest
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            Status = "Approved",
+            ResetToken = token,
+            TokenExpiresAt = DateTime.UtcNow.AddHours(24),
+            RequestedAt = DateTime.UtcNow
+        };
+
+        _context.PasswordResetRequests.Add(resetReq);
+        await _context.SaveChangesAsync();
 
         await _notifications.NotifyAllAdminsAsync(
             "security",
@@ -166,9 +176,22 @@ public class AuthController : ControllerBase
             user.DisplayName,
             user.Username);
 
+        var resetUrl = _emailService.BuildResetPasswordUrl(token);
+        var (sent, error) = await _emailService.TrySendPasswordResetEmailAsync(user.Email, resetUrl);
+
+        if (!sent)
+        {
+            return Ok(new
+            {
+                message =
+                    "We found your account but could not send the reset email. Check SMTP settings on the server, or contact your administrator.",
+                emailError = error
+            });
+        }
+
         return Ok(new
         {
-            message = "Your request was sent to an administrator. You will receive email when it is approved."
+            message = "A password reset link was sent to your registered email. Check inbox and spam (link valid 24 hours)."
         });
     }
 

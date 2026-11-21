@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using IQADMS.API.DTOs.Admin;
 using IQADMS.API.Services;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using Microsoft.Extensions.Configuration;
 
 namespace IQADMS.API.Controllers;
@@ -542,10 +541,7 @@ public class AdminController : ControllerBase
         if (req.Status != "Pending")
             return BadRequest(new { message = "This request was already processed." });
 
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-            .Replace("+", "-")
-            .Replace("/", "_")
-            .TrimEnd('=');
+        var token = PasswordResetTokenGenerator.Generate();
 
         req.Status = "Approved";
         req.ResetToken = token;
